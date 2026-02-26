@@ -130,7 +130,7 @@ export default function Account() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            AriMed tracks anonymous usage analytics locally in your browser to power trending topics and personalization.
+            Aribot tracks anonymous usage analytics locally in your browser to power trending topics and personalization.
             No data is sent to external servers.
           </p>
           <Button

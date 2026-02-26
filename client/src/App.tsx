@@ -52,7 +52,7 @@ function App() {
               <div className="flex flex-col flex-1 min-w-0">
                 <header className="flex items-center gap-2 p-2 border-b shrink-0">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <span className="text-sm font-medium text-muted-foreground">AriMed</span>
+                  <span className="text-sm font-medium text-muted-foreground">Aribot</span>
                 </header>
                 <main className="flex-1 overflow-auto">
                   <Router />

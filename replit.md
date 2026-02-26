@@ -1,7 +1,7 @@
-# AriMed - Clinical Professional Platform
+# Aribot - Clinical Professional Platform
 
 ## Overview
-AriMed is a clinical professional platform for physicians featuring case discussions (Triage), medical news, professional groups, events, an AI assistant (Aribot), and built-in PHI compliance tools.
+Aribot is a clinical professional platform for physicians featuring case discussions (Triage), medical news, professional groups, events, an AI assistant (Aribot), and built-in PHI compliance tools.
 
 ## Architecture
 - **Frontend**: React + TypeScript with Vite, Tailwind CSS, shadcn/ui components
