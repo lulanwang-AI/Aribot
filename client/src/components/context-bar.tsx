@@ -177,7 +177,7 @@ export function SuggestedPrompts({ user }: SuggestedPromptsProps) {
         <Sparkles className="h-3.5 w-3.5 text-primary" />
         Suggested Prompts
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-1 gap-1.5">
         {prompts.map((prompt, i) => (
           <button
             key={i}

@@ -1,136 +1,135 @@
 import { useQuery } from "@tanstack/react-query";
-import { ContextBar, SuggestedPrompts } from "@/components/context-bar";
+import { SuggestedPrompts } from "@/components/context-bar";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Copy, ExternalLink, MessageSquare } from "lucide-react";
+import { Bot, Copy, User as UserIcon, Shield, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { recordEvent } from "@/lib/analytics";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "@shared/schema";
 
 export default function Aribot() {
   const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
   const { toast } = useToast();
+  const [useProfile, setUseProfile] = useState(true);
+  const [phiSafe, setPhiSafe] = useState(true);
 
   useEffect(() => {
     recordEvent("page_view", { section: "aribot" });
     recordEvent("chat_opened", { specialty: user?.specialty });
   }, [user?.specialty]);
 
+  useEffect(() => {
+    if (user) setPhiSafe(user.phiSafeMode);
+  }, [user]);
+
+  function handleCopyContext() {
+    if (!user) return;
+    const ctx = buildContextBlock(user, phiSafe);
+    navigator.clipboard.writeText(ctx);
+    toast({ title: "Context copied", description: "Paste it into Aribot to personalize your session." });
+  }
+
   if (isLoading || !user) {
     return (
-      <div className="p-4 md:p-6 space-y-4">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex h-full">
+        <Skeleton className="flex-1" />
+        <Skeleton className="w-72" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-aribot-title">
-          <Bot className="h-5 w-5 text-primary" />
-          Aribot AI Assistant
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your personalized clinical AI assistant. Copy your context and paste it into the chat for tailored responses.
-        </p>
-      </div>
-
-      <ContextBar user={user} />
-
-      <SuggestedPrompts user={user} />
-
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <div className="bg-card rounded-md overflow-hidden" data-testid="panel-aribot-chat">
-            <div className="flex items-center justify-between gap-1 p-3 border-b">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-sm font-medium">Aribot Chat</span>
-              </div>
-              <Button size="sm" variant="outline" data-testid="button-open-external">
-                <ExternalLink className="h-3 w-3 mr-1.5" />
-                Open in new tab
-              </Button>
-            </div>
-            <div className="h-[500px] flex flex-col items-center justify-center p-6 text-center space-y-4 bg-muted/20">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-8 w-8 text-primary" />
-              </div>
-              <div className="space-y-2 max-w-md">
-                <h3 className="text-lg font-semibold">Aribot is Ready</h3>
-                <p className="text-sm text-muted-foreground">
-                  This panel will display the Dify chatbot iframe when configured. For now, use the Context Helper panel to copy your personalized context and suggested prompts.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  To connect: Set the DIFY_CHATBOT_URL environment variable with your Dify embed URL.
-                </p>
-              </div>
-            </div>
-          </div>
+    <div className="flex h-full" data-testid="page-aribot">
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 min-h-0">
+          <iframe
+            src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
+            className="w-full h-full border-0"
+            style={{ minHeight: "400px" }}
+            allow="microphone"
+            title="Aribot Chat"
+            data-testid="iframe-aribot-chat"
+          />
         </div>
 
-        <div className="space-y-4" data-testid="panel-context-helper">
-          <div className="bg-card rounded-md p-4 space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <MessageSquare className="h-4 w-4 text-primary" />
-              Context Helper
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Since the chatbot runs in an iframe, direct context injection isn't possible.
-              Use the button below to copy your structured context, then paste it as your first message in Aribot.
-            </p>
-            <Button
-              className="w-full"
-              onClick={() => {
-                const ctx = buildContextBlock(user);
-                navigator.clipboard.writeText(ctx);
-                toast({ title: "Context copied", description: "Paste it as your first message in Aribot." });
-              }}
-              data-testid="button-helper-copy"
-            >
-              <Copy className="h-3.5 w-3.5 mr-1.5" />
-              Copy Full Context Block
-            </Button>
+        <div className="border-t bg-card p-3 flex items-center gap-3 flex-wrap" data-testid="panel-profile-bar">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+              <UserIcon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium truncate" data-testid="text-context-name">{user.name}</p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {user.specialty} · {user.hospital}
+              </p>
+            </div>
           </div>
 
-          <div className="bg-card rounded-md p-4 space-y-3">
-            <h3 className="text-sm font-semibold">Quick Paste Area</h3>
-            <p className="text-xs text-muted-foreground">
-              Draft your question here, then copy and paste it into the Aribot chat:
-            </p>
-            <Textarea
-              placeholder="Type your question here..."
-              className="min-h-[120px] text-sm"
-              data-testid="input-quick-paste"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                const el = document.querySelector('[data-testid="input-quick-paste"]') as HTMLTextAreaElement;
-                if (el?.value) {
-                  navigator.clipboard.writeText(el.value);
-                  toast({ title: "Copied", description: "Paste it into Aribot." });
-                }
-              }}
-              data-testid="button-copy-question"
-            >
-              <Copy className="h-3 w-3 mr-1.5" />
-              Copy Question
-            </Button>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+              <Sparkles className="h-3 w-3 text-primary" />
+              <span className="text-muted-foreground">Profile</span>
+              <Switch
+                checked={useProfile}
+                onCheckedChange={setUseProfile}
+                className="scale-75"
+                data-testid="switch-use-profile"
+              />
+            </label>
+            <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+              <Shield className="h-3 w-3 text-primary" />
+              <span className="text-muted-foreground">PHI-safe</span>
+              <Switch
+                checked={phiSafe}
+                onCheckedChange={setPhiSafe}
+                className="scale-75"
+                data-testid="switch-phi-safe"
+              />
+            </label>
           </div>
+
+          {useProfile && user.interests.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {user.interests.slice(0, 3).map((interest) => (
+                <Badge key={interest} variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {interest}
+                </Badge>
+              ))}
+              {user.interests.length > 3 && (
+                <span className="text-[10px] text-muted-foreground">+{user.interests.length - 3}</span>
+              )}
+            </div>
+          )}
+
+          <Button size="sm" variant="default" onClick={handleCopyContext} className="ml-auto h-7 text-xs" data-testid="button-copy-context">
+            <Copy className="h-3 w-3 mr-1" />
+            Copy Context
+          </Button>
+        </div>
+      </div>
+
+      <div className="w-72 border-l bg-card/50 flex flex-col shrink-0 hidden lg:flex" data-testid="panel-suggested-prompts">
+        <div className="p-3 border-b">
+          <h2 className="text-sm font-semibold flex items-center gap-1.5">
+            <Bot className="h-4 w-4 text-primary" />
+            Aribot Assistant
+          </h2>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Copy your context or a prompt, then paste it into the chat.
+          </p>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3">
+          <SuggestedPrompts user={user} />
         </div>
       </div>
     </div>
   );
 }
 
-function buildContextBlock(user: User): string {
+function buildContextBlock(user: User, phiSafe: boolean): string {
   return `CLINICIAN PROFILE CONTEXT (for personalization)
 - Specialty: ${user.specialty}
 - Subspecialty: ${user.subspecialty}
@@ -143,5 +142,5 @@ function buildContextBlock(user: User): string {
   - Ask clarifying questions when needed
 - Safety:
   - Do not include any patient identifiers
-  - PHI-safe mode enabled: ${user.phiSafeMode}`;
+  - PHI-safe mode enabled: ${phiSafe}`;
 }
