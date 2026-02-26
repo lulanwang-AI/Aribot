@@ -152,7 +152,7 @@ export default function Home() {
       </Card>
 
       <div className="flex justify-center">
-        <Link href="/aribot">
+        <Link href="/">
           <Button data-testid="button-open-aribot">
             <Bot className="h-4 w-4 mr-2" />
             Open Aribot AI Assistant

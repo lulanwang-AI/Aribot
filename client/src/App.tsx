@@ -20,8 +20,8 @@ import Team from "@/pages/team";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/aribot" component={Aribot} />
+      <Route path="/" component={Aribot} />
+      <Route path="/home" component={Home} />
       <Route path="/triage" component={Triage} />
       <Route path="/triage/:id">
         {(params) => <TriageDetail id={params.id} />}

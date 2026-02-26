@@ -28,14 +28,14 @@ import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import type { User } from "@shared/schema";
 
 const navItems = [
-  { title: "Home", url: "/", icon: Home },
+  { title: "Aribot", url: "/", icon: Bot },
   { title: "Triage", url: "/triage", icon: Stethoscope },
   { title: "News", url: "/news", icon: Newspaper },
   { title: "Groups", url: "/groups", icon: Users },
   { title: "Events", url: "/events", icon: CalendarDays },
 ];
 
-const aiItems = [{ title: "Aribot", url: "/aribot", icon: Bot }];
+const aiItems = [{ title: "Dashboard", url: "/home", icon: Home }];
 
 const adminItems = [{ title: "Team", url: "/team", icon: Shield }];
 
@@ -84,7 +84,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>AI Assistant</SidebarGroupLabel>
+          <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {aiItems.map((item) => (
@@ -97,7 +97,6 @@ export function AppSidebar() {
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                      <Badge variant="secondary" className="ml-auto text-xs">AI</Badge>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
