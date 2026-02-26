@@ -48,7 +48,8 @@ export default function Aribot() {
           <iframe
             src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
             className="w-full h-full rounded-md border bg-background"
-            style={{ minHeight: "400px" }}
+            style={{ minHeight: "700px" }}
+            frameBorder="0"
             allow="microphone"
             title="Aribot Chat"
             data-testid="iframe-aribot-chat"
