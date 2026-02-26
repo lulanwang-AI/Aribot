@@ -1,0 +1,102 @@
+Update the existing Replit project with these new requirements. Do not restart from scratch; modify the current codebase.
+
+NEW REQUIREMENTS
+1) Aribot personalization context (specialty/interests)
+- Each doctor profile has: specialty, subspecialty, interests[], hospital, role, verification.
+- When the user is logged in, Aribot should “read” the profile and personalize the chatbot experience:
+  A) On /aribot (full page) add a compact “Context bar” above the iframe showing:
+     - Active user: name, specialty, hospital, interests chips
+     - Toggles: “Use my profile context” (default ON), “PHI-safe mode” (default ON)
+     - A small “What’s being shared?” link that opens a modal explaining the exact fields used.
+  B) For Dify iframe: we cannot truly inject system prompts into a static iframe reliably.
+     Implement one of these two approaches:
+     - Preferred: append query params to the iframe URL if Dify supports it (e.g., ?user=...&context=...).
+       If unsupported, fall back to approach below.
+     - Fallback (must implement): create a “Context Helper” panel next to the iframe (or inside the Aribot drawer)
+       containing a “Copy Context” button that copies a structured context block to clipboard, and an input box
+       where the doctor can paste it into Aribot.
+       The context block format:
+
+       CLINICIAN PROFILE CONTEXT (for personalization)
+       - Specialty: ...
+       - Subspecialty: ...
+       - Practice setting: ...
+       - Hospital/Health system: ...
+       - Interests: ...
+       - Preferences:
+         - Evidence-first, cite primary sources when possible
+         - Use concise clinician-facing bullets
+         - Ask clarifying questions when needed
+       - Safety:
+         - Do not include any patient identifiers
+         - PHI-safe mode enabled: <true/false>
+
+  C) Add “Suggested prompts” list under the context bar, generated from specialty + interests:
+     - 8 prompts per user, e.g. “Summarize latest NEJM trials in [specialty]”, “Differential for …”
+     - Clicking a prompt copies it to clipboard (since iframe input is not controllable).
+
+2) Analytics (demo-only, local)
+- Add a lightweight analytics module stored in localStorage:
+  - Track:
+    - page views per section
+    - triage interactions (post created, liked, commented, flagged)
+    - news clicks (open item)
+    - group joins/leaves
+    - event RSVPs
+    - chat opened
+  - Track specialty/topic trends:
+    - From triage tags + news tags + group topics + event type
+    - Store counters by tag and by specialty
+
+- Add a “Trending” panel visible:
+  - On the right side of News and Triage pages (desktop)
+  - As a collapsible drawer on mobile
+  - Trending shows:
+    - Top 10 tags (last 7 days, simulated with timestamps)
+    - Top 5 specialties by activity
+    - “Rising” topics (largest delta vs previous 7 days bucket)
+- Include a small “Reset analytics” button in /account.
+
+3) Compliance: PHI-safe mode + posting rules
+- Add global “PHI-safe mode” toggle (default ON) in account settings and mirrored in Aribot context bar.
+- Add posting rules banner above Triage “Create Case”:
+  - “No patient identifiers (names, DOB, MRN, exact address, phone, email, unique photos, etc.).”
+  - Require checkbox: “I confirm this post contains no patient identifiers.”
+- Auto-redaction warnings:
+  - When a user types a triage post or comment, run client-side heuristics to detect possible PHI:
+    - DOB patterns, SSN patterns, phone numbers, email addresses, MRN-like long numeric strings,
+      full names preceded by “Mr/Ms/Patient”, addresses, exact dates, facility account numbers.
+  - If detected:
+    - Show a warning panel listing what was detected (e.g., “Possible phone number”).
+    - Provide one-click “Auto-redact” that replaces detected spans with [REDACTED].
+    - Block submission until:
+      - user runs auto-redact OR manually edits to clear warnings,
+      - and checks the “No identifiers” confirmation.
+- Flagging workflow:
+  - If a post/comment is flagged, add it to a “Moderation Queue” visible only to Admin role in /team.
+  - Provide actions: “Mark safe”, “Request edit”, “Remove” (demo-only actions).
+
+IMPLEMENTATION NOTES
+- Add /lib/analytics.ts with:
+  - recordEvent(type, payload)
+  - getTrending(rangeDays)
+  - getRising(rangeDays)
+  - resetAnalytics()
+- Add /lib/phi.ts with:
+  - detectPHI(text) => array of findings {type, match, start, end}
+  - redactPHI(text, findings) => redactedText
+  - keep heuristics deterministic and explainable; do NOT claim perfect compliance.
+- Update UI components:
+  - TrendingPanel component used in News and Triage
+  - PHIWarningPanel component used in Create Case and Comments
+  - ContextBar + SuggestedPrompts for Aribot page + Aribot drawer
+- Ensure analytics calls are added to relevant interactions.
+
+DELIVERABLES
+- Update code with these features.
+- Update README:
+  - explain iframe limitation and Context Helper workaround
+  - explain analytics (local only)
+  - explain PHI-safe heuristics and limitations
+
+Proceed to implement now.
