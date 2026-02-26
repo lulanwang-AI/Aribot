@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PHIWarningPanel } from "@/components/phi-warning-panel";
+import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
@@ -76,14 +77,14 @@ export default function TriageDetail({ id }: { id: string }) {
 
           {post.author && (
             <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                  {post.author.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm">{post.author.name}</span>
-              <Badge variant="secondary" className="text-xs">{post.author.specialty}</Badge>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <ClickableDoctor
+                userId={post.authorId}
+                name={post.author.name}
+                specialty={post.author.specialty}
+                showAvatar={true}
+                avatarSize="md"
+              />
+              <span className="text-xs text-muted-foreground flex items-center gap-1 ml-2">
                 <Clock className="h-3 w-3" />
                 {formatTimeAgo(post.createdAt)}
               </span>
@@ -162,16 +163,18 @@ function CommentCard({
 
   return (
     <div className="flex gap-3 p-3 rounded-md bg-card" data-testid={`comment-${comment.id}`}>
-      <Avatar className="h-7 w-7 shrink-0">
-        <AvatarFallback className="text-xs bg-primary/10 text-primary">
-          {comment.author?.name.split(" ").map(n => n[0]).join("").slice(0, 2) || "?"}
-        </AvatarFallback>
-      </Avatar>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium">{comment.author?.name}</span>
-          {comment.author && (
-            <Badge variant="secondary" className="text-xs">{comment.author.specialty}</Badge>
+          {comment.author ? (
+            <ClickableDoctor
+              userId={comment.authorId}
+              name={comment.author.name}
+              specialty={comment.author.specialty}
+              showAvatar={true}
+              avatarSize="sm"
+            />
+          ) : (
+            <span className="text-xs font-medium">Unknown</span>
           )}
           <span className="text-xs text-muted-foreground">{formatTimeAgo(comment.createdAt)}</span>
           {comment.flagged && <Badge variant="destructive" className="text-xs">Flagged</Badge>}

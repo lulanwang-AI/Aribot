@@ -13,11 +13,12 @@ AriMed is a clinical professional platform for physicians featuring case discuss
 ```
 client/src/
   components/
-    app-sidebar.tsx       - Main navigation sidebar
-    context-bar.tsx       - Aribot context bar + suggested prompts
-    trending-panel.tsx    - Trending topics panel (analytics-powered)
-    phi-warning-panel.tsx - PHI detection warnings + posting rules
-    ui/                   - shadcn/ui components
+    app-sidebar.tsx           - Main navigation sidebar
+    context-bar.tsx           - Aribot context bar + suggested prompts
+    doctor-profile-sheet.tsx  - LinkedIn-style doctor profile sheet + ClickableDoctor component
+    trending-panel.tsx        - Trending topics panel (analytics-powered)
+    phi-warning-panel.tsx     - PHI detection warnings + posting rules
+    ui/                       - shadcn/ui components
   lib/
     analytics.ts          - localStorage-based analytics module
     phi.ts                - PHI detection and redaction heuristics
@@ -66,10 +67,19 @@ shared/
 - Actions: Mark safe, Request edit, Remove (demo-only)
 - Only visible to admin role users
 
+### Doctor Profiles (LinkedIn-style)
+- Clickable doctor avatars/names across Triage, Triage Detail, Home, and Sidebar
+- Opens a slide-out Sheet with full profile: specialty, hospital, verified badge, activity stats
+- Shows case count, comment count, group memberships, event RSVPs
+- Links to recent cases and groups from the profile
+- Uses ProfileSheetProvider context at app root for single Sheet instance
+
 ## API Endpoints
 - `GET /api/me` - Current user profile
 - `PATCH /api/me` - Update user settings
-- `GET/POST /api/triage` - List/create triage cases
+- `GET /api/users` - All users (no passwords)
+- `GET /api/users/:id` - Enriched user profile (caseCount, commentCount, groupCount, eventCount, recentCases, memberGroups)
+- `GET/POST /api/triage` - List/create triage cases (list includes commentCount)
 - `GET /api/triage/:id` - Case detail with comments
 - `POST /api/triage/:id/like` - Toggle like
 - `POST /api/triage/:id/flag` - Flag post

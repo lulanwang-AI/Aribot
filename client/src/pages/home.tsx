@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import {
   Stethoscope,
   Newspaper,
@@ -21,7 +22,7 @@ import { useEffect } from "react";
 
 export default function Home() {
   const { data: user, isLoading: userLoading } = useQuery<User>({ queryKey: ["/api/me"] });
-  const { data: posts } = useQuery<(TriagePost & { author: { name: string; specialty: string } | null })[]>({ queryKey: ["/api/triage"] });
+  const { data: posts } = useQuery<(TriagePost & { author: { name: string; specialty: string } | null; commentCount: number })[]>({ queryKey: ["/api/triage"] });
   const { data: news } = useQuery<NewsItem[]>({ queryKey: ["/api/news"] });
   const { data: events } = useQuery<MedEvent[]>({ queryKey: ["/api/events"] });
 
@@ -78,21 +79,28 @@ export default function Home() {
               <p className="text-sm text-muted-foreground py-4 text-center">No cases yet</p>
             )}
             {recentPosts.map((post) => (
-              <Link key={post.id} href={`/triage/${post.id}`}>
-                <div className="p-3 rounded-md hover-elevate cursor-pointer space-y-1" data-testid={`card-post-${post.id}`}>
-                  <p className="text-sm font-medium leading-snug">{post.title}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Heart className="h-3 w-3" /> {post.likes.length}
-                    </span>
-                    <span>{post.author?.name}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatTimeAgo(post.createdAt)}
-                    </span>
-                  </div>
+              <div key={post.id} className="p-3 rounded-md hover:bg-muted/40 transition-colors space-y-1" data-testid={`card-post-${post.id}`}>
+                <Link href={`/triage/${post.id}`}>
+                  <p className="text-sm font-medium leading-snug cursor-pointer hover:text-primary transition-colors">{post.title}</p>
+                </Link>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Heart className="h-3 w-3" /> {post.likes.length}
+                  </span>
+                  {post.author && (
+                    <ClickableDoctor
+                      userId={post.authorId}
+                      name={post.author.name}
+                      showAvatar={true}
+                      avatarSize="sm"
+                    />
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTimeAgo(post.createdAt)}
+                  </span>
                 </div>
-              </Link>
+              </div>
             ))}
           </CardContent>
         </Card>

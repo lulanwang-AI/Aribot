@@ -55,14 +55,51 @@ export async function registerRoutes(
     res.json(users.map(({ password: _, ...u }) => u));
   });
 
+  app.get("/api/users/:id", async (req, res) => {
+    const user = await storage.getUser(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const { password: _, ...safe } = user;
+    const posts = await storage.getTriagePosts();
+    const allComments: any[] = [];
+    for (const p of posts) {
+      const cs = await storage.getComments(p.id);
+      allComments.push(...cs);
+    }
+    const groups = await storage.getGroups();
+    const events = await storage.getEvents();
+    const caseCount = posts.filter(p => p.authorId === req.params.id).length;
+    const commentCount = allComments.filter(c => c.authorId === req.params.id).length;
+    const groupCount = groups.filter(g => g.members.includes(req.params.id)).length;
+    const eventCount = events.filter(e => e.rsvps.includes(req.params.id)).length;
+    const recentCases = posts
+      .filter(p => p.authorId === req.params.id)
+      .slice(0, 3)
+      .map(p => ({ id: p.id, title: p.title, tags: p.tags, createdAt: p.createdAt }));
+    const memberGroups = groups
+      .filter(g => g.members.includes(req.params.id))
+      .map(g => ({ id: g.id, name: g.name, topic: g.topic }));
+    res.json({
+      ...safe,
+      caseCount,
+      commentCount,
+      groupCount,
+      eventCount,
+      recentCases,
+      memberGroups,
+    });
+  });
+
   app.get("/api/triage", async (_req, res) => {
     const posts = await storage.getTriagePosts();
     const users = await storage.getAllUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
-    const enriched = posts.map(p => ({
-      ...p,
-      author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty } : null,
-      commentCount: 0,
+    const enriched = await Promise.all(posts.map(async p => {
+      const comments = await storage.getComments(p.id);
+      return {
+        ...p,
+        author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty } : null,
+        commentCount: comments.length,
+      };
     }));
     res.json(enriched);
   });

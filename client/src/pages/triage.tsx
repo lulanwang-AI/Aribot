@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
 import { detectPHI } from "@/lib/phi";
+import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import {
   Plus,
   Heart,
@@ -180,18 +181,27 @@ function PostCard({ post, onClick }: { post: EnrichedPost; onClick: () => void }
           <Heart className={`h-3 w-3 mr-1 ${isLiked ? "fill-current" : ""}`} />
           {post.likes.length}
         </Button>
+        <span className="text-xs text-muted-foreground flex items-center gap-1" data-testid={`text-comments-${post.id}`}>
+          <MessageSquare className="h-3 w-3" />
+          {post.commentCount}
+        </span>
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {formatTimeAgo(post.createdAt)}
         </span>
         {post.author && (
-          <span className="text-xs text-muted-foreground ml-auto">
-            {post.author.name}
+          <span className="ml-auto">
+            <ClickableDoctor
+              userId={post.authorId}
+              name={post.author.name}
+              showAvatar={true}
+              avatarSize="sm"
+            />
           </span>
         )}
         <Button
-          size="icon"
-          variant="outline"
+          size="sm"
+          variant="ghost"
           onClick={() => flagMutation.mutate()}
           disabled={flagMutation.isPending || post.flagged}
           data-testid={`button-flag-${post.id}`}

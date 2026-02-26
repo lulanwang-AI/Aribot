@@ -24,6 +24,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import type { User } from "@shared/schema";
 
 const navItems = [
@@ -151,16 +152,14 @@ export function AppSidebar() {
 
       <SidebarFooter>
         {user && (
-          <div className="flex items-center gap-2 px-2 py-2">
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                {user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-medium truncate" data-testid="text-sidebar-username">{user.name}</span>
-              <span className="text-xs text-muted-foreground truncate">{user.specialty}</span>
-            </div>
+          <div className="px-2 py-2" data-testid="sidebar-user-profile">
+            <ClickableDoctor
+              userId={user.id}
+              name={user.name}
+              specialty={user.specialty}
+              showAvatar={true}
+              avatarSize="sm"
+            />
           </div>
         )}
       </SidebarFooter>
