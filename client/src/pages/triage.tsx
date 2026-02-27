@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -36,8 +37,9 @@ import type { TriagePost } from "@shared/schema";
 import { useEffect } from "react";
 
 type EnrichedPost = TriagePost & {
-  author: { name: string; specialty: string } | null;
+  author: { name: string; specialty: string; avatarUrl: string } | null;
   commentCount: number;
+  participants?: { id: string; name: string; avatarUrl: string }[];
 };
 
 export default function Triage() {
@@ -198,6 +200,21 @@ function PostCard({ post, onClick }: { post: EnrichedPost; onClick: () => void }
           <MessageSquare className="h-3 w-3" />
           {post.commentCount}
         </span>
+        {post.participants && post.participants.length > 0 && (
+          <div className="flex items-center -space-x-1.5" data-testid={`participants-${post.id}`}>
+            {post.participants.slice(0, 4).map(p => (
+              <Avatar key={p.id} className="h-5 w-5 ring-2 ring-background" title={p.name}>
+                <AvatarImage src={p.avatarUrl} />
+                <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                  {p.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {post.participants.length > 4 && (
+              <span className="text-[10px] text-muted-foreground ml-2">+{post.participants.length - 4}</span>
+            )}
+          </div>
+        )}
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {formatTimeAgo(post.createdAt)}

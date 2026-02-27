@@ -91,10 +91,16 @@ export async function registerRoutes(
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
     const enriched = await Promise.all(posts.map(async p => {
       const comments = await storage.getComments(p.id);
+      const uniqueParticipantIds = [...new Set(comments.filter(c => !c.anonymous).map(c => c.authorId))];
       return {
         ...p,
         author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty, avatarUrl: userMap[p.authorId].avatarUrl } : null,
         commentCount: comments.length,
+        participants: uniqueParticipantIds.slice(0, 5).map(uid => ({
+          id: uid,
+          name: userMap[uid]?.name || "Unknown",
+          avatarUrl: userMap[uid]?.avatarUrl || "",
+        })),
       };
     }));
     res.json(enriched);
