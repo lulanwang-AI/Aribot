@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProfileSheetProvider } from "@/components/doctor-profile-sheet";
 import { FloatingAribot } from "@/components/floating-aribot";
+import { NetworkBackground } from "@/components/network-background";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Aribot from "@/pages/aribot";
@@ -63,6 +64,7 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
   return (
     <AuthContext.Provider value={{ signOut: onSignOut }}>
       <ProfileSheetProvider>
+        <NetworkBackground />
         <SidebarProvider style={sidebarStyle as React.CSSProperties}>
           <div className="flex h-screen w-full">
             <AppSidebar />
