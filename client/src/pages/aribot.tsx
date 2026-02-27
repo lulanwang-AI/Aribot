@@ -144,7 +144,7 @@ export default function Aribot() {
         </div>
       </div>
 
-      <div className="relative shrink-0 hidden lg:block">
+      <div className="relative shrink-0 hidden lg:flex">
         <button
           onClick={() => setShowPanel(!showPanel)}
           data-testid="button-panel-toggle"
@@ -153,8 +153,13 @@ export default function Aribot() {
           {showPanel ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
         </button>
 
-        {showPanel && (
-          <div className="w-80 border-l bg-card/50 flex flex-col h-full" data-testid="panel-right-sidebar">
+        <div
+          className={`overflow-hidden transition-[width] duration-300 ease-in-out ${showPanel ? "w-80" : "w-0"}`}
+        >
+          <div
+            className="w-80 border-l bg-card/50 flex flex-col h-full"
+            data-testid="panel-right-sidebar"
+          >
             <div className="p-3 border-b">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
@@ -317,7 +322,8 @@ export default function Aribot() {
               </p>
             </div>
           </div>
-        )}
+        </div>
+        </div>
       </div>
     </div>
   );
