@@ -117,15 +117,16 @@ export default function News() {
         </div>
       </div>
 
-      {showAgentPanel && <AgentConfigPanel />}
-
-      <button
-        onClick={() => setShowAgentPanel(!showAgentPanel)}
-        data-testid="button-agent-panel-toggle"
-        className="absolute top-1/2 right-0 -translate-y-1/2 z-10 h-12 w-5 hidden lg:flex items-center justify-center bg-background/80 backdrop-blur-sm border border-r-0 rounded-l-md shadow-sm hover:bg-accent transition-colors"
-      >
-        {showAgentPanel ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
-      </button>
+      <div className="relative shrink-0 hidden lg:block">
+        <button
+          onClick={() => setShowAgentPanel(!showAgentPanel)}
+          data-testid="button-agent-panel-toggle"
+          className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-full z-10 h-12 w-5 flex items-center justify-center bg-background/80 backdrop-blur-sm border border-r-0 rounded-l-md shadow-sm hover:bg-accent transition-colors"
+        >
+          {showAgentPanel ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
+        </button>
+        {showAgentPanel && <AgentConfigPanel />}
+      </div>
 
       <NewsDetailSheet newsId={selectedNewsId} open={!!selectedNewsId} onClose={() => setSelectedNewsId(null)} />
       <FullArticleSheet item={fullArticleItem} open={!!fullArticleItem} onClose={() => setFullArticleItem(null)} />
