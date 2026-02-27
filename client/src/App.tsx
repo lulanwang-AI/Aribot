@@ -4,7 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProfileSheetProvider } from "@/components/doctor-profile-sheet";
 import { FloatingAribot } from "@/components/floating-aribot";
@@ -27,6 +27,21 @@ import Training from "@/pages/training";
 import Doctors from "@/pages/doctors";
 import Login from "@/pages/login";
 import { AuthContext } from "@/lib/auth";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+function SidebarEdgeTrigger() {
+  const { toggleSidebar, state } = useSidebar();
+  const isOpen = state === "expanded";
+  return (
+    <button
+      onClick={toggleSidebar}
+      data-testid="button-sidebar-toggle"
+      className="absolute top-1/2 left-0 -translate-y-1/2 z-10 h-12 w-5 flex items-center justify-center bg-background/80 backdrop-blur-sm border border-l-0 rounded-r-md shadow-sm hover:bg-accent transition-colors"
+    >
+      {isOpen ? <ChevronLeft className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+    </button>
+  );
+}
 
 function Router() {
   return (
@@ -72,7 +87,7 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
               <main className="flex-1 overflow-auto">
                 <Router />
               </main>
-              <SidebarTrigger className="absolute top-3 left-3 z-10 h-7 w-7 rounded-md bg-background/80 backdrop-blur-sm shadow-sm border" data-testid="button-sidebar-toggle" />
+              <SidebarEdgeTrigger />
             </div>
           </div>
           <FloatingAribot />
