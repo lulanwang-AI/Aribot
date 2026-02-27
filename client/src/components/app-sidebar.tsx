@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { User } from "@shared/schema";
 
 interface Notifications {
@@ -65,6 +65,11 @@ export function AppSidebar() {
   const { data: user } = useQuery<User>({ queryKey: ["/api/me"] });
   const { data: notifs } = useQuery<Notifications>({ queryKey: ["/api/notifications"] });
   const [aribotOpen, setAribotOpen] = useState(true);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  const dismissNotif = useCallback((key: string) => {
+    setDismissed(prev => new Set(prev).add(key));
+  }, []);
 
   return (
     <Sidebar>
@@ -126,7 +131,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => {
-                const count = item.notifKey && notifs ? notifs[item.notifKey] : 0;
+                const notifKey = item.notifKey;
+                const count = notifKey && notifs ? notifs[notifKey] : 0;
+                const showBadge = count > 0 && notifKey && !dismissed.has(notifKey);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -134,11 +141,11 @@ export function AppSidebar() {
                       data-active={location === item.url || location.startsWith(item.url + "/")}
                       data-testid={`nav-${item.title.toLowerCase()}`}
                     >
-                      <Link href={item.url}>
+                      <Link href={item.url} onClick={() => notifKey && dismissNotif(notifKey)}>
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.title}</span>
-                        {count > 0 && (
-                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center" data-testid={`badge-${item.title.toLowerCase()}`}>
+                        {showBadge && (
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center bg-sky-400 hover:bg-sky-500 text-white border-0" data-testid={`badge-${item.title.toLowerCase()}`}>
                             {count > 99 ? "99+" : count}
                           </Badge>
                         )}
@@ -157,7 +164,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {secondaryItems.map((item) => {
-                const count = item.notifKey && notifs ? notifs[item.notifKey] : 0;
+                const notifKey = item.notifKey;
+                const count = notifKey && notifs ? notifs[notifKey] : 0;
+                const showBadge = count > 0 && notifKey && !dismissed.has(notifKey);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -165,11 +174,11 @@ export function AppSidebar() {
                       data-active={location === item.url}
                       data-testid={`nav-${item.title.toLowerCase().replace(/ /g, "-")}`}
                     >
-                      <Link href={item.url}>
+                      <Link href={item.url} onClick={() => notifKey && dismissNotif(notifKey)}>
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.title}</span>
-                        {count > 0 && (
-                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center" data-testid={`badge-${item.title.toLowerCase().replace(/ /g, "-")}`}>
+                        {showBadge && (
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center bg-sky-400 hover:bg-sky-500 text-white border-0" data-testid={`badge-${item.title.toLowerCase().replace(/ /g, "-")}`}>
                             {count > 99 ? "99+" : count}
                           </Badge>
                         )}
