@@ -51,28 +51,20 @@ export default function News() {
   }, []);
 
   return (
-    <div className="flex h-full" data-testid="page-news">
+    <div className="flex h-full relative" data-testid="page-news">
       <div className={`flex-1 min-w-0 p-4 md:p-6 overflow-auto ${showAgentPanel ? "max-w-4xl" : "max-w-5xl mx-auto"}`}>
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
-              <Newspaper className="h-5 w-5 text-primary" />
-              News AI
-              <Badge variant="secondary" className="text-[9px] font-normal ml-1">
-                <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-                Agent
-              </Badge>
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              AI-powered research discovery from top medical journals
-            </p>
-          </div>
-          {!showAgentPanel && (
-            <Button variant="outline" size="sm" onClick={() => setShowAgentPanel(true)} data-testid="button-show-agent-panel">
-              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
-              Agent Config
-            </Button>
-          )}
+        <div className="mb-6">
+          <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
+            <Newspaper className="h-5 w-5 text-primary" />
+            News AI
+            <Badge variant="secondary" className="text-[9px] font-normal ml-1">
+              <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+              Agent
+            </Badge>
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            AI-powered research discovery from top medical journals
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-3 mb-5">
@@ -125,7 +117,15 @@ export default function News() {
         </div>
       </div>
 
-      {showAgentPanel && <AgentConfigPanel onClose={() => setShowAgentPanel(false)} />}
+      {showAgentPanel && <AgentConfigPanel />}
+
+      <button
+        onClick={() => setShowAgentPanel(!showAgentPanel)}
+        data-testid="button-agent-panel-toggle"
+        className="absolute top-1/2 right-0 -translate-y-1/2 z-10 h-12 w-5 hidden lg:flex items-center justify-center bg-background/80 backdrop-blur-sm border border-r-0 rounded-l-md shadow-sm hover:bg-accent transition-colors"
+      >
+        {showAgentPanel ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
+      </button>
 
       <NewsDetailSheet newsId={selectedNewsId} open={!!selectedNewsId} onClose={() => setSelectedNewsId(null)} />
       <FullArticleSheet item={fullArticleItem} open={!!fullArticleItem} onClose={() => setFullArticleItem(null)} />
@@ -133,7 +133,7 @@ export default function News() {
   );
 }
 
-function AgentConfigPanel({ onClose }: { onClose: () => void }) {
+function AgentConfigPanel() {
   const [agentName, setAgentName] = useState("My Research Agent");
   const [selectedSources, setSelectedSources] = useState<string[]>(["NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>(["Cardiology", "Clinical Trials"]);
@@ -167,14 +167,11 @@ function AgentConfigPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="w-[320px] border-l bg-muted/10 overflow-y-auto shrink-0 hidden lg:block" data-testid="panel-agent-config">
       <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-1">
+        <div className="mb-1">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Bot className="h-4 w-4 text-primary" />
             News AI Agent
           </h2>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose} data-testid="button-close-agent-panel">
-            <X className="h-3.5 w-3.5" />
-          </Button>
         </div>
         <p className="text-[11px] text-muted-foreground">Configure your personal research agent</p>
       </div>
