@@ -57,10 +57,6 @@ export default function News() {
           <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
             <Newspaper className="h-5 w-5 text-primary" />
             News AI
-            <Badge variant="secondary" className="text-[9px] font-normal ml-1">
-              <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-              Agent
-            </Badge>
           </h1>
           <p className="text-sm text-muted-foreground">
             AI-powered research discovery from top medical journals
