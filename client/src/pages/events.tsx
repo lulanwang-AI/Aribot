@@ -82,23 +82,24 @@ function EventCard({ event }: { event: MedEvent }) {
 
   return (
     <Card data-testid={`card-event-${event.id}`} className={`overflow-hidden ${isPast ? "opacity-70" : ""}`}>
-      {event.imageUrl && (
-        <div className="h-36 w-full overflow-hidden">
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      )}
       <CardContent className="p-5">
         <div className="flex gap-4">
-          <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-16 h-16 rounded-lg bg-primary/10 text-primary">
-            <span className="text-xl font-bold leading-none">{eventDate.getDate()}</span>
-            <span className="text-[11px] uppercase mt-0.5">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
-            <span className="text-[9px] opacity-60">{eventDate.getFullYear()}</span>
-          </div>
+          {event.imageUrl ? (
+            <div className="hidden sm:block shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+              <img
+                src={event.imageUrl}
+                alt={event.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-16 h-16 rounded-lg bg-primary/10 text-primary">
+              <span className="text-xl font-bold leading-none">{eventDate.getDate()}</span>
+              <span className="text-[11px] uppercase mt-0.5">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
+              <span className="text-[9px] opacity-60">{eventDate.getFullYear()}</span>
+            </div>
+          )}
           <div className="flex-1 min-w-0 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">{event.title}</h3>
