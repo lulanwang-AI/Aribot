@@ -218,7 +218,7 @@ export function AppSidebar() {
       <SidebarFooter>
         {user && (
           <div className="px-2 py-2">
-            <ClickableDoctor userId={user.id} name={user.name} specialty={user.specialty} size="sm" />
+            <ClickableDoctor userId={user.id} name={user.name} specialty={user.specialty} avatarUrl={user.avatarUrl} />
             <p className="text-[10px] text-muted-foreground mt-1 px-1 italic">
               For licensed clinicians only.
             </p>

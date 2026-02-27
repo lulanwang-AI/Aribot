@@ -207,6 +207,7 @@ function PostCard({ post, onClick }: { post: EnrichedPost; onClick: () => void }
             <ClickableDoctor
               userId={post.authorId}
               name={post.author.name}
+              avatarUrl={post.author.avatarUrl}
               showAvatar={true}
               avatarSize="sm"
             />

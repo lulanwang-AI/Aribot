@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
 import { CalendarDays, MapPin, Users, CheckCircle, Plus, Clock, Search, Building, Gauge } from "lucide-react";
 import type { MedEvent } from "@shared/schema";
 
+type EnrichedEvent = MedEvent & {
+  rsvpAvatars?: { id: string; name: string; avatarUrl: string }[];
+};
+
 export default function Events() {
-  const { data: events, isLoading } = useQuery<MedEvent[]>({ queryKey: ["/api/events"] });
+  const { data: events, isLoading } = useQuery<EnrichedEvent[]>({ queryKey: ["/api/events"] });
   const [search, setSearch] = useState("");
 
   useEffect(() => { recordEvent("page_view", { section: "events" }); }, []);
@@ -127,10 +131,11 @@ function EventCard({ event }: { event: MedEvent }) {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-1.5">
-                  {attendeePreview.map((rId, i) => (
-                    <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                  {(event.rsvpAvatars || attendeePreview.map(id => ({ id, name: id, avatarUrl: "" }))).map((a, i) => (
+                    <Avatar key={i} className="h-6 w-6 border-2 border-background" title={a.name}>
+                      <AvatarImage src={a.avatarUrl} />
                       <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
-                        {rId.slice(1, 3).toUpperCase()}
+                        {a.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                   ))}

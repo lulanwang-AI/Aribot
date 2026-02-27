@@ -93,7 +93,7 @@ export async function registerRoutes(
       const comments = await storage.getComments(p.id);
       return {
         ...p,
-        author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty } : null,
+        author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty, avatarUrl: userMap[p.authorId].avatarUrl } : null,
         commentCount: comments.length,
       };
     }));
@@ -108,12 +108,12 @@ export async function registerRoutes(
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
     res.json({
       ...post,
-      author: userMap[post.authorId] ? { name: userMap[post.authorId].name, specialty: userMap[post.authorId].specialty } : null,
+      author: userMap[post.authorId] ? { name: userMap[post.authorId].name, specialty: userMap[post.authorId].specialty, avatarUrl: userMap[post.authorId].avatarUrl } : null,
       comments: comments.map(c => ({
         ...c,
         author: c.anonymous
-          ? { name: "Anonymous Clinician", specialty: "" }
-          : userMap[c.authorId] ? { name: userMap[c.authorId].name, specialty: userMap[c.authorId].specialty } : null,
+          ? { name: "Anonymous Clinician", specialty: "", avatarUrl: "" }
+          : userMap[c.authorId] ? { name: userMap[c.authorId].name, specialty: userMap[c.authorId].specialty, avatarUrl: userMap[c.authorId].avatarUrl } : null,
       })),
     });
   });
@@ -297,7 +297,17 @@ export async function registerRoutes(
 
   app.get("/api/events", async (_req, res) => {
     const events = await storage.getEvents();
-    res.json(events);
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const enriched = events.map(e => ({
+      ...e,
+      rsvpAvatars: e.rsvps.slice(0, 5).map(uid => ({
+        id: uid,
+        name: userMap[uid]?.name || "Unknown",
+        avatarUrl: userMap[uid]?.avatarUrl || "",
+      })),
+    }));
+    res.json(enriched);
   });
 
   app.post("/api/events/:id/rsvp", async (req, res) => {

@@ -260,12 +260,13 @@ interface ClickableDoctorProps {
   userId: string;
   name: string;
   specialty?: string;
+  avatarUrl?: string;
   showAvatar?: boolean;
   avatarSize?: "sm" | "md";
   className?: string;
 }
 
-export function ClickableDoctor({ userId, name, specialty, showAvatar = true, avatarSize = "sm", className = "" }: ClickableDoctorProps) {
+export function ClickableDoctor({ userId, name, specialty, avatarUrl, showAvatar = true, avatarSize = "sm", className = "" }: ClickableDoctorProps) {
   const { openProfile } = useProfileSheet();
 
   const initials = name
@@ -290,6 +291,7 @@ export function ClickableDoctor({ userId, name, specialty, showAvatar = true, av
     >
       {showAvatar && (
         <Avatar className={`${sizeClass} ring-2 ring-transparent group-hover:ring-primary/30 transition-all`}>
+          {avatarUrl && <AvatarImage src={avatarUrl} />}
           <AvatarFallback className={`${textSizeClass === "text-sm" ? "text-xs" : "text-[10px]"} bg-primary/10 text-primary`}>
             {initials}
           </AvatarFallback>
