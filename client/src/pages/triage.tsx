@@ -33,8 +33,6 @@ import {
   Stethoscope,
   TrendingUp,
   Flame,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TriagePost } from "@shared/schema";
@@ -51,8 +49,6 @@ export default function Triage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
-
-  const [trendingExpanded, setTrendingExpanded] = useState(true);
 
   const { data: posts, isLoading } = useQuery<EnrichedPost[]>({
     queryKey: ["/api/triage", sortBy],
@@ -130,68 +126,59 @@ export default function Triage() {
 
       <TrendingDrawer />
 
-      {trendingPosts && trendingPosts.length > 0 && (
-        <div className="mt-4 mb-4" data-testid="section-trending-cases">
-          <button
-            onClick={() => setTrendingExpanded(!trendingExpanded)}
-            className="flex items-center gap-2 w-full text-left mb-2 group"
-            data-testid="button-toggle-trending"
-          >
-            <Flame className="h-4 w-4 text-orange-500" />
-            <h2 className="text-sm font-semibold">Top 10 Trending Cases</h2>
-            <Badge variant="secondary" className="text-[10px]">{trendingPosts.length}</Badge>
-            <div className="flex-1" />
-            {trendingExpanded ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            )}
-          </button>
-          {trendingExpanded && (
-            <div className="grid gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-              {trendingPosts.map((post, index) => (
-                <button
-                  key={post.id}
-                  onClick={() => setLocation(`/triage/${post.id}`)}
-                  className="flex items-center gap-3 p-2.5 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-left group"
-                  data-testid={`trending-case-${index}`}
-                >
-                  <span className={`text-sm font-bold w-6 text-center shrink-0 ${index < 3 ? "text-orange-500" : "text-muted-foreground"}`}>
-                    {index + 1}
-                  </span>
-                  {index < 3 && <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0 -ml-1" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{post.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {post.author && (
-                        <span className="text-[11px] text-muted-foreground truncate">{post.author.name} · {post.author.specialty}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-                    <span className="flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      {post.likes?.length || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" />
-                      {post.commentCount || 0}
-                    </span>
-                  </div>
-                  {post.tags.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-1 shrink-0">
-                      <Badge variant="outline" className="text-[9px]">{post.tags[0]}</Badge>
-                      {post.tags.length > 1 && <span className="text-[9px] text-muted-foreground">+{post.tags.length - 1}</span>}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="flex gap-6 mt-4">
+        <div className="hidden lg:block w-72 shrink-0" data-testid="section-trending-cases">
+          <div className="sticky top-4 space-y-4">
+            <div className="bg-card rounded-lg border p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Flame className="h-4 w-4 text-orange-500" />
+                <h2 className="text-sm font-semibold">Top 10 Trending</h2>
+              </div>
+              {!trendingPosts && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-10" />)}
+                </div>
+              )}
+              {trendingPosts && trendingPosts.length === 0 && (
+                <p className="text-xs text-muted-foreground py-4 text-center">No trending cases yet</p>
+              )}
+              <div className="space-y-0.5">
+                {trendingPosts?.map((post, index) => (
+                  <button
+                    key={post.id}
+                    onClick={() => setLocation(`/triage/${post.id}`)}
+                    className="flex items-start gap-2 w-full p-2 rounded-md hover:bg-accent/50 transition-colors text-left group"
+                    data-testid={`trending-case-${index}`}
+                  >
+                    <span className={`text-xs font-bold mt-0.5 w-4 shrink-0 text-center ${index < 3 ? "text-orange-500" : "text-muted-foreground"}`}>
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">{post.title}</p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5">
+                          <Heart className="h-2.5 w-2.5" />
+                          {post.likes?.length || 0}
+                        </span>
+                        <span className="flex items-center gap-0.5">
+                          <MessageSquare className="h-2.5 w-2.5" />
+                          {post.commentCount || 0}
+                        </span>
+                        {post.tags.length > 0 && (
+                          <span className="truncate">{post.tags[0]}</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="bg-card rounded-lg border p-4">
+              <TrendingPanel />
+            </div>
+          </div>
+        </div>
+
         <div className="flex-1 space-y-3">
           {isLoading && (
             <div className="space-y-3">
@@ -209,12 +196,6 @@ export default function Triage() {
           {filtered?.map((post) => (
             <PostCard key={post.id} post={post} onClick={() => setLocation(`/triage/${post.id}`)} />
           ))}
-        </div>
-
-        <div className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-4 bg-card rounded-md p-4">
-            <TrendingPanel />
-          </div>
         </div>
       </div>
     </div>
