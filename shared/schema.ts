@@ -91,6 +91,8 @@ export interface NewsItem {
   id: string;
   title: string;
   summary: string;
+  abstract: string;
+  researcherName: string;
   source: string;
   url: string;
   tags: string[];

@@ -142,6 +142,16 @@ const summaryTemplates = [
   "Large-scale population study identifies key risk factors and protective measures, offering new insights for prevention strategies and early intervention programs.",
 ];
 
+const abstractTemplates = [
+  "**Background:** The management of {spec} remains a significant clinical challenge. Recent advances in molecular understanding have opened new therapeutic avenues.\n\n**Methods:** We conducted a multi-center, double-blind, randomized controlled trial across 24 academic medical centers (N=3,847). Primary endpoints included clinical response at 12 weeks and sustained remission at 52 weeks.\n\n**Results:** The intervention group demonstrated a statistically significant improvement in the primary endpoint (HR 0.72, 95% CI 0.61–0.85, p<0.001). Adverse events were comparable between groups. Subgroup analyses revealed consistent benefit across demographic categories.\n\n**Conclusions:** These findings support a paradigm shift in the approach to {spec} management, with meaningful improvements in patient-centered outcomes.",
+  "**Objective:** To evaluate the efficacy and safety of a novel diagnostic approach in {spec} using a prospective cohort design.\n\n**Study Design:** Prospective, multi-center observational study enrolling 2,156 patients across 18 sites from 2023–2025. Sensitivity and specificity were assessed against the current gold standard.\n\n**Results:** The novel approach achieved 94.2% sensitivity and 97.1% specificity (AUC 0.96). Time to diagnosis was reduced by 47% (median 3.2 days vs. 6.1 days, p<0.001). Cost-per-diagnosis decreased by 32%.\n\n**Implications:** Adoption of this diagnostic pathway could significantly reduce diagnostic delay and healthcare resource utilization while maintaining diagnostic accuracy.",
+  "**Introduction:** Current treatment paradigms in {spec} are limited by heterogeneous patient responses and significant side-effect burden.\n\n**Methods:** This systematic review and network meta-analysis included 47 randomized controlled trials (N=28,492). Bayesian network analysis was performed using a random-effects model.\n\n**Findings:** Treatment ranking identified the novel approach as having the highest probability of being the most effective intervention (SUCRA 0.91). Number needed to treat was 6 (95% CrI 4–9). Safety profiles were favorable compared to standard of care.\n\n**Interpretation:** The evidence supports re-evaluation of current clinical practice guidelines in {spec}, particularly for patients who have failed first-line therapy.",
+  "**Purpose:** To assess real-world outcomes of emerging therapeutic strategies in {spec} across diverse healthcare settings.\n\n**Design:** Retrospective analysis of electronic health records from 12 integrated health systems (N=15,230 patients, 2022–2025). Propensity score matching was used to control for confounders.\n\n**Outcomes:** Adjusted analysis showed 28% reduction in composite endpoint (OR 0.72, 95% CI 0.64–0.81). Benefits persisted across age groups, sex, and comorbidity burden. Medication adherence was 84% at 12 months.\n\n**Significance:** Real-world evidence confirms and extends clinical trial findings, supporting broad adoption of this therapeutic approach in routine clinical practice.",
+];
+
+const researcherFirstNames = ["James","Maria","David","Sarah","Michael","Elena","Robert","Aisha","William","Priya","John","Fatima","Richard","Yuki","Thomas","Nadia","Charles","Lin","Andrew","Sophia"];
+const researcherLastNames = ["Chen","Rodriguez","Patel","Thompson","Nakamura","Okafor","Schmidt","Kim","Anderson","Gupta","Williams","Hassan","Mueller","Park","Johnson","Desai","Brown","Yamamoto","Martinez","Krishnamurthy"];
+
 function generateNews(count: number, doctors: User[]): NewsItem[] {
   const items: NewsItem[] = [];
   const now = Date.now();
@@ -150,10 +160,14 @@ function generateNews(count: number, doctors: User[]): NewsItem[] {
     const topic = pick(newsTopics);
     const tag = spec.name.toLowerCase().replace(/ /g, "-");
     const likeCount = randInt(0, 20);
+    const researcherFn = pick(researcherFirstNames);
+    const researcherLn = pick(researcherLastNames);
     items.push({
       id: `n${i + 1}`,
       title: topic.title.replace(/\{spec\}/g, spec.name),
       summary: pick(summaryTemplates),
+      abstract: pick(abstractTemplates).replace(/\{spec\}/g, spec.name.toLowerCase()),
+      researcherName: `Dr. ${researcherFn} ${researcherLn}, ${pick(["MD","MD, PhD","PhD","MD, MPH","MD, FACS","MD, FACC"])}`,
       source: pick(newsSources),
       url: "#",
       tags: topic.tags.map(t => t.replace("{tag}", tag)),

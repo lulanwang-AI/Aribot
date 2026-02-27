@@ -9,11 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { recordEvent } from "@/lib/analytics";
-import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply } from "lucide-react";
-import type { NewsItem, NewsComment } from "@shared/schema";
+import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply, Share2, ChevronDown, ChevronUp, User as UserIcon, FileText } from "lucide-react";
+import type { NewsItem, NewsComment, User } from "@shared/schema";
 
 const SOURCES = ["All", "NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"];
 const SPECIALTIES = ["All", "Cardiology", "Oncology", "Neurology", "Emergency Medicine", "Radiology", "Pediatrics", "Internal Medicine", "Surgery", "Infectious Disease"];
@@ -29,6 +30,7 @@ export default function News() {
   const [source, setSource] = useState("All");
   const [specialty, setSpecialty] = useState("All");
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
+  const [fullArticleItem, setFullArticleItem] = useState<NewsItemWithCommenters | null>(null);
 
   const queryParams = new URLSearchParams();
   if (source !== "All") queryParams.set("source", source);
@@ -96,16 +98,26 @@ export default function News() {
       )}
 
       <div className="space-y-3">
-        {news?.map(item => <NewsCard key={item.id} item={item} onOpenComments={() => setSelectedNewsId(item.id)} />)}
+        {news?.map(item => (
+          <NewsCard
+            key={item.id}
+            item={item}
+            onOpenComments={() => setSelectedNewsId(item.id)}
+            onOpenFullArticle={() => setFullArticleItem(item)}
+          />
+        ))}
       </div>
 
       <NewsDetailSheet newsId={selectedNewsId} open={!!selectedNewsId} onClose={() => setSelectedNewsId(null)} />
+      <FullArticleSheet item={fullArticleItem} open={!!fullArticleItem} onClose={() => setFullArticleItem(null)} />
     </div>
   );
 }
 
-function NewsCard({ item, onOpenComments }: { item: NewsItemWithCommenters; onOpenComments: () => void }) {
+function NewsCard({ item, onOpenComments, onOpenFullArticle }: { item: NewsItemWithCommenters; onOpenComments: () => void; onOpenFullArticle: () => void }) {
   const isLiked = item.likes?.includes("u1");
+  const [expanded, setExpanded] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const likeMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/news/${item.id}/like`),
@@ -115,74 +127,250 @@ function NewsCard({ item, onOpenComments }: { item: NewsItemWithCommenters; onOp
   });
 
   return (
-    <Card className="hover-elevate" data-testid={`card-news-${item.id}`}>
-      <CardContent className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold leading-snug">{item.title}</h3>
-            <span className="text-xs text-blue-500 font-medium">{item.source}</span>
+    <>
+      <Card className="hover-elevate" data-testid={`card-news-${item.id}`}>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+              <h3 className="text-sm font-semibold leading-snug">{item.title}</h3>
+              <span className="text-xs text-blue-500 font-medium">{item.source}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 shrink-0"
+              onClick={onOpenFullArticle}
+              title="View full article"
+              data-testid={`button-full-article-${item.id}`}
+            >
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
           </div>
-          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.summary}</p>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {item.tags.slice(0, 3).map((tag, idx) => (
-              <Badge key={`${tag}-${idx}`} variant="secondary" className="text-[10px]">{tag}</Badge>
-            ))}
-            {item.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{item.tags.length - 3}</span>}
-          </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-            <span className="flex items-center gap-1">
-              <BookOpen className="h-3 w-3" />
-              {item.readingTime} min
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatTimeAgo(item.publishedAt)}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 pt-1 border-t" onClick={e => e.stopPropagation()}>
-          <Button
-            size="sm"
-            variant={isLiked ? "default" : "outline"}
-            className="h-7 text-xs"
-            onClick={() => likeMutation.mutate()}
-            disabled={likeMutation.isPending}
-            data-testid={`button-like-news-${item.id}`}
-          >
-            <Heart className={`h-3 w-3 mr-1 ${isLiked ? "fill-current" : ""}`} />
-            {item.likes?.length || 0}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs"
-            onClick={onOpenComments}
-            data-testid={`button-comments-news-${item.id}`}
-          >
-            <MessageSquare className="h-3 w-3 mr-1" />
-            {item.commentCount || 0}
-          </Button>
-          {item.commenters && item.commenters.length > 0 && (
-            <div className="flex items-center -space-x-1.5 ml-1" data-testid={`commenters-news-${item.id}`}>
-              {item.commenters.slice(0, 4).map(c => (
-                <Avatar key={c.id} className="h-5 w-5 ring-2 ring-background" title={c.name}>
-                  <AvatarImage src={c.avatarUrl} />
-                  <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
-                    {c.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {item.commenters.length > 4 && (
-                <span className="text-[10px] text-muted-foreground ml-2">+{item.commenters.length - 4}</span>
-              )}
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.summary}</p>
+
+          {expanded && (
+            <div className="pt-2 pb-1 space-y-3 border-t animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2 text-xs">
+                <UserIcon className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">{item.researcherName}</span>
+              </div>
+              <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+                {renderMarkdownLight(item.abstract)}
+              </div>
             </div>
           )}
+
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {item.tags.slice(0, 3).map((tag, idx) => (
+                <Badge key={`${tag}-${idx}`} variant="secondary" className="text-[10px]">{tag}</Badge>
+              ))}
+              {item.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{item.tags.length - 3}</span>}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {item.readingTime} min
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formatTimeAgo(item.publishedAt)}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1 border-t" onClick={e => e.stopPropagation()}>
+            <Button
+              size="sm"
+              variant={isLiked ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() => likeMutation.mutate()}
+              disabled={likeMutation.isPending}
+              data-testid={`button-like-news-${item.id}`}
+            >
+              <Heart className={`h-3 w-3 mr-1 ${isLiked ? "fill-current" : ""}`} />
+              {item.likes?.length || 0}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={onOpenComments}
+              data-testid={`button-comments-news-${item.id}`}
+            >
+              <MessageSquare className="h-3 w-3 mr-1" />
+              {item.commentCount || 0}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setShowShareDialog(true)}
+              data-testid={`button-share-news-${item.id}`}
+            >
+              <Share2 className="h-3 w-3 mr-1" />
+              Share
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs ml-auto"
+              onClick={() => setExpanded(!expanded)}
+              data-testid={`button-expand-news-${item.id}`}
+            >
+              {expanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+              {expanded ? "Less" : "Abstract"}
+            </Button>
+            {item.commenters && item.commenters.length > 0 && (
+              <div className="flex items-center -space-x-1.5 ml-1" data-testid={`commenters-news-${item.id}`}>
+                {item.commenters.slice(0, 4).map(c => (
+                  <Avatar key={c.id} className="h-5 w-5 ring-2 ring-background" title={c.name}>
+                    <AvatarImage src={c.avatarUrl} />
+                    <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                      {c.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+                {item.commenters.length > 4 && (
+                  <span className="text-[10px] text-muted-foreground ml-2">+{item.commenters.length - 4}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      <ShareNewsDialog open={showShareDialog} onClose={() => setShowShareDialog(false)} newsItem={item} />
+    </>
+  );
+}
+
+function renderMarkdownLight(text: string): JSX.Element[] {
+  if (!text) return [];
+  return text.split("\n").map((line, i) => {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      return <span key={j}>{part}</span>;
+    });
+    return <p key={i} className={line === "" ? "h-2" : ""}>{parts}</p>;
+  });
+}
+
+function ShareNewsDialog({ open, onClose, newsItem }: { open: boolean; onClose: () => void; newsItem: NewsItem }) {
+  const { data: doctors } = useQuery<User[]>({ queryKey: ["/api/doctors"] });
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+
+  const filtered = doctors?.filter(d =>
+    d.id !== "u1" && (!searchQuery || d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.specialty.toLowerCase().includes(searchQuery.toLowerCase()))
+  ).slice(0, 10);
+
+  function handleShare(doctor: User) {
+    toast({ title: "Article shared", description: `Sent "${newsItem.title}" to ${doctor.name}` });
+    onClose();
+    setSearchQuery("");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) { onClose(); setSearchQuery(""); } }}>
+      <DialogContent className="max-w-sm" data-testid="dialog-share-news">
+        <DialogHeader>
+          <DialogTitle className="text-sm">Share Article</DialogTitle>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground line-clamp-1 -mt-2">{newsItem.title}</p>
+        <div className="relative">
+          <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search team members..."
+            className="pl-9 h-9 text-sm"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            data-testid="input-share-search"
+          />
         </div>
-      </CardContent>
-    </Card>
+        <div className="space-y-1 max-h-[240px] overflow-y-auto">
+          {filtered?.map(doctor => (
+            <button
+              key={doctor.id}
+              className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-left"
+              onClick={() => handleShare(doctor)}
+              data-testid={`button-share-to-${doctor.id}`}
+            >
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={doctor.avatarUrl} />
+                <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                  {doctor.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-xs font-medium truncate">{doctor.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{doctor.specialty}</p>
+              </div>
+              <Send className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+            </button>
+          ))}
+          {filtered?.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">No doctors found</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FullArticleSheet({ item, open, onClose }: { item: NewsItemWithCommenters | null; open: boolean; onClose: () => void }) {
+  if (!item) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      <SheetContent className="w-[520px] sm:w-[580px] overflow-y-auto" data-testid="sheet-full-article">
+        <SheetHeader>
+          <SheetTitle className="text-left text-base leading-snug pr-4">{item.title}</SheetTitle>
+        </SheetHeader>
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Badge className="text-xs">{item.source}</Badge>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <BookOpen className="h-3 w-3" /> {item.readingTime} min read
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {new Date(item.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/30">
+            <UserIcon className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-medium">{item.researcherName}</span>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Summary</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{item.summary}</p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Abstract</h3>
+            <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line space-y-1">
+              {renderMarkdownLight(item.abstract)}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 pt-2 border-t">
+            {item.tags.map((tag, idx) => (
+              <Badge key={`${tag}-${idx}`} variant="secondary" className="text-[10px]">{tag}</Badge>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Heart className="h-3 w-3" /> {item.likes?.length || 0} likes
+            <span className="mx-1">·</span>
+            <MessageSquare className="h-3 w-3" /> {item.commentCount || 0} comments
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
