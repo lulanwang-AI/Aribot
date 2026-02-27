@@ -127,9 +127,28 @@ export default function Triage() {
       <TrendingDrawer />
 
       <div className="flex gap-6 mt-4">
-        <div className="hidden lg:block w-72 shrink-0" data-testid="section-trending-cases">
+        <div className="flex-1 space-y-3">
+          {isLoading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32" />
+              ))}
+            </div>
+          )}
+          {!isLoading && filtered?.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Stethoscope className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No cases found</p>
+            </div>
+          )}
+          {filtered?.map((post) => (
+            <PostCard key={post.id} post={post} onClick={() => setLocation(`/triage/${post.id}`)} />
+          ))}
+        </div>
+
+        <div className="hidden lg:block w-72 shrink-0">
           <div className="sticky top-4 space-y-4">
-            <div className="bg-card rounded-lg border p-4">
+            <div className="bg-card rounded-lg border p-4" data-testid="section-trending-cases">
               <div className="flex items-center gap-2 mb-3">
                 <Flame className="h-4 w-4 text-orange-500" />
                 <h2 className="text-sm font-semibold">Top 10 Trending</h2>
@@ -177,25 +196,6 @@ export default function Triage() {
               <TrendingPanel />
             </div>
           </div>
-        </div>
-
-        <div className="flex-1 space-y-3">
-          {isLoading && (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32" />
-              ))}
-            </div>
-          )}
-          {!isLoading && filtered?.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Stethoscope className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No cases found</p>
-            </div>
-          )}
-          {filtered?.map((post) => (
-            <PostCard key={post.id} post={post} onClick={() => setLocation(`/triage/${post.id}`)} />
-          ))}
         </div>
       </div>
     </div>
