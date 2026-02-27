@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { TrendingPanel, TrendingDrawer } from "@/components/trending-panel";
+import { TrendingDrawer } from "@/components/trending-panel";
 import { PHIWarningPanel, PostingRulesBanner } from "@/components/phi-warning-panel";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -31,7 +31,6 @@ import {
   Clock,
   Search,
   Stethoscope,
-  TrendingUp,
   Flame,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -147,53 +146,48 @@ export default function Triage() {
         </div>
 
         <div className="hidden lg:block w-72 shrink-0">
-          <div className="sticky top-4 space-y-4">
-            <div className="bg-card rounded-lg border p-4" data-testid="section-trending-cases">
-              <div className="flex items-center gap-2 mb-3">
-                <Flame className="h-4 w-4 text-orange-500" />
-                <h2 className="text-sm font-semibold">Top 10 Trending</h2>
-              </div>
-              {!trendingPosts && (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-10" />)}
-                </div>
-              )}
-              {trendingPosts && trendingPosts.length === 0 && (
-                <p className="text-xs text-muted-foreground py-4 text-center">No trending cases yet</p>
-              )}
-              <div className="space-y-0.5">
-                {trendingPosts?.map((post, index) => (
-                  <button
-                    key={post.id}
-                    onClick={() => setLocation(`/triage/${post.id}`)}
-                    className="flex items-start gap-2 w-full p-2 rounded-md hover:bg-accent/50 transition-colors text-left group"
-                    data-testid={`trending-case-${index}`}
-                  >
-                    <span className={`text-xs font-bold mt-0.5 w-4 shrink-0 text-center ${index < 3 ? "text-orange-500" : "text-muted-foreground"}`}>
-                      {index + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">{post.title}</p>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-0.5">
-                          <Heart className="h-2.5 w-2.5" />
-                          {post.likes?.length || 0}
-                        </span>
-                        <span className="flex items-center gap-0.5">
-                          <MessageSquare className="h-2.5 w-2.5" />
-                          {post.commentCount || 0}
-                        </span>
-                        {post.tags.length > 0 && (
-                          <span className="truncate">{post.tags[0]}</span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+          <div className="bg-card rounded-lg border p-4" data-testid="section-trending-cases">
+            <div className="flex items-center gap-2 mb-3">
+              <Flame className="h-4 w-4 text-orange-500" />
+              <h2 className="text-sm font-semibold">Top 10 Trending</h2>
             </div>
-            <div className="bg-card rounded-lg border p-4">
-              <TrendingPanel />
+            {!trendingPosts && (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-10" />)}
+              </div>
+            )}
+            {trendingPosts && trendingPosts.length === 0 && (
+              <p className="text-xs text-muted-foreground py-4 text-center">No trending cases yet</p>
+            )}
+            <div className="space-y-0.5">
+              {trendingPosts?.map((post, index) => (
+                <button
+                  key={post.id}
+                  onClick={() => setLocation(`/triage/${post.id}`)}
+                  className="flex items-start gap-2 w-full p-2 rounded-md hover:bg-accent/50 transition-colors text-left group"
+                  data-testid={`trending-case-${index}`}
+                >
+                  <span className={`text-xs font-bold mt-0.5 w-4 shrink-0 text-center ${index < 3 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">{post.title}</p>
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-0.5">
+                        <Heart className="h-2.5 w-2.5" />
+                        {post.likes?.length || 0}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <MessageSquare className="h-2.5 w-2.5" />
+                        {post.commentCount || 0}
+                      </span>
+                      {post.tags.length > 0 && (
+                        <span className="truncate">{post.tags[0]}</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
