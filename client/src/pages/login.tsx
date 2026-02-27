@@ -34,8 +34,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             <img src={aribotLogoPath} alt="ARIbots" className="h-16 w-16 rounded-xl shadow-lg object-contain ring-2 ring-white/20" />
           </div>
           <h1 className="text-2xl font-bold text-white" data-testid="text-login-title">ARIbots</h1>
-          <p className="text-sm text-white/70">EMPOWERING MEDICINE WITH AI
-          Built by physicians for physicians</p>
+          <p className="text-sm text-white/70">EMPOWERING MEDICINE WITH AI</p>
         </div>
 
         <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
