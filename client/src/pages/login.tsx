@@ -28,14 +28,13 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         style={{ backgroundImage: `url(${BG_IMAGE_URL})` }}
       />
       <div className="absolute inset-0 bg-[#5f6360]/80 backdrop-blur-sm" />
-
       <div className="relative z-10 w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <img src={aribotLogoPath} alt="ARIbots" className="h-16 w-16 rounded-xl shadow-lg object-contain ring-2 ring-white/20" />
           </div>
           <h1 className="text-2xl font-bold text-white" data-testid="text-login-title">ARIbots</h1>
-          <p className="text-sm text-white/70">Clinical AI Community for Physicians</p>
+          <p className="text-sm text-white/70">EMPOWERING MEDICINE WITH AI</p>
         </div>
 
         <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
