@@ -31,7 +31,7 @@ export default function Events() {
           <CalendarDays className="h-5 w-5 text-primary" />
           Events
         </h1>
-        <p className="text-sm text-muted-foreground">Conferences, grand rounds, and continuing education</p>
+        <p className="text-sm text-muted-foreground">Conferences, grand rounds, labs, meetings, and coffee breaks</p>
       </div>
 
       <div className="relative mb-5">
@@ -74,9 +74,20 @@ function EventCard({ event }: { event: MedEvent }) {
   });
 
   const attendeePreview = event.rsvps.slice(0, 5);
+  const typeLabel = event.type.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
   return (
-    <Card data-testid={`card-event-${event.id}`} className={isPast ? "opacity-70" : ""}>
+    <Card data-testid={`card-event-${event.id}`} className={`overflow-hidden ${isPast ? "opacity-70" : ""}`}>
+      {event.imageUrl && (
+        <div className="h-36 w-full overflow-hidden">
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
       <CardContent className="p-5">
         <div className="flex gap-4">
           <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-16 h-16 rounded-lg bg-primary/10 text-primary">
@@ -87,7 +98,7 @@ function EventCard({ event }: { event: MedEvent }) {
           <div className="flex-1 min-w-0 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">{event.title}</h3>
-              <Badge variant="secondary" className="text-[10px] shrink-0">{event.type}</Badge>
+              <Badge variant="secondary" className="text-[10px] shrink-0">{typeLabel}</Badge>
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">{event.description}</p>

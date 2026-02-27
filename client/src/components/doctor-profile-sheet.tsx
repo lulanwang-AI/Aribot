@@ -7,7 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -31,6 +31,7 @@ interface DoctorProfile {
   hospital: string;
   role: string;
   verified: boolean;
+  avatarUrl: string;
   caseCount: number;
   commentCount: number;
   groupCount: number;
@@ -103,6 +104,7 @@ function DoctorProfileSheet({ userId, open, onOpenChange }: { userId: string | n
           <div className="space-y-5 mt-4">
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16" data-testid="avatar-profile">
+                <AvatarImage src={profile.avatarUrl} />
                 <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
                   {initials}
                 </AvatarFallback>

@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
-import { Users, UserPlus, UserMinus, Hash, Search, Building, Sparkles } from "lucide-react";
+import { Users, UserPlus, UserMinus, Hash, Search, Building, Sparkles, ChevronRight } from "lucide-react";
 import type { Group } from "@shared/schema";
 
+type EnrichedGroup = Group & {
+  memberAvatars: { id: string; name: string; avatarUrl: string }[];
+};
+
 export default function Groups() {
-  const { data: groups, isLoading } = useQuery<Group[]>({ queryKey: ["/api/groups"] });
+  const { data: groups, isLoading } = useQuery<EnrichedGroup[]>({ queryKey: ["/api/groups"] });
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
 
@@ -67,7 +72,7 @@ export default function Groups() {
   );
 }
 
-function GroupCard({ group }: { group: Group }) {
+function GroupCard({ group }: { group: EnrichedGroup }) {
   const isMember = group.members.includes("u1");
 
   const joinMutation = useMutation({
@@ -79,69 +84,75 @@ function GroupCard({ group }: { group: Group }) {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/groups"] }); },
   });
 
-  const memberPreview = group.members.slice(0, 4);
-
   return (
-    <Card data-testid={`card-group-${group.id}`}>
-      <CardContent className="p-5 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1.5 min-w-0">
-            <h3 className="text-sm font-semibold">{group.name}</h3>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge variant="secondary" className="text-[10px]">
-                <Hash className="h-2.5 w-2.5 mr-0.5" />
-                {group.topic}
-              </Badge>
-              <Badge variant={group.type === "hospital" ? "outline" : "secondary"} className="text-[10px]">
-                {group.type === "hospital" ? <Building className="h-2.5 w-2.5 mr-0.5" /> : <Sparkles className="h-2.5 w-2.5 mr-0.5" />}
-                {group.type === "hospital" ? "Hospital" : "Interest"}
-              </Badge>
+    <Card data-testid={`card-group-${group.id}`} className="hover-elevate transition-all">
+      <Link href={`/groups/${group.id}`}>
+        <CardContent className="p-5 space-y-3 cursor-pointer">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold">{group.name}</h3>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="secondary" className="text-[10px]">
+                  <Hash className="h-2.5 w-2.5 mr-0.5" />
+                  {group.topic}
+                </Badge>
+                <Badge variant={group.type === "hospital" ? "outline" : "secondary"} className="text-[10px]">
+                  {group.type === "hospital" ? <Building className="h-2.5 w-2.5 mr-0.5" /> : <Sparkles className="h-2.5 w-2.5 mr-0.5" />}
+                  {group.type === "hospital" ? "Hospital" : "Interest"}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+              <Users className="h-3 w-3" />
+              {group.memberCount.toLocaleString()}
             </div>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-            <Users className="h-3 w-3" />
-            {group.memberCount.toLocaleString()}
-          </div>
-        </div>
 
-        <p className="text-xs text-muted-foreground leading-relaxed">{group.description}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{group.description}</p>
 
-        {group.hospital && (
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Building className="h-3 w-3" />
-            {group.hospital}{group.city ? ` · ${group.city}` : ""}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between">
-          <div className="flex -space-x-2">
-            {memberPreview.map((mId, i) => (
-              <Avatar key={i} className="h-7 w-7 border-2 border-background">
-                <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                  {mId.slice(1, 3).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            ))}
-            {group.members.length > 4 && (
-              <div className="h-7 w-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] text-muted-foreground font-medium">
-                +{group.members.length - 4}
-              </div>
-            )}
-          </div>
-
-          {isMember ? (
-            <Button size="sm" variant="outline" onClick={() => leaveMutation.mutate()} disabled={leaveMutation.isPending} data-testid={`button-leave-${group.id}`}>
-              <UserMinus className="h-3 w-3 mr-1.5" />
-              Leave
-            </Button>
-          ) : (
-            <Button size="sm" onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending} data-testid={`button-join-${group.id}`}>
-              <UserPlus className="h-3 w-3 mr-1.5" />
-              Join
-            </Button>
+          {group.hospital && (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Building className="h-3 w-3" />
+              {group.hospital}{group.city ? ` · ${group.city}` : ""}
+            </p>
           )}
-        </div>
-      </CardContent>
+
+          <div className="flex items-center justify-between">
+            <div className="flex -space-x-2">
+              {group.memberAvatars?.map((m, i) => (
+                <Avatar key={i} className="h-7 w-7 border-2 border-background">
+                  <AvatarImage src={m.avatarUrl} />
+                  <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                    {m.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {group.members.length > 5 && (
+                <div className="h-7 w-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] text-muted-foreground font-medium">
+                  +{group.members.length - 5}
+                </div>
+              )}
+            </div>
+
+            <div onClick={e => e.preventDefault()}>
+              {isMember ? (
+                <Button size="sm" variant="outline" onClick={() => leaveMutation.mutate()} disabled={leaveMutation.isPending} data-testid={`button-leave-${group.id}`}>
+                  <UserMinus className="h-3 w-3 mr-1.5" />
+                  Leave
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending} data-testid={`button-join-${group.id}`}>
+                  <UserPlus className="h-3 w-3 mr-1.5" />
+                  Join
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Link>
     </Card>
   );
 }

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Search, CheckCircle, Trophy, Building, MapPin } from "lucide-react";
 import type { User } from "@shared/schema";
@@ -72,7 +72,7 @@ export function DoctorDirectory({ onSelect, selectable, compact }: DoctorDirecto
 
       {isLoading && <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}</div>}
 
-      <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+      <div className={`space-y-1.5 ${compact ? "max-h-[400px]" : ""} overflow-y-auto`}>
         {doctors?.map(doc => (
           <DoctorCard key={doc.id} doctor={doc} compact={compact} selectable={selectable} onSelect={onSelect} />
         ))}
@@ -97,6 +97,7 @@ function DoctorCard({ doctor, compact, selectable, onSelect }: {
       data-testid={`doctor-card-${doctor.id}`}
     >
       <Avatar className={compact ? "h-8 w-8" : "h-10 w-10"}>
+        <AvatarImage src={doctor.avatarUrl} />
         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">{initials}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">

@@ -5,7 +5,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -35,18 +34,25 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import type { User } from "@shared/schema";
 
+interface Notifications {
+  news: number;
+  triage: number;
+  events: number;
+  chats: number;
+}
+
 const mainNavItems = [
-  { title: "News", url: "/news", icon: Newspaper },
-  { title: "Triage", url: "/triage", icon: Stethoscope },
-  { title: "Groups", url: "/groups", icon: Users },
-  { title: "Events", url: "/events", icon: CalendarDays },
-  { title: "Doctors", url: "/doctors", icon: UserSearch },
+  { title: "News", url: "/news", icon: Newspaper, notifKey: "news" as const },
+  { title: "Triage", url: "/triage", icon: Stethoscope, notifKey: "triage" as const },
+  { title: "Groups", url: "/groups", icon: Users, notifKey: null },
+  { title: "Events", url: "/events", icon: CalendarDays, notifKey: "events" as const },
+  { title: "Doctors", url: "/doctors", icon: UserSearch, notifKey: null },
 ];
 
 const secondaryItems = [
-  { title: "Chats", url: "/chats", icon: MessageCircle },
-  { title: "Training", url: "/training", icon: BookOpen },
-  { title: "My Team", url: "/team", icon: Shield },
+  { title: "Chats", url: "/chats", icon: MessageCircle, notifKey: "chats" as const },
+  { title: "Training", url: "/training", icon: BookOpen, notifKey: null },
+  { title: "My Team", url: "/team", icon: Shield, notifKey: null },
 ];
 
 const bottomItems = [
@@ -57,6 +63,7 @@ const bottomItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { data: user } = useQuery<User>({ queryKey: ["/api/me"] });
+  const { data: notifs } = useQuery<Notifications>({ queryKey: ["/api/notifications"] });
   const [aribotOpen, setAribotOpen] = useState(true);
 
   return (
@@ -118,20 +125,28 @@ export function AppSidebar() {
           </Collapsible>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    data-active={location === item.url || location.startsWith(item.url + "/")}
-                    data-testid={`nav-${item.title.toLowerCase()}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainNavItems.map((item) => {
+                const count = item.notifKey && notifs ? notifs[item.notifKey] : 0;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      data-active={location === item.url || location.startsWith(item.url + "/")}
+                      data-testid={`nav-${item.title.toLowerCase()}`}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span className="flex-1">{item.title}</span>
+                        {count > 0 && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center" data-testid={`badge-${item.title.toLowerCase()}`}>
+                            {count > 99 ? "99+" : count}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -141,20 +156,28 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {secondaryItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    data-active={location === item.url}
-                    data-testid={`nav-${item.title.toLowerCase().replace(/ /g, "-")}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {secondaryItems.map((item) => {
+                const count = item.notifKey && notifs ? notifs[item.notifKey] : 0;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      data-active={location === item.url}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/ /g, "-")}`}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span className="flex-1">{item.title}</span>
+                        {count > 0 && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[18px] flex items-center justify-center" data-testid={`badge-${item.title.toLowerCase().replace(/ /g, "-")}`}>
+                            {count > 99 ? "99+" : count}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

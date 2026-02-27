@@ -191,12 +191,10 @@ function CommentCard({ comment, postId, isReply }: { comment: DetailComment; pos
           <Heart className={`h-3 w-3 mr-1 ${isLiked ? "fill-current text-red-500" : ""}`} />
           {comment.likes?.length || 0}
         </Button>
-        {!isReply && (
-          <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setShowReply(!showReply)}>
-            <Reply className="h-3 w-3 mr-1" />
-            Reply
-          </Button>
-        )}
+        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setShowReply(!showReply)}>
+          <Reply className="h-3 w-3 mr-1" />
+          Reply
+        </Button>
         <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => flagMutation.mutate()} disabled={flagMutation.isPending || comment.flagged}>
           <Flag className="h-3 w-3" />
         </Button>

@@ -17,6 +17,7 @@ import Triage from "@/pages/triage";
 import TriageDetail from "@/pages/triage-detail";
 import News from "@/pages/news";
 import Groups from "@/pages/groups";
+import GroupDetail from "@/pages/group-detail";
 import Events from "@/pages/events";
 import Account from "@/pages/account";
 import Team from "@/pages/team";
@@ -39,6 +40,9 @@ function Router() {
       </Route>
       <Route path="/news" component={News} />
       <Route path="/groups" component={Groups} />
+      <Route path="/groups/:id">
+        {(params) => <GroupDetail id={params.id} />}
+      </Route>
       <Route path="/events" component={Events} />
       <Route path="/chats" component={Chats} />
       <Route path="/training" component={Training} />

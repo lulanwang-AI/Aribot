@@ -196,9 +196,70 @@ export async function registerRoutes(
     res.json(items);
   });
 
+  app.get("/api/news/:id", async (req, res) => {
+    const item = await storage.getNewsItem(req.params.id);
+    if (!item) return res.status(404).json({ message: "News not found" });
+    const comments = await storage.getNewsComments(req.params.id);
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    res.json({
+      ...item,
+      comments: comments.map(c => ({
+        ...c,
+        author: userMap[c.authorId] ? { name: userMap[c.authorId].name, specialty: userMap[c.authorId].specialty, avatarUrl: userMap[c.authorId].avatarUrl } : null,
+      })),
+    });
+  });
+
+  app.post("/api/news/:id/like", async (req, res) => {
+    const item = await storage.likeNewsItem(req.params.id, "u1");
+    if (!item) return res.status(404).json({ message: "News not found" });
+    res.json(item);
+  });
+
+  app.post("/api/news/:id/comments", async (req, res) => {
+    const schema = z.object({ content: z.string().min(1), parentId: z.string().nullable().default(null) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const comment = await storage.createNewsComment({
+      newsId: req.params.id,
+      authorId: "u1",
+      content: parsed.data.content,
+      parentId: parsed.data.parentId,
+      likes: [],
+      createdAt: new Date().toISOString(),
+    });
+    res.status(201).json(comment);
+  });
+
+  app.post("/api/news-comments/:id/like", async (req, res) => {
+    const comment = await storage.likeNewsComment(req.params.id, "u1");
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    res.json(comment);
+  });
+
   app.get("/api/groups", async (_req, res) => {
     const groups = await storage.getGroups();
-    res.json(groups);
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const enriched = groups.map(g => ({
+      ...g,
+      memberAvatars: g.members.slice(0, 5).map(mId => ({
+        id: mId,
+        name: userMap[mId]?.name || "Unknown",
+        avatarUrl: userMap[mId]?.avatarUrl || "",
+      })),
+    }));
+    res.json(enriched);
+  });
+
+  app.get("/api/groups/:id", async (req, res) => {
+    const group = await storage.getGroup(req.params.id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const memberDetails = group.members.map(mId => userMap[mId]).filter(Boolean).map(({ password: _, ...u }) => u);
+    res.json({ ...group, memberDetails });
   });
 
   app.post("/api/groups/:id/join", async (req, res) => {
@@ -334,12 +395,33 @@ export async function registerRoutes(
   app.get("/api/teams", async (_req, res) => {
     const teams = await storage.getTeams();
     const users = await storage.getAllUsers();
-    const userMap = Object.fromEntries(users.map(u => [u.id, { name: u.name, specialty: u.specialty }]));
+    const userMap = Object.fromEntries(users.map(u => [u.id, { name: u.name, specialty: u.specialty, hospital: u.hospital, avatarUrl: u.avatarUrl, verified: u.verified, rankingScore: u.rankingScore }]));
     const enriched = teams.map(t => ({
       ...t,
       members: t.members.map(m => ({ ...m, ...userMap[m.userId] })),
     }));
     res.json(enriched);
+  });
+
+  app.get("/api/notifications", async (_req, res) => {
+    const news = await storage.getNewsItems();
+    const posts = await storage.getTriagePosts();
+    const events = await storage.getEvents();
+    const threads = await storage.getChatThreads("u1");
+    const recentNews = news.filter(n => {
+      const age = Date.now() - new Date(n.publishedAt).getTime();
+      return age < 24 * 3600000;
+    }).length;
+    const recentTriage = posts.filter(p => {
+      const age = Date.now() - new Date(p.createdAt).getTime();
+      return age < 24 * 3600000;
+    }).length;
+    const upcomingEvents = events.filter(e => {
+      const diff = new Date(e.date).getTime() - Date.now();
+      return diff > 0 && diff < 7 * 86400000;
+    }).length;
+    const unreadChats = threads.reduce((sum, t) => sum + t.unreadCount, 0);
+    res.json({ news: recentNews, triage: recentTriage, events: upcomingEvents, chats: unreadChats });
   });
 
   return httpServer;

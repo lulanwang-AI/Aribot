@@ -1,5 +1,5 @@
 import type {
-  User, InsertUser, TriagePost, Comment, NewsItem, Group, MedEvent, FlaggedItem,
+  User, InsertUser, TriagePost, Comment, NewsItem, NewsComment, Group, MedEvent, FlaggedItem,
   ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -25,6 +25,11 @@ export interface IStorage {
   flagComment(commentId: string): Promise<Comment | undefined>;
 
   getNewsItems(source?: string, specialty?: string, search?: string): Promise<NewsItem[]>;
+  getNewsItem(id: string): Promise<NewsItem | undefined>;
+  likeNewsItem(newsId: string, userId: string): Promise<NewsItem | undefined>;
+  getNewsComments(newsId: string): Promise<NewsComment[]>;
+  createNewsComment(comment: Omit<NewsComment, "id">): Promise<NewsComment>;
+  likeNewsComment(commentId: string, userId: string): Promise<NewsComment | undefined>;
 
   getGroups(): Promise<Group[]>;
   getGroup(id: string): Promise<Group | undefined>;
@@ -63,6 +68,7 @@ export class MemStorage implements IStorage {
   private triagePosts: Map<string, TriagePost> = new Map();
   private comments: Map<string, Comment> = new Map();
   private newsItems: Map<string, NewsItem> = new Map();
+  private newsComments: Map<string, NewsComment> = new Map();
   private groups: Map<string, Group> = new Map();
   private events: Map<string, MedEvent> = new Map();
   private flaggedItems: Map<string, FlaggedItem> = new Map();
@@ -83,6 +89,7 @@ export class MemStorage implements IStorage {
     data.triagePosts.forEach(p => this.triagePosts.set(p.id, p));
     data.comments.forEach(c => this.comments.set(c.id, c));
     data.news.forEach(n => this.newsItems.set(n.id, n));
+    data.newsComments.forEach(c => this.newsComments.set(c.id, c));
     data.groups.forEach(g => this.groups.set(g.id, g));
     data.events.forEach(e => this.events.set(e.id, e));
     data.flaggedItems.forEach(f => this.flaggedItems.set(f.id, f));
@@ -218,6 +225,40 @@ export class MemStorage implements IStorage {
       items = items.filter(n => n.title.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q));
     }
     return items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  }
+  async getNewsItem(id: string) { return this.newsItems.get(id); }
+  async likeNewsItem(newsId: string, userId: string) {
+    const n = this.newsItems.get(newsId);
+    if (!n) return undefined;
+    if (n.likes.includes(userId)) {
+      n.likes = n.likes.filter(id => id !== userId);
+    } else {
+      n.likes.push(userId);
+    }
+    return n;
+  }
+  async getNewsComments(newsId: string) {
+    return Array.from(this.newsComments.values())
+      .filter(c => c.newsId === newsId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  async createNewsComment(comment: Omit<NewsComment, "id">) {
+    const id = randomUUID();
+    const c = { ...comment, id };
+    this.newsComments.set(id, c);
+    const news = this.newsItems.get(comment.newsId);
+    if (news) news.commentCount++;
+    return c;
+  }
+  async likeNewsComment(commentId: string, userId: string) {
+    const c = this.newsComments.get(commentId);
+    if (!c) return undefined;
+    if (c.likes.includes(userId)) {
+      c.likes = c.likes.filter(id => id !== userId);
+    } else {
+      c.likes.push(userId);
+    }
+    return c;
   }
 
   async getGroups() { return Array.from(this.groups.values()); }

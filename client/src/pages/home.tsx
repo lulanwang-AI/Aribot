@@ -15,10 +15,16 @@ import {
   Heart,
   MessageSquare,
   Clock,
+  MapPin,
+  Building,
+  CheckCircle,
+  Plus,
 } from "lucide-react";
 import type { User, TriagePost, NewsItem, MedEvent } from "@shared/schema";
 import { seedAnalytics, recordEvent } from "@/lib/analytics";
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Home() {
   const { data: user, isLoading: userLoading } = useQuery<User>({ queryKey: ["/api/me"] });
@@ -26,10 +32,24 @@ export default function Home() {
   const { data: news } = useQuery<NewsItem[]>({ queryKey: ["/api/news"] });
   const { data: events } = useQuery<MedEvent[]>({ queryKey: ["/api/events"] });
 
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+
   useEffect(() => {
     seedAnalytics();
     recordEvent("page_view", { section: "home" });
   }, []);
+
+  const calendarEvents = useMemo(() => {
+    if (!events) return new Map<string, MedEvent[]>();
+    const map = new Map<string, MedEvent[]>();
+    events.forEach(e => {
+      const dateKey = new Date(e.date).toISOString().split("T")[0];
+      const existing = map.get(dateKey) || [];
+      existing.push(e);
+      map.set(dateKey, existing);
+    });
+    return map;
+  }, [events]);
 
   if (userLoading) {
     return (
@@ -42,9 +62,18 @@ export default function Home() {
     );
   }
 
-  const upcomingEvents = events?.slice(0, 3) || [];
-  const recentPosts = posts?.slice(0, 3) || [];
-  const recentNews = news?.slice(0, 3) || [];
+  const upcomingEvents = events?.filter(e => new Date(e.date) >= new Date()).slice(0, 5) || [];
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+
+  const calendarDays: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
@@ -64,92 +93,74 @@ export default function Home() {
         <StatCard icon={CalendarDays} label="Upcoming Events" value={upcomingEvents.length} href="/events" color="text-amber-500" />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Card>
+      <div className="grid lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold">Recent Triage Cases</CardTitle>
-            <Link href="/triage">
-              <Button size="sm" variant="outline" data-testid="link-view-triage">
-                View all <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              My Calendar
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} data-testid="button-prev-month">&lt;</Button>
+              <span className="text-sm font-medium min-w-[120px] text-center">
+                {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} data-testid="button-next-month">&gt;</Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {recentPosts.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">No cases yet</p>
-            )}
-            {recentPosts.map((post) => (
-              <div key={post.id} className="p-3 rounded-md hover:bg-muted/40 transition-colors space-y-1" data-testid={`card-post-${post.id}`}>
-                <Link href={`/triage/${post.id}`}>
-                  <p className="text-sm font-medium leading-snug cursor-pointer hover:text-primary transition-colors">{post.title}</p>
-                </Link>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Heart className="h-3 w-3" /> {post.likes.length}
-                  </span>
-                  {post.author && (
-                    <ClickableDoctor
-                      userId={post.authorId}
-                      name={post.author.name}
-                      showAvatar={true}
-                      avatarSize="sm"
-                    />
-                  )}
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatTimeAgo(post.createdAt)}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <div className="grid grid-cols-7 gap-0.5">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                <div key={d} className="text-[10px] font-medium text-muted-foreground text-center py-1">{d}</div>
+              ))}
+              {calendarDays.map((day, i) => {
+                if (day === null) return <div key={`empty-${i}`} className="h-16" />;
+                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const dayEvents = calendarEvents.get(dateStr) || [];
+                const isToday = dateStr === todayStr;
+                return (
+                  <div
+                    key={dateStr}
+                    className={`h-16 p-0.5 rounded-md border text-xs ${isToday ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/30"}`}
+                    data-testid={`calendar-day-${day}`}
+                  >
+                    <span className={`text-[11px] font-medium ${isToday ? "text-primary" : ""}`}>{day}</span>
+                    <div className="space-y-0.5 mt-0.5 overflow-hidden">
+                      {dayEvents.slice(0, 2).map(ev => (
+                        <div key={ev.id} className="text-[9px] leading-tight px-0.5 py-px rounded bg-primary/10 text-primary truncate" title={ev.title}>
+                          {ev.title.length > 14 ? ev.title.slice(0, 14) + "…" : ev.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <span className="text-[9px] text-muted-foreground px-0.5">+{dayEvents.length - 2}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold">Latest News</CardTitle>
-            <Link href="/news">
-              <Button size="sm" variant="outline" data-testid="link-view-news">
+            <CardTitle className="text-sm font-semibold">Upcoming Events</CardTitle>
+            <Link href="/events">
+              <Button size="sm" variant="outline" data-testid="link-view-events">
                 View all <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent className="space-y-2">
-            {recentNews.map((item) => (
-              <div key={item.id} className="p-3 rounded-md hover-elevate cursor-pointer space-y-1" data-testid={`card-news-${item.id}`}>
-                <p className="text-sm font-medium leading-snug">{item.title}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{item.source}</span>
-                  <span>{formatTimeAgo(item.publishedAt)}</span>
-                </div>
-              </div>
+            {upcomingEvents.length === 0 && (
+              <p className="text-sm text-muted-foreground py-4 text-center">No upcoming events</p>
+            )}
+            {upcomingEvents.map((event) => (
+              <UpcomingEventCard key={event.id} event={event} />
             ))}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-          <CardTitle className="text-sm font-semibold">Upcoming Events</CardTitle>
-          <Link href="/events">
-            <Button size="sm" variant="outline" data-testid="link-view-events">
-              View all <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-3">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="p-3 rounded-md bg-muted/30 space-y-1" data-testid={`card-event-${event.id}`}>
-                <p className="text-sm font-medium">{event.title}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(event.date)}</p>
-                <p className="text-xs text-muted-foreground">{event.location}</p>
-                <Badge variant="secondary" className="text-xs mt-1">{event.type}</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex justify-center">
         <Link href="/">
@@ -158,6 +169,48 @@ export default function Home() {
             Open Aribot AI Assistant
           </Button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function UpcomingEventCard({ event }: { event: MedEvent }) {
+  const hasRsvpd = event.rsvps.includes("u1");
+  const eventDate = new Date(event.date);
+
+  const rsvpMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/events/${event.id}/${hasRsvpd ? "unrsvp" : "rsvp"}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    },
+  });
+
+  return (
+    <div className="p-3 rounded-md bg-muted/30 space-y-1.5" data-testid={`card-event-${event.id}`}>
+      <p className="text-sm font-medium leading-snug">{event.title}</p>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {eventDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+        </span>
+        <span className="flex items-center gap-1">
+          <MapPin className="h-3 w-3" />
+          {event.location}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <Badge variant="secondary" className="text-[10px]">{event.type.replace(/-/g, " ")}</Badge>
+        {hasRsvpd ? (
+          <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => rsvpMutation.mutate()} disabled={rsvpMutation.isPending}>
+            <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+            Going
+          </Button>
+        ) : (
+          <Button size="sm" className="h-6 text-xs" onClick={() => rsvpMutation.mutate()} disabled={rsvpMutation.isPending}>
+            <Plus className="h-3 w-3 mr-1" />
+            RSVP
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -179,22 +232,4 @@ function StatCard({ icon: Icon, label, value, href, color }: { icon: any; label:
       </Card>
     </Link>
   );
-}
-
-function formatTimeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }

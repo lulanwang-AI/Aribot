@@ -1,5 +1,5 @@
 import type {
-  User, TriagePost, Comment, NewsItem, Group, MedEvent, FlaggedItem,
+  User, TriagePost, Comment, NewsItem, NewsComment, Group, MedEvent, FlaggedItem,
   ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team
 } from "@shared/schema";
 
@@ -97,7 +97,7 @@ function generateDoctors(count: number): User[] {
       rankingScore: Math.min(100, randInt(30, 70) + Math.floor(yrsExp * 1.5)),
       badges: pickN(badgeOptions, randInt(0, 3)),
       bio: generateBio(fn, ln, spec.name, hosp.name, yrsExp),
-      avatarUrl: "",
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fn.toLowerCase()}${ln.toLowerCase()}${i}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`,
     });
   }
   return docs;
@@ -142,13 +142,14 @@ const summaryTemplates = [
   "Large-scale population study identifies key risk factors and protective measures, offering new insights for prevention strategies and early intervention programs.",
 ];
 
-function generateNews(count: number): NewsItem[] {
+function generateNews(count: number, doctors: User[]): NewsItem[] {
   const items: NewsItem[] = [];
   const now = Date.now();
   for (let i = 0; i < count; i++) {
     const spec = pick(specialties);
     const topic = pick(newsTopics);
     const tag = spec.name.toLowerCase().replace(/ /g, "-");
+    const likeCount = randInt(0, 20);
     items.push({
       id: `n${i + 1}`,
       title: topic.title.replace(/\{spec\}/g, spec.name),
@@ -158,9 +159,50 @@ function generateNews(count: number): NewsItem[] {
       tags: topic.tags.map(t => t.replace("{tag}", tag)),
       publishedAt: new Date(now - i * 8 * 3600000 - randInt(0, 7200000)).toISOString(),
       readingTime: randInt(3, 12),
+      likes: pickN(doctors, likeCount).map(d => d.id),
+      commentCount: randInt(0, 12),
     });
   }
   return items;
+}
+
+const newsCommentTemplates = [
+  "This is a landmark study. The implications for clinical practice are significant.",
+  "I've been following this research closely. The methodology is solid.",
+  "We should discuss this at our next journal club meeting.",
+  "Very relevant to my current patient population. Thanks for sharing.",
+  "The sample size concerns me a bit, but the results are promising.",
+  "Has anyone started implementing these findings in their practice?",
+  "This aligns with what we've been seeing clinically at our institution.",
+  "I'd like to see a longer follow-up period before changing practice.",
+  "Important findings. I'll be sharing this with my residents.",
+  "The cost-effectiveness analysis is particularly compelling.",
+];
+
+function generateNewsComments(newsItems: NewsItem[], doctors: User[]): NewsComment[] {
+  const comments: NewsComment[] = [];
+  let cid = 1;
+  const now = Date.now();
+  for (const news of newsItems) {
+    const numComments = news.commentCount;
+    const topLevelIds: string[] = [];
+    for (let j = 0; j < numComments; j++) {
+      const author = pick(doctors.slice(0, 60));
+      const isReply = j > 1 && topLevelIds.length > 0 && rand() > 0.7;
+      const id = `nc${cid++}`;
+      comments.push({
+        id,
+        newsId: news.id,
+        authorId: author.id,
+        content: pick(newsCommentTemplates),
+        parentId: isReply ? pick(topLevelIds) : null,
+        likes: pickN(doctors, randInt(0, 5)).map(d => d.id),
+        createdAt: new Date(now - randInt(0, 72) * 3600000).toISOString(),
+      });
+      if (!isReply) topLevelIds.push(id);
+    }
+  }
+  return comments;
 }
 
 const caseTemplates = [
@@ -319,10 +361,21 @@ function generateGroups(count: number, doctors: User[]): Group[] {
   return groups;
 }
 
+const eventImagesByType: Record<string, string> = {
+  "conference": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=300&fit=crop",
+  "grand-rounds": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=300&fit=crop",
+  "lab": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&h=300&fit=crop",
+  "meeting": "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&h=300&fit=crop",
+  "coffee-chat": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=300&fit=crop",
+  "workshop": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=300&fit=crop",
+  "webinar": "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?w=600&h=300&fit=crop",
+  "course": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=300&fit=crop",
+};
+
 function generateEvents(count: number, doctors: User[]): MedEvent[] {
   const events: MedEvent[] = [];
   const now = Date.now();
-  const types = ["conference","grand-rounds","symposium","workshop","webinar","coffee-chat","course"];
+  const types = ["conference","grand-rounds","lab","meeting","coffee-chat","workshop","webinar","course"];
   const eventNames = [
     "Annual Scientific Sessions","Grand Rounds: {topic}","Clinical Research Symposium",
     "Board Review Course","Journal Club: {topic}","Case Conference","Morbidity & Mortality Conference",
@@ -333,26 +386,29 @@ function generateEvents(count: number, doctors: User[]): MedEvent[] {
     "Simulation Training","Hands-On Procedures Lab","Biostatistics Bootcamp",
     "Grant Writing Workshop","Peer Review Training","Medical Education Conference",
     "Research Methods Symposium","Translational Science Seminar","Palliative Care Rounds",
-    "Health Policy Forum","Patient Safety Conference",
+    "Health Policy Forum","Patient Safety Conference","Morning Coffee & Cases",
+    "Lab Techniques Session","Departmental Meeting","Interdisciplinary Rounds",
   ];
   const topics = ["Heart Failure Therapies","Stroke Management","Cancer Immunotherapy","Sepsis Protocols","AI Diagnostics","Precision Medicine","Trauma Care","Pediatric Emergencies"];
   for (let i = 0; i < count; i++) {
     const h = pick(hospitals);
     const topic = pick(topics);
     const eName = pick(eventNames).replace("{topic}", topic);
+    const eventType = pick(types);
     const cap = randInt(20, 200);
     const rsvpCount = randInt(5, Math.min(cap, 40));
     events.push({
       id: `e${i + 1}`,
       title: eName,
-      description: `Join colleagues for this ${pick(types)} focusing on the latest advances and best practices. Featuring expert speakers and interactive sessions.`,
-      type: pick(types),
+      description: `Join colleagues for this ${eventType} focusing on the latest advances and best practices. Featuring expert speakers and interactive sessions.`,
+      type: eventType,
       date: new Date(now + (i + 1) * 3 * 86400000 + randInt(0, 86400000)).toISOString(),
       location: rand() > 0.4 ? `${h.city}, ${h.state}` : "Virtual",
       hostGroup: "",
       hostHospital: h.name,
       capacity: cap,
       rsvps: pickN(doctors, rsvpCount).map(d => d.id),
+      imageUrl: eventImagesByType[eventType] || eventImagesByType["conference"],
     });
   }
   return events;
@@ -517,7 +573,8 @@ export function seedAllData() {
     bio: "Board-certified interventional cardiologist with expertise in structural heart disease and heart failure. 12 years at MGH with active clinical research program.",
   };
 
-  const news = generateNews(80);
+  const news = generateNews(80, doctors);
+  const newsComments = generateNewsComments(news, doctors);
   const triagePosts = generateTriagePosts(60, doctors);
   const comments = generateComments(triagePosts, doctors);
   const groups = generateGroups(40, doctors);
@@ -530,6 +587,7 @@ export function seedAllData() {
   return {
     doctors,
     news,
+    newsComments,
     triagePosts,
     comments,
     groups,

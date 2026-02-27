@@ -96,6 +96,18 @@ export interface NewsItem {
   tags: string[];
   publishedAt: string;
   readingTime: number;
+  likes: string[];
+  commentCount: number;
+}
+
+export interface NewsComment {
+  id: string;
+  newsId: string;
+  authorId: string;
+  content: string;
+  parentId: string | null;
+  likes: string[];
+  createdAt: string;
 }
 
 export interface Group {
@@ -121,6 +133,7 @@ export interface MedEvent {
   hostHospital: string;
   capacity: number;
   rsvps: string[];
+  imageUrl: string;
 }
 
 export interface FlaggedItem {
