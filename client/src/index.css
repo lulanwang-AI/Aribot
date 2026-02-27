@@ -293,8 +293,12 @@
   }
 }
 
-.dify-embed {
+.dify-embed,
+.dify-embed * {
   background: #fff !important;
+}
+
+.dify-embed {
   color-scheme: light !important;
   border-radius: 12px;
   overflow: hidden;
