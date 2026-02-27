@@ -28,6 +28,7 @@ export interface IStorage {
   getNewsItem(id: string): Promise<NewsItem | undefined>;
   likeNewsItem(newsId: string, userId: string): Promise<NewsItem | undefined>;
   getNewsComments(newsId: string): Promise<NewsComment[]>;
+  getAllNewsComments(): Promise<NewsComment[]>;
   createNewsComment(comment: Omit<NewsComment, "id">): Promise<NewsComment>;
   likeNewsComment(commentId: string, userId: string): Promise<NewsComment | undefined>;
 
@@ -241,6 +242,9 @@ export class MemStorage implements IStorage {
     return Array.from(this.newsComments.values())
       .filter(c => c.newsId === newsId)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  async getAllNewsComments() {
+    return Array.from(this.newsComments.values());
   }
   async createNewsComment(comment: Omit<NewsComment, "id">) {
     const id = randomUUID();

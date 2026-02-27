@@ -20,6 +20,10 @@ const SPECIALTIES = ["All", "Cardiology", "Oncology", "Neurology", "Emergency Me
 
 type DetailComment = NewsComment & { author: { name: string; specialty: string; avatarUrl: string } | null };
 
+type NewsItemWithCommenters = NewsItem & {
+  commenters?: { id: string; name: string; avatarUrl: string }[];
+};
+
 export default function News() {
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("All");
@@ -32,7 +36,7 @@ export default function News() {
   if (search) queryParams.set("search", search);
   const qs = queryParams.toString();
 
-  const { data: news, isLoading } = useQuery<NewsItem[]>({
+  const { data: news, isLoading } = useQuery<NewsItemWithCommenters[]>({
     queryKey: ["/api/news", qs],
     queryFn: () => fetch(`/api/news${qs ? `?${qs}` : ""}`).then(r => r.json()),
   });
@@ -100,7 +104,7 @@ export default function News() {
   );
 }
 
-function NewsCard({ item, onOpenComments }: { item: NewsItem; onOpenComments: () => void }) {
+function NewsCard({ item, onOpenComments }: { item: NewsItemWithCommenters; onOpenComments: () => void }) {
   const isLiked = item.likes?.includes("u1");
 
   const likeMutation = useMutation({
@@ -123,8 +127,8 @@ function NewsCard({ item, onOpenComments }: { item: NewsItem; onOpenComments: ()
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.summary}</p>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {item.tags.slice(0, 3).map(tag => (
-              <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+            {item.tags.slice(0, 3).map((tag, idx) => (
+              <Badge key={`${tag}-${idx}`} variant="secondary" className="text-[10px]">{tag}</Badge>
             ))}
             {item.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{item.tags.length - 3}</span>}
           </div>
@@ -161,6 +165,21 @@ function NewsCard({ item, onOpenComments }: { item: NewsItem; onOpenComments: ()
             <MessageSquare className="h-3 w-3 mr-1" />
             {item.commentCount || 0}
           </Button>
+          {item.commenters && item.commenters.length > 0 && (
+            <div className="flex items-center -space-x-1.5 ml-1" data-testid={`commenters-news-${item.id}`}>
+              {item.commenters.slice(0, 4).map(c => (
+                <Avatar key={c.id} className="h-5 w-5 ring-2 ring-background" title={c.name}>
+                  <AvatarImage src={c.avatarUrl} />
+                  <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                    {c.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {item.commenters.length > 4 && (
+                <span className="text-[10px] text-muted-foreground ml-2">+{item.commenters.length - 4}</span>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

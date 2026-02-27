@@ -193,7 +193,28 @@ export async function registerRoutes(
       specialty as string | undefined,
       search as string | undefined,
     );
-    res.json(items);
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const allComments = await storage.getAllNewsComments();
+    const commentsByNews = new Map<string, typeof allComments>();
+    allComments.forEach(c => {
+      const arr = commentsByNews.get(c.newsId) || [];
+      arr.push(c);
+      commentsByNews.set(c.newsId, arr);
+    });
+    const enriched = items.map(item => {
+      const comments = commentsByNews.get(item.id) || [];
+      const uniqueAuthors = [...new Set(comments.map(c => c.authorId))];
+      return {
+        ...item,
+        commenters: uniqueAuthors.slice(0, 5).map(uid => ({
+          id: uid,
+          name: userMap[uid]?.name || "Unknown",
+          avatarUrl: userMap[uid]?.avatarUrl || "",
+        })),
+      };
+    });
+    res.json(enriched);
   });
 
   app.get("/api/news/:id", async (req, res) => {
