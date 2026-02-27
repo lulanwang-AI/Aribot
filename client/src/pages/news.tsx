@@ -13,7 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { recordEvent } from "@/lib/analytics";
-import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply, Share2, ChevronDown, ChevronUp, User as UserIcon, FileText } from "lucide-react";
+import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply, Share2, ChevronDown, ChevronUp, User as UserIcon, FileText, Bot, Settings, Sparkles, Zap, Filter, Bell, Plus, X, RefreshCw, Wand2, SlidersHorizontal } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { NewsItem, NewsComment, User } from "@shared/schema";
 
 const SOURCES = ["All", "NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"];
@@ -31,6 +33,7 @@ export default function News() {
   const [specialty, setSpecialty] = useState("All");
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
   const [fullArticleItem, setFullArticleItem] = useState<NewsItemWithCommenters | null>(null);
+  const [showAgentPanel, setShowAgentPanel] = useState(true);
 
   const queryParams = new URLSearchParams();
   if (source !== "All") queryParams.set("source", source);
@@ -48,68 +51,307 @@ export default function News() {
   }, []);
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto" data-testid="page-news">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
-          <Newspaper className="h-5 w-5 text-primary" />
-          Medical News
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Latest research from NEJM, The Lancet, JAMA, BMJ, and Nature Medicine
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3 mb-5">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search articles..."
-            className="pl-9"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            data-testid="input-search-news"
-          />
+    <div className="flex h-full" data-testid="page-news">
+      <div className={`flex-1 min-w-0 p-4 md:p-6 overflow-auto ${showAgentPanel ? "max-w-4xl" : "max-w-5xl mx-auto"}`}>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
+              <Newspaper className="h-5 w-5 text-primary" />
+              News AI
+              <Badge variant="secondary" className="text-[9px] font-normal ml-1">
+                <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+                Agent
+              </Badge>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              AI-powered research discovery from top medical journals
+            </p>
+          </div>
+          {!showAgentPanel && (
+            <Button variant="outline" size="sm" onClick={() => setShowAgentPanel(true)} data-testid="button-show-agent-panel">
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+              Agent Config
+            </Button>
+          )}
         </div>
-        <Select value={source} onValueChange={setSource}>
-          <SelectTrigger className="w-44" data-testid="select-source">
-            <SelectValue placeholder="Source" />
-          </SelectTrigger>
-          <SelectContent>
-            {SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={specialty} onValueChange={setSpecialty}>
-          <SelectTrigger className="w-48" data-testid="select-specialty">
-            <SelectValue placeholder="Specialty" />
-          </SelectTrigger>
-          <SelectContent>
-            {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
 
-      {isLoading && <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}</div>}
-
-      {!isLoading && news?.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <Newspaper className="h-10 w-10 mx-auto mb-3 opacity-20" />
-          <p className="text-sm">No articles match your filters</p>
+        <div className="flex flex-wrap gap-3 mb-5">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search articles..."
+              className="pl-9"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              data-testid="input-search-news"
+            />
+          </div>
+          <Select value={source} onValueChange={setSource}>
+            <SelectTrigger className="w-44" data-testid="select-source">
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
+            <SelectContent>
+              {SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={specialty} onValueChange={setSpecialty}>
+            <SelectTrigger className="w-48" data-testid="select-specialty">
+              <SelectValue placeholder="Specialty" />
+            </SelectTrigger>
+            <SelectContent>
+              {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-      )}
 
-      <div className="space-y-3">
-        {news?.map(item => (
-          <NewsCard
-            key={item.id}
-            item={item}
-            onOpenComments={() => setSelectedNewsId(item.id)}
-            onOpenFullArticle={() => setFullArticleItem(item)}
-          />
-        ))}
+        {isLoading && <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}</div>}
+
+        {!isLoading && news?.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            <Newspaper className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">No articles match your filters</p>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {news?.map(item => (
+            <NewsCard
+              key={item.id}
+              item={item}
+              onOpenComments={() => setSelectedNewsId(item.id)}
+              onOpenFullArticle={() => setFullArticleItem(item)}
+            />
+          ))}
+        </div>
       </div>
+
+      {showAgentPanel && <AgentConfigPanel onClose={() => setShowAgentPanel(false)} />}
 
       <NewsDetailSheet newsId={selectedNewsId} open={!!selectedNewsId} onClose={() => setSelectedNewsId(null)} />
       <FullArticleSheet item={fullArticleItem} open={!!fullArticleItem} onClose={() => setFullArticleItem(null)} />
+    </div>
+  );
+}
+
+function AgentConfigPanel({ onClose }: { onClose: () => void }) {
+  const [agentName, setAgentName] = useState("My Research Agent");
+  const [selectedSources, setSelectedSources] = useState<string[]>(["NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["Cardiology", "Clinical Trials"]);
+  const [summaryLength, setSummaryLength] = useState("medium");
+  const [autoSummarize, setAutoSummarize] = useState(true);
+  const [dailyDigest, setDailyDigest] = useState(true);
+  const [highlightBreakthroughs, setHighlightBreakthroughs] = useState(true);
+  const [includeAbstract, setIncludeAbstract] = useState(true);
+  const [citationStyle, setCitationStyle] = useState("ama");
+  const [frequency, setFrequency] = useState("daily");
+  const [newTopic, setNewTopic] = useState("");
+  const { toast } = useToast();
+
+  const allTopics = ["Cardiology", "Oncology", "Neurology", "Emergency Medicine", "Radiology", "Pediatrics", "Internal Medicine", "Surgery", "Infectious Disease", "Clinical Trials", "AI in Medicine", "Gene Therapy", "Immunotherapy", "Precision Medicine", "Digital Health"];
+
+  function toggleSource(s: string) {
+    setSelectedSources(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  }
+
+  function toggleTopic(t: string) {
+    setSelectedTopics(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
+
+  function addCustomTopic() {
+    if (newTopic.trim() && !selectedTopics.includes(newTopic.trim())) {
+      setSelectedTopics(prev => [...prev, newTopic.trim()]);
+      setNewTopic("");
+    }
+  }
+
+  return (
+    <div className="w-[320px] border-l bg-muted/10 overflow-y-auto shrink-0 hidden lg:block" data-testid="panel-agent-config">
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Bot className="h-4 w-4 text-primary" />
+            News AI Agent
+          </h2>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose} data-testid="button-close-agent-panel">
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">Configure your personal research agent</p>
+      </div>
+
+      <div className="p-4 space-y-5">
+        <div className="space-y-2">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Wand2 className="h-3 w-3 text-primary" />
+            Agent Name
+          </Label>
+          <Input
+            value={agentName}
+            onChange={e => setAgentName(e.target.value)}
+            className="h-8 text-sm"
+            data-testid="input-agent-name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <BookOpen className="h-3 w-3 text-primary" />
+            Journal Sources
+          </Label>
+          <div className="flex flex-wrap gap-1.5">
+            {["NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"].map(s => (
+              <Badge
+                key={s}
+                variant={selectedSources.includes(s) ? "default" : "outline"}
+                className="text-[10px] cursor-pointer transition-colors"
+                onClick={() => toggleSource(s)}
+                data-testid={`badge-source-${s}`}
+              >
+                {s}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Filter className="h-3 w-3 text-primary" />
+            Topics of Interest
+          </Label>
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+            {allTopics.map(t => (
+              <Badge
+                key={t}
+                variant={selectedTopics.includes(t) ? "default" : "outline"}
+                className="text-[10px] cursor-pointer transition-colors"
+                onClick={() => toggleTopic(t)}
+                data-testid={`badge-topic-${t}`}
+              >
+                {t}
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-1.5">
+            <Input
+              placeholder="Add custom topic..."
+              className="h-7 text-xs flex-1"
+              value={newTopic}
+              onChange={e => setNewTopic(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addCustomTopic()}
+              data-testid="input-custom-topic"
+            />
+            <Button size="sm" variant="outline" className="h-7 w-7 p-0 shrink-0" onClick={addCustomTopic}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-2 border-t">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Settings className="h-3 w-3 text-primary" />
+            Agent Behavior
+          </Label>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground">Auto-summarize articles</label>
+              <Switch checked={autoSummarize} onCheckedChange={setAutoSummarize} data-testid="switch-auto-summarize" />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground">Highlight breakthroughs</label>
+              <Switch checked={highlightBreakthroughs} onCheckedChange={setHighlightBreakthroughs} data-testid="switch-highlight" />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground">Include abstract</label>
+              <Switch checked={includeAbstract} onCheckedChange={setIncludeAbstract} data-testid="switch-include-abstract" />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground">Daily email digest</label>
+              <Switch checked={dailyDigest} onCheckedChange={setDailyDigest} data-testid="switch-daily-digest" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t">
+          <Label className="text-xs font-medium">Summary Length</Label>
+          <Select value={summaryLength} onValueChange={setSummaryLength}>
+            <SelectTrigger className="h-8 text-xs" data-testid="select-summary-length">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="brief">Brief (1-2 sentences)</SelectItem>
+              <SelectItem value="medium">Medium (paragraph)</SelectItem>
+              <SelectItem value="detailed">Detailed (full breakdown)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Citation Format</Label>
+          <Select value={citationStyle} onValueChange={setCitationStyle}>
+            <SelectTrigger className="h-8 text-xs" data-testid="select-citation-style">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ama">AMA Style</SelectItem>
+              <SelectItem value="apa">APA Style</SelectItem>
+              <SelectItem value="vancouver">Vancouver Style</SelectItem>
+              <SelectItem value="harvard">Harvard Style</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Scan Frequency</Label>
+          <Select value={frequency} onValueChange={setFrequency}>
+            <SelectTrigger className="h-8 text-xs" data-testid="select-frequency">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="realtime">Real-time</SelectItem>
+              <SelectItem value="hourly">Every hour</SelectItem>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2 pt-3 border-t">
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium">Agent Status</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[11px] text-muted-foreground">Active · Scanning 5 journals</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Last scan: 12 min ago · 3 new articles found</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 h-8 text-xs"
+            onClick={() => toast({ title: "Agent updated", description: "Your News AI agent configuration has been saved." })}
+            data-testid="button-save-agent"
+          >
+            <Zap className="h-3 w-3 mr-1.5" />
+            Save Agent
+          </Button>
+          <Button
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={() => toast({ title: "Scanning...", description: "Your agent is scanning journals for new articles." })}
+            data-testid="button-run-agent"
+          >
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

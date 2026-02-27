@@ -42,7 +42,7 @@ interface Notifications {
 }
 
 const mainNavItems = [
-  { title: "News", url: "/news", icon: Newspaper, notifKey: "news" as const },
+  { title: "News AI", url: "/news", icon: Newspaper, notifKey: "news" as const },
   { title: "Triage", url: "/triage", icon: Stethoscope, notifKey: "triage" as const },
   { title: "Groups", url: "/groups", icon: Users, notifKey: null },
   { title: "Events", url: "/events", icon: CalendarDays, notifKey: "events" as const },
