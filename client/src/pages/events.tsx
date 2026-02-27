@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, MapPin, Users, CheckCircle, Plus, Clock, Search, Building, Gauge, X } from "lucide-react";
+import { CalendarDays, MapPin, Users, CheckCircle, Plus, Clock, Search, Building, Gauge, X, Ticket } from "lucide-react";
 import type { MedEvent } from "@shared/schema";
 import { useMemo } from "react";
 
@@ -75,7 +75,8 @@ export default function Events() {
 
   const hasActiveFilters = typeFilter !== "all" || locationFilter !== "all" || dateFilter !== "all";
 
-  const upcoming = filtered.filter(e => new Date(e.date) >= new Date());
+  const myEvents = filtered.filter(e => e.rsvps.includes("u1") && new Date(e.date) >= new Date());
+  const upcoming = filtered.filter(e => !e.rsvps.includes("u1") && new Date(e.date) >= new Date());
   const past = filtered.filter(e => new Date(e.date) < new Date());
 
   return (
@@ -135,10 +136,20 @@ export default function Events() {
 
       {isLoading && <div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-40" />)}</div>}
 
-      {!isLoading && upcoming.length === 0 && past.length === 0 && (
+      {!isLoading && myEvents.length === 0 && upcoming.length === 0 && past.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-20" />
           <p className="text-sm">No events match your filters</p>
+        </div>
+      )}
+
+      {myEvents.length > 0 && (
+        <div className="space-y-4 mb-8">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+            <Ticket className="h-4 w-4" />
+            Your Events ({myEvents.length})
+          </h2>
+          {myEvents.map(event => <EventCard key={event.id} event={event} />)}
         </div>
       )}
 
@@ -256,14 +267,20 @@ function EventCard({ event }: { event: MedEvent }) {
                 </div>
               </div>
 
-              <div>
+              <div className="flex items-center gap-2">
                 {isPast ? (
                   <Badge variant="secondary" className="text-xs">Past event</Badge>
                 ) : hasRsvpd ? (
-                  <Button size="sm" variant="outline" onClick={() => rsvpMutation.mutate()} disabled={rsvpMutation.isPending} data-testid={`button-unrsvp-${event.id}`}>
-                    <CheckCircle className="h-3 w-3 mr-1.5 text-green-500" />
-                    Attending
-                  </Button>
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => rsvpMutation.mutate()} disabled={rsvpMutation.isPending} data-testid={`button-unrsvp-${event.id}`}>
+                      <CheckCircle className="h-3 w-3 mr-1.5 text-green-500" />
+                      Attending
+                    </Button>
+                    <Button size="sm" variant="secondary" data-testid={`button-ticket-${event.id}`}>
+                      <Ticket className="h-3 w-3 mr-1.5" />
+                      Ticket
+                    </Button>
+                  </>
                 ) : (
                   <Button size="sm" onClick={() => rsvpMutation.mutate()} disabled={rsvpMutation.isPending} data-testid={`button-rsvp-${event.id}`}>
                     <Plus className="h-3 w-3 mr-1.5" />
