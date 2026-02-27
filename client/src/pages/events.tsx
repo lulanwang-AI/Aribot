@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, MapPin, Users, CheckCircle, Plus, Clock, Search, Building, Gauge, X, Ticket } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CalendarDays, MapPin, Users, CheckCircle, Plus, Clock, Search, Building, Gauge, X, Ticket, ChevronDown } from "lucide-react";
 import type { MedEvent } from "@shared/schema";
 import { useMemo } from "react";
 
@@ -144,13 +145,18 @@ export default function Events() {
       )}
 
       {myEvents.length > 0 && (
-        <div className="space-y-4 mb-8">
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-            <Ticket className="h-4 w-4" />
-            Your Events ({myEvents.length})
-          </h2>
-          {myEvents.map(event => <EventCard key={event.id} event={event} />)}
-        </div>
+        <Collapsible defaultOpen className="mb-8">
+          <CollapsibleTrigger className="flex items-center gap-2 w-full group" data-testid="toggle-your-events">
+            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+              <Ticket className="h-4 w-4" />
+              Your Events ({myEvents.length})
+            </h2>
+            <ChevronDown className="h-4 w-4 text-primary transition-transform group-data-[state=closed]:-rotate-90" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-4">
+            {myEvents.map(event => <EventCard key={event.id} event={event} />)}
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {upcoming.length > 0 && (
