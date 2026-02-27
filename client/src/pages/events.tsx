@@ -84,7 +84,7 @@ function EventCard({ event }: { event: MedEvent }) {
     <Card data-testid={`card-event-${event.id}`} className={`overflow-hidden ${isPast ? "opacity-70" : ""}`}>
       <CardContent className="p-5">
         <div className="flex gap-4">
-          <div className="hidden sm:block shrink-0 w-16 h-16 rounded-lg overflow-hidden relative">
+          <div className="hidden sm:block shrink-0 w-24 h-24 rounded-lg overflow-hidden relative">
             {event.imageUrl ? (
               <img
                 src={event.imageUrl}
@@ -96,8 +96,8 @@ function EventCard({ event }: { event: MedEvent }) {
               <div className="w-full h-full bg-primary/10" />
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white">
-              <span className="text-xl font-bold leading-none drop-shadow-sm">{eventDate.getDate()}</span>
-              <span className="text-[10px] uppercase mt-0.5 drop-shadow-sm">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
+              <span className="text-2xl font-bold leading-none drop-shadow-sm">{eventDate.getDate()}</span>
+              <span className="text-[11px] uppercase mt-0.5 drop-shadow-sm">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
             </div>
           </div>
           <div className="flex-1 min-w-0 space-y-2.5">
