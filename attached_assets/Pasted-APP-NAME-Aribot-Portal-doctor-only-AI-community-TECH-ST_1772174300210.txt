@@ -1,0 +1,160 @@
+APP NAME
+- “Aribot Portal” (doctor-only AI + community)
+
+TECH STACK (use exactly this unless blocked)
+- Next.js (App Router) + TypeScript
+- TailwindCSS for styling (Apple-like: clean, minimal, lots of whitespace)
+- shadcn/ui components + lucide-react icons
+- Zustand (or React Context) for global UI state
+- Local mock DB: JSON + in-memory store OR SQLite (better) via Prisma. If Prisma is too heavy for Replit, use JSON + localStorage + simple API routes.
+
+CORE UI / UX REQUIREMENTS
+1) Apple website-like design: simple, professional, minimal borders, subtle shadows, excellent typography.
+2) Layout: left sidebar + main content area.
+3) Default route is /aribot and main content is a Dify chatbot embedded EXACTLY like this:
+
+<iframe
+ src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
+ style="width: 100%; height: 100%; min-height: 700px"
+ frameborder="0"
+ allow="microphone">
+</iframe>
+
+4) Sidebar menu items (top to bottom):
+   - Aribot (expandable section)
+     - Chat
+     - History
+     - Folders
+   - News
+   - Triage
+   - Groups
+   - Events
+   - (divider line)
+   - Chats
+   - Training
+   - My Team
+   - (divider line)
+   - Personal Account (profile/settings)
+5) Behavior: when user clicks any sidebar item OTHER THAN Aribot, the Aribot chatbot should collapse into a floating circular icon in the bottom-right corner.
+   - Floating icon opens a drawer/modal containing the chatbot iframe.
+   - The drawer should also show Aribot “History” and “Folders” panels on the left of the drawer (simple list UI).
+   - On /aribot, the chatbot is full-page in the main area and the floating icon is hidden.
+6) Doctor-only positioning:
+   - Add a simple “Doctor Login” screen (mock auth is fine) and a “Verified Clinician” badge on profiles.
+   - Add a prominent disclaimer: “For licensed clinicians. Not for patient use. Not medical advice; verify with primary sources.”
+
+DATA REQUIREMENTS (IMPORTANT: generate NEW realistic sample data)
+- Seed data should pretend there are hundreds of existing members (doctors only) from different hospitals.
+- Each doctor has:
+  id, full name, specialty, subspecialty, hospital/health system, city/state, years experience, ranking score (1–100), badges, short bio, avatar (placeholder), verification status.
+- Generate at least:
+  - 200 doctors
+  - 80 news items
+  - 60 triage cases/posts (with comments + nested replies)
+  - 40 groups
+  - 30 events
+  - 25 chat threads (mix of 1:1 and group)
+  - 12 training modules
+  - 6 teams with memberships
+- Create a single seed function “seedAllData()” that runs on first load (and stores to localStorage) OR a /api/seed endpoint.
+- Every time the app restarts, it should re-use stored data (unless user clicks “Reset Demo Data”).
+
+PAGES / FEATURES
+A) Aribot
+- Main /aribot page shows the iframe full-height (min-height 700px).
+- Aribot expandable menu shows History + Folders (fake items). Allow “New folder”, “Rename”, “Delete” (local only).
+- History entries: title, timestamp, tags, folder assignment.
+
+B) News (/news)
+- Focus on medical news “from NEJM, The Lancet and others” (also include JAMA, BMJ, Nature Medicine).
+- Use seeded items with: title, source, date, specialty tags, short abstract, link (placeholder), reading time.
+- Add filters:
+  - by source (NEJM/Lancet/JAMA/BMJ/Nature Medicine)
+  - by specialty interest tags (Cardiology, Oncology, Radiology, Neurology, Pediatrics, Emergency, etc.)
+  - search bar.
+- Display as clean cards.
+
+C) Triage (/triage)
+- Card feed of doctor-posted clinical questions/cases.
+- Each case supports:
+  - text + optional images (use placeholder image URLs)
+  - tags (specialty)
+  - “Like” on post
+  - comments with:
+    - reply to comment (nested)
+    - like on comment
+    - “Answer anonymously” option per comment (shows “Anonymous Clinician” but still stores doctor id internally)
+    - flag/report button
+- Populate significantly (60+ cases, each 3–12 comments, some nested replies).
+- Include a “Create Case” modal with fields: title, body, tags, upload image (mock).
+- Add sorting: trending (likes), newest, most discussed.
+
+D) Groups (/groups)
+- Doctors can join groups:
+  - local hospital groups (e.g., “Cedars-Sinai Radiology”, “UCLA Oncology Fellows”)
+  - interest groups (e.g., “Stroke Imaging”, “Breast Cancer Tumor Board”, “Peds ER”)
+- Group page shows description, members list (top ranked), recent posts (simple).
+- Join/Leave button.
+
+E) Events (/events)
+- Events include: grand rounds, coffee breaks, live events, conferences.
+- Fields: title, type, host hospital/group, date/time, location (or virtual), description, capacity, RSVP list.
+- Allow RSVP/Un-RSVP and show attendee avatars.
+- Provide at least 30 seeded events across the next 90 days (relative to current date).
+
+F) Chats (/chats)
+- 1:1 and group chats.
+- Chat list left, thread view right.
+- Messages include text + file attachments (mock files: pdf/png/docx).
+- Provide seeded conversations, include timestamps, unread counts.
+- Simple “New Chat” flow: select doctors from directory.
+
+G) Training (/training)
+- List of short modules (e.g., “Using Aribot effectively”, “How to cite primary sources”, “Clinical AI pitfalls”).
+- Each module page: outline + completion toggle.
+
+H) My Team (/team)
+- Team management UI with:
+  - teams, roles (Admin/Member), invites (mock)
+  - show shared chats and group memberships.
+
+I) Personal Account (/account)
+- Profile page with specialty, hospital, ranking score, badges, interests.
+- Settings: notification toggles (mock), appearance (light/dark), reset demo data.
+
+DIRECTORY / RANKING
+- Implement a “Doctors Directory” component used in multiple places:
+  - search by name/specialty/hospital
+  - sort by ranking score
+- Ranking: compute a score using seeded factors (years experience, activity, peer likes) so it feels realistic.
+
+DESIGN REQUIREMENTS
+- Left sidebar: fixed width, subtle divider, icons, section headers.
+- Main content: consistent header with page title + global search.
+- Use responsive layout (sidebar collapses on mobile).
+- Smooth transitions (drawer open/close, sidebar hover states).
+
+ENGINEERING REQUIREMENTS
+- No external paid APIs required.
+- Must run in Replit with a single “Run” action.
+- Provide clear folder structure:
+  - /app routes
+  - /components
+  - /lib (data generation, storage)
+  - /types
+- Include a README with:
+  - how to run
+  - how demo data is generated
+  - where to replace mock data with real APIs later
+
+ACCEPTANCE CHECKLIST (must satisfy)
+- Landing defaults to /aribot with iframe.
+- Sidebar items exactly as specified, including dividers and expandable Aribot section.
+- Navigating away shows floating Aribot icon bottom-right; clicking opens chatbot drawer with history/folders.
+- All sections are populated with large realistic seeded datasets.
+- Triage supports likes, anonymous comments, nested replies, flagging, image attachments (mock).
+- News has source + specialty filters and search.
+- Chats support files (mock) and have seeded threads.
+- Doctor directory exists and ranking is visible across the app.
+
+Now implement it. Generate all code files, then summarize how to run and where to adjust styling.

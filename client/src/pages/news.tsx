@@ -4,119 +4,113 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingPanel, TrendingDrawer } from "@/components/trending-panel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { recordEvent } from "@/lib/analytics";
-import {
-  Newspaper,
-  Search,
-  ExternalLink,
-  Clock,
-} from "lucide-react";
+import { Newspaper, Search, ExternalLink, Clock, BookOpen } from "lucide-react";
 import type { NewsItem } from "@shared/schema";
+
+const SOURCES = ["All", "NEJM", "The Lancet", "JAMA", "BMJ", "Nature Medicine"];
+const SPECIALTIES = ["All", "Cardiology", "Oncology", "Neurology", "Emergency Medicine", "Radiology", "Pediatrics", "Internal Medicine", "Surgery", "Infectious Disease"];
 
 export default function News() {
   const [search, setSearch] = useState("");
+  const [source, setSource] = useState("All");
+  const [specialty, setSpecialty] = useState("All");
+
+  const queryParams = new URLSearchParams();
+  if (source !== "All") queryParams.set("source", source);
+  if (specialty !== "All") queryParams.set("specialty", specialty.toLowerCase().replace(/ /g, "-"));
+  if (search) queryParams.set("search", search);
+  const qs = queryParams.toString();
+
   const { data: news, isLoading } = useQuery<NewsItem[]>({
-    queryKey: ["/api/news"],
+    queryKey: ["/api/news", qs],
+    queryFn: () => fetch(`/api/news${qs ? `?${qs}` : ""}`).then(r => r.json()),
   });
 
   useEffect(() => {
     recordEvent("page_view", { section: "news" });
   }, []);
 
-  const filtered = news?.filter(
-    (n) =>
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      n.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())) ||
-      n.source.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="mb-4">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto" data-testid="page-news">
+      <div className="mb-6">
         <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-news-title">
           <Newspaper className="h-5 w-5 text-primary" />
           Medical News
         </h1>
         <p className="text-sm text-muted-foreground">
-          Latest research, guidelines, and clinical updates
+          Latest research from NEJM, The Lancet, JAMA, BMJ, and Nature Medicine
         </p>
       </div>
 
-      <div className="mb-4">
-        <div className="relative">
+      <div className="flex flex-wrap gap-3 mb-5">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search news by title, source, or tag..."
+            placeholder="Search articles..."
             className="pl-9"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             data-testid="input-search-news"
           />
         </div>
+        <Select value={source} onValueChange={setSource}>
+          <SelectTrigger className="w-44" data-testid="select-source">
+            <SelectValue placeholder="Source" />
+          </SelectTrigger>
+          <SelectContent>
+            {SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={specialty} onValueChange={setSpecialty}>
+          <SelectTrigger className="w-48" data-testid="select-specialty">
+            <SelectValue placeholder="Specialty" />
+          </SelectTrigger>
+          <SelectContent>
+            {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
-      <TrendingDrawer />
+      {isLoading && <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}</div>}
 
-      <div className="flex gap-6 mt-4">
-        <div className="flex-1 space-y-3">
-          {isLoading && (
-            <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-36" />
-              ))}
-            </div>
-          )}
-          {!isLoading && filtered?.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Newspaper className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No news found</p>
-            </div>
-          )}
-          {filtered?.map((item) => (
-            <NewsCard key={item.id} item={item} />
-          ))}
+      {!isLoading && news?.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <Newspaper className="h-10 w-10 mx-auto mb-3 opacity-20" />
+          <p className="text-sm">No articles match your filters</p>
         </div>
+      )}
 
-        <div className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-4 bg-card rounded-md p-4">
-            <TrendingPanel />
-          </div>
-        </div>
+      <div className="space-y-3">
+        {news?.map(item => <NewsCard key={item.id} item={item} />)}
       </div>
     </div>
   );
 }
 
 function NewsCard({ item }: { item: NewsItem }) {
-  function handleClick() {
-    recordEvent("news_click", { tags: item.tags, specialty: item.tags[0] });
-  }
-
   return (
-    <Card
-      className="hover-elevate cursor-pointer"
-      onClick={handleClick}
-      data-testid={`card-news-${item.id}`}
-    >
+    <Card className="hover-elevate cursor-pointer" onClick={() => recordEvent("news_click", { tags: item.tags })} data-testid={`card-news-${item.id}`}>
       <CardContent className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-semibold leading-snug">{item.title}</h3>
           <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {item.summary}
-        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.summary}</p>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {item.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
+            {item.tags.slice(0, 3).map(tag => (
+              <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
             ))}
+            {item.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{item.tags.length - 3}</span>}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-            <span className="font-medium">{item.source}</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+            <Badge variant="outline" className="text-[10px] font-medium">{item.source}</Badge>
+            <span className="flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              {item.readingTime} min
+            </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatTimeAgo(item.publishedAt)}

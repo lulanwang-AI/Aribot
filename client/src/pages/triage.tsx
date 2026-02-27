@@ -31,6 +31,7 @@ import {
   Search,
   Stethoscope,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TriagePost } from "@shared/schema";
 import { useEffect } from "react";
 
@@ -43,9 +44,11 @@ export default function Triage() {
   const [, setLocation] = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
   const { data: posts, isLoading } = useQuery<EnrichedPost[]>({
-    queryKey: ["/api/triage"],
+    queryKey: ["/api/triage", sortBy],
+    queryFn: () => fetch(`/api/triage?sort=${sortBy}`).then(r => r.json()),
   });
 
   useEffect(() => {
@@ -90,8 +93,8 @@ export default function Triage() {
         </Dialog>
       </div>
 
-      <div className="mb-4">
-        <div className="relative">
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search cases by title or tag..."
@@ -101,6 +104,16 @@ export default function Triage() {
             data-testid="input-search-triage"
           />
         </div>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-40" data-testid="select-sort-triage">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="trending">Trending</SelectItem>
+            <SelectItem value="discussed">Most Discussed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <TrendingDrawer />

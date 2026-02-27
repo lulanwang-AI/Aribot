@@ -18,12 +18,18 @@ import {
   Building,
   Stethoscope,
   GraduationCap,
+  LogOut,
+  MapPin,
+  Award,
+  Trophy,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import type { User } from "@shared/schema";
 
 export default function Account() {
   const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<User>) => {
@@ -69,7 +75,35 @@ export default function Account() {
             <InfoField icon={Stethoscope} label="Specialty" value={user.specialty} />
             <InfoField icon={GraduationCap} label="Subspecialty" value={user.subspecialty} />
             <InfoField icon={Building} label="Hospital" value={user.hospital} />
+            <InfoField icon={MapPin} label="Location" value={`${user.city}, ${user.state}`} />
+            <InfoField icon={Award} label="Experience" value={`${user.yearsExperience} years`} />
           </div>
+
+          <div className="flex items-center gap-2">
+            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-sm font-medium">Ranking Score: {user.rankingScore}</span>
+          </div>
+
+          {user.badges.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Badges</p>
+              <div className="flex flex-wrap gap-1.5">
+                {user.badges.map(b => (
+                  <Badge key={b} className="text-xs">
+                    <Award className="h-2.5 w-2.5 mr-0.5" />
+                    {b}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {user.bio && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Bio</p>
+              <p className="text-sm text-muted-foreground">{user.bio}</p>
+            </div>
+          )}
 
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1.5">Interests</p>
@@ -147,6 +181,24 @@ export default function Account() {
           </Button>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={signOut}
+            data-testid="button-sign-out"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
+
+      <p className="text-center text-[10px] text-muted-foreground py-2">
+        For licensed clinicians only. Not for patient use. Content is not medical advice — verify with primary sources.
+      </p>
     </div>
   );
 }

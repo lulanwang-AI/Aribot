@@ -7,10 +7,13 @@ const createPostSchema = z.object({
   title: z.string().min(1),
   content: z.string().min(1),
   tags: z.array(z.string()).default([]),
+  images: z.array(z.string()).default([]),
 });
 
 const createCommentSchema = z.object({
   content: z.string().min(1),
+  parentId: z.string().nullable().default(null),
+  anonymous: z.boolean().default(false),
 });
 
 const flagSchema = z.object({
@@ -60,37 +63,30 @@ export async function registerRoutes(
     if (!user) return res.status(404).json({ message: "User not found" });
     const { password: _, ...safe } = user;
     const posts = await storage.getTriagePosts();
-    const allComments: any[] = [];
-    for (const p of posts) {
-      const cs = await storage.getComments(p.id);
-      allComments.push(...cs);
-    }
     const groups = await storage.getGroups();
     const events = await storage.getEvents();
-    const caseCount = posts.filter(p => p.authorId === req.params.id).length;
-    const commentCount = allComments.filter(c => c.authorId === req.params.id).length;
+    const userPosts = posts.filter(p => p.authorId === req.params.id);
+    const caseCount = userPosts.length;
     const groupCount = groups.filter(g => g.members.includes(req.params.id)).length;
     const eventCount = events.filter(e => e.rsvps.includes(req.params.id)).length;
-    const recentCases = posts
-      .filter(p => p.authorId === req.params.id)
-      .slice(0, 3)
-      .map(p => ({ id: p.id, title: p.title, tags: p.tags, createdAt: p.createdAt }));
-    const memberGroups = groups
-      .filter(g => g.members.includes(req.params.id))
-      .map(g => ({ id: g.id, name: g.name, topic: g.topic }));
-    res.json({
-      ...safe,
-      caseCount,
-      commentCount,
-      groupCount,
-      eventCount,
-      recentCases,
-      memberGroups,
-    });
+    const recentCases = userPosts.slice(0, 3).map(p => ({ id: p.id, title: p.title, tags: p.tags, createdAt: p.createdAt }));
+    const memberGroups = groups.filter(g => g.members.includes(req.params.id)).map(g => ({ id: g.id, name: g.name, topic: g.topic }));
+    res.json({ ...safe, caseCount, commentCount: 0, groupCount, eventCount, recentCases, memberGroups });
   });
 
-  app.get("/api/triage", async (_req, res) => {
-    const posts = await storage.getTriagePosts();
+  app.get("/api/doctors", async (req, res) => {
+    const { q, specialty, sort } = req.query;
+    const docs = await storage.searchDoctors(
+      q as string | undefined,
+      specialty as string | undefined,
+      sort as string | undefined
+    );
+    res.json(docs.slice(0, 100).map(({ password: _, ...u }) => u));
+  });
+
+  app.get("/api/triage", async (req, res) => {
+    const sort = req.query.sort as string | undefined;
+    const posts = await storage.getTriagePosts(sort);
     const users = await storage.getAllUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
     const enriched = await Promise.all(posts.map(async p => {
@@ -115,7 +111,9 @@ export async function registerRoutes(
       author: userMap[post.authorId] ? { name: userMap[post.authorId].name, specialty: userMap[post.authorId].specialty } : null,
       comments: comments.map(c => ({
         ...c,
-        author: userMap[c.authorId] ? { name: userMap[c.authorId].name, specialty: userMap[c.authorId].specialty } : null,
+        author: c.anonymous
+          ? { name: "Anonymous Clinician", specialty: "" }
+          : userMap[c.authorId] ? { name: userMap[c.authorId].name, specialty: userMap[c.authorId].specialty } : null,
       })),
     });
   });
@@ -123,12 +121,12 @@ export async function registerRoutes(
   app.post("/api/triage", async (req, res) => {
     const parsed = createPostSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
-    const { title, content, tags } = parsed.data;
     const post = await storage.createTriagePost({
       authorId: "u1",
-      title,
-      content,
-      tags,
+      title: parsed.data.title,
+      content: parsed.data.content,
+      tags: parsed.data.tags,
+      images: parsed.data.images,
       likes: [],
       flagged: false,
       createdAt: new Date().toISOString(),
@@ -147,14 +145,9 @@ export async function registerRoutes(
     const post = await storage.flagTriagePost(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
     await storage.createFlaggedItem({
-      contentType: "post",
-      contentId: req.params.id,
-      content: post.content.substring(0, 200),
-      authorName: "Unknown",
-      reason: parsed.success ? parsed.data.reason : "Flagged by user",
-      reportedBy: "u1",
-      status: "pending",
-      createdAt: new Date().toISOString(),
+      contentType: "post", contentId: req.params.id, content: post.content.substring(0, 200),
+      authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
+      reportedBy: "u1", status: "pending", createdAt: new Date().toISOString(),
     });
     res.json(post);
   });
@@ -166,10 +159,19 @@ export async function registerRoutes(
       postId: req.params.id,
       authorId: "u1",
       content: parsed.data.content,
+      parentId: parsed.data.parentId,
+      anonymous: parsed.data.anonymous,
+      likes: [],
       flagged: false,
       createdAt: new Date().toISOString(),
     });
     res.status(201).json(comment);
+  });
+
+  app.post("/api/comments/:id/like", async (req, res) => {
+    const comment = await storage.likeComment(req.params.id, "u1");
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    res.json(comment);
   });
 
   app.post("/api/comments/:id/flag", async (req, res) => {
@@ -177,20 +179,20 @@ export async function registerRoutes(
     const comment = await storage.flagComment(req.params.id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
     await storage.createFlaggedItem({
-      contentType: "comment",
-      contentId: req.params.id,
-      content: comment.content.substring(0, 200),
-      authorName: "Unknown",
-      reason: parsed.success ? parsed.data.reason : "Flagged by user",
-      reportedBy: "u1",
-      status: "pending",
-      createdAt: new Date().toISOString(),
+      contentType: "comment", contentId: req.params.id, content: comment.content.substring(0, 200),
+      authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
+      reportedBy: "u1", status: "pending", createdAt: new Date().toISOString(),
     });
     res.json(comment);
   });
 
-  app.get("/api/news", async (_req, res) => {
-    const items = await storage.getNewsItems();
+  app.get("/api/news", async (req, res) => {
+    const { source, specialty, search } = req.query;
+    const items = await storage.getNewsItems(
+      source as string | undefined,
+      specialty as string | undefined,
+      search as string | undefined,
+    );
     res.json(items);
   });
 
@@ -239,6 +241,105 @@ export async function registerRoutes(
     const item = await storage.updateFlaggedItem(req.params.id, parsed.data.status);
     if (!item) return res.status(404).json({ message: "Item not found" });
     res.json(item);
+  });
+
+  app.get("/api/chats", async (_req, res) => {
+    const threads = await storage.getChatThreads("u1");
+    res.json(threads);
+  });
+
+  app.get("/api/chats/:id/messages", async (req, res) => {
+    const messages = await storage.getChatMessages(req.params.id);
+    res.json(messages);
+  });
+
+  app.post("/api/chats/:id/messages", async (req, res) => {
+    const schema = z.object({ content: z.string().min(1), attachments: z.array(z.any()).default([]) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const msg = await storage.createChatMessage({
+      threadId: req.params.id,
+      senderId: "u1",
+      content: parsed.data.content,
+      attachments: parsed.data.attachments,
+      createdAt: new Date().toISOString(),
+    });
+    res.status(201).json(msg);
+  });
+
+  app.post("/api/chats", async (req, res) => {
+    const schema = z.object({ name: z.string(), type: z.enum(["direct", "group"]), participants: z.array(z.string()) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const thread = await storage.createChatThread({
+      ...parsed.data,
+      lastMessage: "",
+      lastMessageAt: new Date().toISOString(),
+      unreadCount: 0,
+    });
+    res.status(201).json(thread);
+  });
+
+  app.get("/api/training", async (_req, res) => {
+    const modules = await storage.getTrainingModules();
+    res.json(modules);
+  });
+
+  app.patch("/api/training/:id/complete", async (req, res) => {
+    const mod = await storage.completeTrainingStep(req.params.id, "u1");
+    if (!mod) return res.status(404).json({ message: "Module not found" });
+    res.json(mod);
+  });
+
+  app.get("/api/aribot/history", async (_req, res) => {
+    const history = await storage.getAribotHistory();
+    res.json(history);
+  });
+
+  app.post("/api/aribot/history", async (req, res) => {
+    const schema = z.object({ title: z.string(), tags: z.array(z.string()).default([]), folderId: z.string().nullable().default(null) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const item = await storage.createAribotHistory({ ...parsed.data, createdAt: new Date().toISOString() });
+    res.status(201).json(item);
+  });
+
+  app.get("/api/aribot/folders", async (_req, res) => {
+    const folders = await storage.getAribotFolders();
+    res.json(folders);
+  });
+
+  app.post("/api/aribot/folders", async (req, res) => {
+    const schema = z.object({ name: z.string().min(1) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const folder = await storage.createAribotFolder({ name: parsed.data.name, createdAt: new Date().toISOString() });
+    res.status(201).json(folder);
+  });
+
+  app.patch("/api/aribot/folders/:id", async (req, res) => {
+    const schema = z.object({ name: z.string().min(1) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const folder = await storage.updateAribotFolder(req.params.id, parsed.data.name);
+    if (!folder) return res.status(404).json({ message: "Folder not found" });
+    res.json(folder);
+  });
+
+  app.delete("/api/aribot/folders/:id", async (req, res) => {
+    const deleted = await storage.deleteAribotFolder(req.params.id);
+    res.json({ success: deleted });
+  });
+
+  app.get("/api/teams", async (_req, res) => {
+    const teams = await storage.getTeams();
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, { name: u.name, specialty: u.specialty }]));
+    const enriched = teams.map(t => ({
+      ...t,
+      members: t.members.map(m => ({ ...m, ...userMap[m.userId] })),
+    }));
+    res.json(enriched);
   });
 
   return httpServer;
