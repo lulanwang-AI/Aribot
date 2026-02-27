@@ -27,6 +27,7 @@ import {
   Clock,
   FolderOpen,
   UserSearch,
+  Video,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -48,6 +49,7 @@ const mainNavItems = [
   { title: "Groups", url: "/groups", icon: Users, notifKey: null },
   { title: "Events", url: "/events", icon: CalendarDays, notifKey: "events" as const },
   { title: "Doctors", url: "/doctors", icon: UserSearch, notifKey: null },
+  { title: "Telemedicine", url: "/telemed", icon: Video, notifKey: null },
 ];
 
 const secondaryItems = [

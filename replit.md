@@ -46,6 +46,7 @@ client/src/
     training.tsx          - Training modules with completion tracking
     account.tsx           - User profile, settings, sign out
     team.tsx              - Team members display + moderation queue
+    telemed.tsx           - Telemedicine: inquiries, consultations, video call, earnings
 server/
   routes.ts               - API endpoints
   storage.ts              - In-memory storage with seed data
@@ -70,6 +71,7 @@ shared/
 - `/training` - Training modules
 - `/account` - Settings & sign out
 - `/team` - Team members + moderation queue
+- `/telemed` - Telemedicine (inquiries, my consultations, video call, earnings)
 
 ## API Endpoints
 - `GET/PATCH /api/me` - Current user
@@ -93,6 +95,13 @@ shared/
 - `GET /api/teams` - Teams with enriched member data
 - `GET /api/moderation`, `PATCH /api/moderation/:id` - Moderation
 - `GET /api/notifications` - Notification counts for sidebar badges
+- `GET /api/telemed/consultations?status=&urgency=` - Telemedicine consultations
+- `GET /api/telemed/consultations/:id` - Single consultation
+- `POST /api/telemed/consultations/:id/accept` - Accept consultation
+- `POST /api/telemed/consultations/:id/complete` - Complete with notes/diagnosis
+- `PATCH /api/telemed/consultations/:id/notes` - Update notes
+- `GET /api/telemed/earnings` - Earnings summary
+- `GET /api/telemed/stats` - Dashboard stats
 
 ## Key Features
 - **Aribot**: Dify iframe chatbot, floating widget on non-home pages
@@ -106,6 +115,7 @@ shared/
 - **Dashboard**: Calendar view showing upcoming events
 - **Teams**: Populated team members with avatars, rankings, and roles
 - **Notifications**: Badge counts on News, Triage, Events, Chats nav items
+- **Telemedicine**: Patient inquiry queue, accept/join video calls, simulated call UI, earnings tracking, consultation completion with diagnosis/prescriptions
 - **Auth**: Mock login screen, sign out from Account page
 - **PHI**: Client-side detection, auto-redact, confirmation checkboxes
 
@@ -117,6 +127,7 @@ shared/
 - 30 events with photos (Lab/Conference/Meeting/Grand Rounds/Coffee Chat types)
 - 25 chat threads with messages
 - 12 training modules
+- 30 telemedicine consultations (mixed statuses, urgencies, complaints)
 - 6 teams with enriched member data
 
 ## Running

@@ -1,6 +1,7 @@
 import type {
   User, TriagePost, Comment, NewsItem, NewsComment, Group, MedEvent, FlaggedItem,
-  ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team
+  ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team,
+  TelemedConsultation
 } from "@shared/schema";
 
 function seededRandom(seed: number) {
@@ -566,6 +567,145 @@ function generateTeams(doctors: User[]): Team[] {
   ];
 }
 
+function generateTelemedConsultations(): TelemedConsultation[] {
+  const consultations: TelemedConsultation[] = [];
+  const now = Date.now();
+
+  const complaints = [
+    { chief: "Chest pain", symptoms: ["chest tightness", "shortness of breath", "radiating pain to left arm"], history: "History of hypertension, on lisinopril 10mg daily" },
+    { chief: "Chronic cough", symptoms: ["persistent dry cough", "mild wheezing", "post-nasal drip"], history: "Non-smoker, seasonal allergies" },
+    { chief: "Skin rash", symptoms: ["erythematous papules", "pruritus", "spreading to trunk"], history: "No known drug allergies, started new detergent recently" },
+    { chief: "Recurring headaches", symptoms: ["throbbing bilateral headache", "photophobia", "nausea"], history: "Migraines since adolescence, family history positive" },
+    { chief: "Joint pain", symptoms: ["bilateral knee pain", "morning stiffness", "swelling"], history: "BMI 31, sedentary lifestyle, no prior joint issues" },
+    { chief: "Anxiety symptoms", symptoms: ["palpitations", "excessive worry", "insomnia", "difficulty concentrating"], history: "Recently divorced, increased work stress" },
+    { chief: "Follow-up diabetes management", symptoms: ["polyuria", "polydipsia", "fatigue"], history: "Type 2 DM diagnosed 3 years ago, on metformin 1000mg BID" },
+    { chief: "Hypertension check", symptoms: ["elevated BP readings at home", "occasional dizziness"], history: "HTN diagnosed 5 years ago, on amlodipine 5mg daily" },
+    { chief: "Lower back pain", symptoms: ["lumbar pain", "radiating to right leg", "numbness in foot"], history: "Office worker, no prior spine issues" },
+    { chief: "Persistent fatigue", symptoms: ["extreme tiredness", "brain fog", "muscle weakness"], history: "Post-COVID infection 3 months ago" },
+    { chief: "Abdominal pain", symptoms: ["epigastric pain", "bloating", "acid reflux"], history: "GERD diagnosed 2 years ago, on omeprazole PRN" },
+    { chief: "Sore throat and fever", symptoms: ["pharyngeal erythema", "fever 101.2F", "cervical lymphadenopathy"], history: "No recent travel, works in daycare" },
+    { chief: "Shortness of breath", symptoms: ["dyspnea on exertion", "orthopnea", "ankle edema"], history: "Former smoker, quit 5 years ago, mild COPD" },
+    { chief: "Dizziness and vertigo", symptoms: ["room-spinning sensation", "nausea", "unsteady gait"], history: "No hearing loss, no tinnitus" },
+    { chief: "Urinary symptoms", symptoms: ["dysuria", "frequency", "urgency", "suprapubic pain"], history: "Recurrent UTIs, 3 episodes in past year" },
+    { chief: "Insomnia", symptoms: ["difficulty falling asleep", "early morning awakening", "daytime drowsiness"], history: "Shift worker, caffeine intake 4+ cups daily" },
+    { chief: "Allergic rhinitis flare", symptoms: ["nasal congestion", "sneezing", "watery eyes", "itchy palate"], history: "Seasonal allergies, on cetirizine" },
+    { chief: "Depression screening", symptoms: ["low mood", "anhedonia", "weight loss", "poor appetite"], history: "Family history of depression, recent bereavement" },
+    { chief: "Wrist pain", symptoms: ["right wrist pain", "numbness in fingers", "worse at night"], history: "Data entry specialist, repetitive motion" },
+    { chief: "Follow-up thyroid", symptoms: ["weight gain", "cold intolerance", "dry skin"], history: "Hypothyroidism on levothyroxine 75mcg daily" },
+    { chief: "Pediatric fever", symptoms: ["fever 102.5F", "irritability", "decreased oral intake", "ear tugging"], history: "12-month-old, up to date on vaccinations" },
+    { chief: "Medication refill request", symptoms: ["stable on current regimen", "no new complaints"], history: "Controlled asthma on fluticasone/salmeterol" },
+    { chief: "Eye redness", symptoms: ["bilateral conjunctival injection", "watery discharge", "gritty sensation"], history: "Contact lens wearer, no recent changes" },
+    { chief: "Palpitations", symptoms: ["intermittent rapid heartbeat", "lightheadedness", "anxiety"], history: "No structural heart disease, normal echo last year" },
+    { chief: "Foot numbness", symptoms: ["bilateral foot tingling", "burning sensation", "balance issues"], history: "Type 2 DM for 8 years, A1c 7.8%" },
+    { chief: "Acne flare-up", symptoms: ["inflammatory papules", "comedones", "facial scarring"], history: "Tried topical retinoids, moderate severity" },
+    { chief: "Constipation", symptoms: ["infrequent bowel movements", "straining", "abdominal discomfort"], history: "Low fiber diet, sedentary, on opioids for back pain" },
+    { chief: "Weight management consultation", symptoms: ["progressive weight gain", "difficulty losing weight", "joint stress"], history: "BMI 34, prediabetes, family history of obesity" },
+    { chief: "Seasonal flu symptoms", symptoms: ["myalgia", "fever 100.8F", "cough", "malaise"], history: "Did not receive flu vaccine this season" },
+    { chief: "Post-surgical follow-up", symptoms: ["incision healing well", "mild discomfort", "no signs of infection"], history: "Laparoscopic cholecystectomy 2 weeks ago" },
+  ];
+
+  const insuranceProviders = ["Aetna", "BlueCross", "UnitedHealth", "Cigna", "Humana", "Medicare", "Kaiser"];
+
+  const statusDistribution: TelemedConsultation["status"][] = [
+    "pending","pending","pending","pending","pending","pending","pending","pending","pending","pending","pending","pending",
+    "accepted","accepted","accepted","accepted","accepted",
+    "in-progress","in-progress","in-progress",
+    "completed","completed","completed","completed","completed","completed","completed","completed",
+    "cancelled","cancelled",
+  ];
+
+  const urgencyDistribution: TelemedConsultation["urgency"][] = [
+    "medium","medium","medium","medium","medium","medium","medium","medium","medium","medium","medium","medium",
+    "low","low","low","low","low","low","low","low",
+    "high","high","high","high","high","high","high",
+    "urgent","urgent","urgent",
+  ];
+
+  const diagnosisTemplates = [
+    "Acute condition managed with pharmacologic intervention. Patient counseled on lifestyle modifications.",
+    "Chronic condition stable on current therapy. Medication adjustment recommended.",
+    "New diagnosis established. Treatment plan initiated with follow-up in 2 weeks.",
+    "Exacerbation of known condition. Short-term therapy prescribed with monitoring plan.",
+    "Benign condition identified. Reassurance provided with symptomatic treatment.",
+    "Multifactorial presentation. Addressed primary concern with referral for secondary issues.",
+    "Stable chronic disease management. Labs ordered for next visit.",
+    "Acute self-limited illness. Supportive care recommended.",
+  ];
+
+  const prescriptionOptions = [
+    ["Amoxicillin 500mg TID x 10 days"],
+    ["Ibuprofen 400mg TID PRN", "Cyclobenzaprine 10mg QHS"],
+    ["Metformin 500mg BID", "Glipizide 5mg daily"],
+    ["Amlodipine 10mg daily", "Hydrochlorothiazide 25mg daily"],
+    ["Fluoxetine 20mg daily"],
+    ["Montelukast 10mg daily", "Fluticasone nasal spray BID"],
+    ["Omeprazole 20mg daily", "Sucralfate 1g QID"],
+    ["Gabapentin 300mg TID", "Acetaminophen 500mg Q6H PRN"],
+    ["Prednisone taper 40-30-20-10mg", "Cetirizine 10mg daily"],
+    ["Levothyroxine 88mcg daily"],
+    ["Lisinopril 20mg daily"],
+    ["Atorvastatin 40mg QHS"],
+  ];
+
+  const noteTemplates = [
+    "Patient presented with chief complaint as described. Physical exam findings consistent with clinical history. Discussed treatment options and patient agreed to plan. Follow-up scheduled.",
+    "Telehealth visit conducted successfully. Patient reports symptoms as documented. Assessment and plan discussed in detail. Patient verbalized understanding of treatment plan.",
+    "Video consultation completed. Reviewed labs and imaging from prior visit. Adjusted medications as noted. Patient to return in 4 weeks for reassessment.",
+    "Remote consultation for ongoing management. Symptoms improved since last visit. Continuing current regimen with minor adjustments. Lifestyle counseling provided.",
+    "Initial telehealth evaluation. Comprehensive history obtained. Working diagnosis established. Treatment initiated with close follow-up planned.",
+  ];
+
+  for (let i = 0; i < 30; i++) {
+    const complaint = complaints[i];
+    const status = statusDistribution[i];
+    const urgency = pick(urgencyDistribution);
+    const patientFn = pick(firstNames);
+    const patientLn = pick(lastNames);
+    const age = randInt(18, 82);
+    const gender = rand() > 0.5 ? "Male" : "Female";
+    const hoursOffset = randInt(-72, 96);
+    const scheduledAt = new Date(now + hoursOffset * 3600000).toISOString();
+    const createdAt = new Date(now - randInt(1, 120) * 3600000).toISOString();
+    const earnings = randInt(75, 250);
+    const hasVitals = rand() > 0.4;
+
+    const isCompleted = status === "completed";
+    const isAccepted = status === "accepted" || status === "in-progress" || isCompleted;
+
+    consultations.push({
+      id: `tm${i + 1}`,
+      patientName: `${patientFn} ${patientLn}`,
+      patientAge: age,
+      patientGender: gender,
+      chiefComplaint: complaint.chief,
+      symptoms: complaint.symptoms,
+      urgency,
+      status,
+      scheduledAt,
+      createdAt,
+      duration: isCompleted ? randInt(10, 45) : 0,
+      earnings,
+      doctorId: isAccepted ? "u1" : null,
+      notes: isCompleted ? pick(noteTemplates) : "",
+      diagnosis: isCompleted ? pick(diagnosisTemplates) : "",
+      prescriptions: isCompleted ? pick(prescriptionOptions) : [],
+      vitals: hasVitals ? {
+        bp: `${randInt(110, 160)}/${randInt(65, 95)}`,
+        heartRate: randInt(58, 105),
+        temp: `${(97 + rand() * 3).toFixed(1)}F`,
+        spo2: randInt(94, 100),
+        weight: `${randInt(120, 240)} lbs`,
+      } : {},
+      insuranceProvider: pick(insuranceProviders),
+      paymentStatus: isCompleted ? (rand() > 0.3 ? "paid" : "processing") : "pending",
+      followUp: isCompleted ? rand() > 0.4 : false,
+      patientHistory: complaint.history,
+      attachments: [],
+    });
+  }
+  return consultations;
+}
+
 export function seedAllData() {
   const doctors = generateDoctors(200);
   doctors[0] = {
@@ -597,6 +737,7 @@ export function seedAllData() {
   const training = generateTraining();
   const { history: aribotHistory, folders: aribotFolders } = generateAribotData();
   const teams = generateTeams(doctors);
+  const telemedConsultations = generateTelemedConsultations();
 
   return {
     doctors,
@@ -613,5 +754,6 @@ export function seedAllData() {
     aribotFolders,
     teams,
     flaggedItems: [] as FlaggedItem[],
+    telemedConsultations,
   };
 }

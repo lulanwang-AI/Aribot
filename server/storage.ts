@@ -1,6 +1,7 @@
 import type {
   User, InsertUser, TriagePost, Comment, NewsItem, NewsComment, Group, MedEvent, FlaggedItem,
-  ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team
+  ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team,
+  TelemedConsultation
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { seedAllData } from "./seed";
@@ -63,6 +64,13 @@ export interface IStorage {
   deleteAribotFolder(id: string): Promise<boolean>;
 
   getTeams(): Promise<Team[]>;
+
+  getTelemedConsultations(status?: string, urgency?: string): Promise<TelemedConsultation[]>;
+  getTelemedConsultation(id: string): Promise<TelemedConsultation | undefined>;
+  acceptTelemedConsultation(id: string, doctorId: string): Promise<TelemedConsultation | undefined>;
+  completeTelemedConsultation(id: string, data: { notes: string; diagnosis: string; prescriptions: string[] }): Promise<TelemedConsultation | undefined>;
+  updateTelemedNotes(id: string, notes: string): Promise<TelemedConsultation | undefined>;
+  getTelemedEarnings(doctorId: string): Promise<{ totalEarnings: number; thisMonth: number; thisWeek: number; pendingPayout: number; completedConsultations: number; avgPerConsultation: number }>;
 }
 
 export class MemStorage implements IStorage {
@@ -80,6 +88,7 @@ export class MemStorage implements IStorage {
   private aribotHistory: Map<string, AribotHistory> = new Map();
   private aribotFolders: Map<string, AribotFolder> = new Map();
   private teams: Map<string, Team> = new Map();
+  private telemedConsultations: Map<string, TelemedConsultation> = new Map();
 
   constructor() {
     this.seed();
@@ -101,6 +110,7 @@ export class MemStorage implements IStorage {
     data.aribotHistory.forEach(h => this.aribotHistory.set(h.id, h));
     data.aribotFolders.forEach(f => this.aribotFolders.set(f.id, f));
     data.teams.forEach(t => this.teams.set(t.id, t));
+    data.telemedConsultations.forEach(c => this.telemedConsultations.set(c.id, c));
   }
 
   async getUser(id: string) { return this.users.get(id); }
@@ -391,6 +401,55 @@ export class MemStorage implements IStorage {
   }
 
   async getTeams() { return Array.from(this.teams.values()); }
+
+  async getTelemedConsultations(status?: string, urgency?: string) {
+    let items = Array.from(this.telemedConsultations.values());
+    if (status) items = items.filter(c => c.status === status);
+    if (urgency) items = items.filter(c => c.urgency === urgency);
+    return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  async getTelemedConsultation(id: string) { return this.telemedConsultations.get(id); }
+  async acceptTelemedConsultation(id: string, doctorId: string) {
+    const c = this.telemedConsultations.get(id);
+    if (!c) return undefined;
+    c.status = "accepted";
+    c.doctorId = doctorId;
+    return c;
+  }
+  async completeTelemedConsultation(id: string, data: { notes: string; diagnosis: string; prescriptions: string[] }) {
+    const c = this.telemedConsultations.get(id);
+    if (!c) return undefined;
+    c.status = "completed";
+    c.notes = data.notes;
+    c.diagnosis = data.diagnosis;
+    c.prescriptions = data.prescriptions;
+    c.paymentStatus = "processing";
+    return c;
+  }
+  async updateTelemedNotes(id: string, notes: string) {
+    const c = this.telemedConsultations.get(id);
+    if (!c) return undefined;
+    c.notes = notes;
+    return c;
+  }
+  async getTelemedEarnings(doctorId: string) {
+    const all = Array.from(this.telemedConsultations.values()).filter(c => c.doctorId === doctorId && c.status === "completed");
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayOfWeek = now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - dayOfWeek);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const totalEarnings = all.reduce((sum, c) => sum + c.earnings, 0);
+    const thisMonth = all.filter(c => new Date(c.scheduledAt) >= monthStart).reduce((sum, c) => sum + c.earnings, 0);
+    const thisWeek = all.filter(c => new Date(c.scheduledAt) >= weekStart).reduce((sum, c) => sum + c.earnings, 0);
+    const pendingPayout = all.filter(c => c.paymentStatus === "processing").reduce((sum, c) => sum + c.earnings, 0);
+    const completedConsultations = all.length;
+    const avgPerConsultation = completedConsultations > 0 ? Math.round(totalEarnings / completedConsultations) : 0;
+
+    return { totalEarnings, thisMonth, thisWeek, pendingPayout, completedConsultations, avgPerConsultation };
+  }
 }
 
 export const storage = new MemStorage();

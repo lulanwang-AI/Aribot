@@ -213,3 +213,43 @@ export const insertChatMessageSchema = z.object({
     url: z.string(),
   })).default([]),
 });
+
+export interface TelemedConsultation {
+  id: string;
+  patientName: string;
+  patientAge: number;
+  patientGender: string;
+  chiefComplaint: string;
+  symptoms: string[];
+  urgency: "low" | "medium" | "high" | "urgent";
+  status: "pending" | "accepted" | "in-progress" | "completed" | "cancelled";
+  scheduledAt: string;
+  createdAt: string;
+  duration: number;
+  earnings: number;
+  doctorId: string | null;
+  notes: string;
+  diagnosis: string;
+  prescriptions: string[];
+  vitals: {
+    bp?: string;
+    heartRate?: number;
+    temp?: string;
+    spo2?: number;
+    weight?: string;
+  };
+  insuranceProvider: string;
+  paymentStatus: "pending" | "paid" | "processing";
+  followUp: boolean;
+  patientHistory: string;
+  attachments: string[];
+}
+
+export interface TelemedEarnings {
+  totalEarnings: number;
+  thisMonth: number;
+  thisWeek: number;
+  pendingPayout: number;
+  completedConsultations: number;
+  avgPerConsultation: number;
+}

@@ -476,5 +476,68 @@ export async function registerRoutes(
     res.json({ news: recentNews, triage: recentTriage, events: upcomingEvents, chats: unreadChats });
   });
 
+  app.get("/api/telemed/consultations", async (req, res) => {
+    const { status, urgency } = req.query;
+    const consultations = await storage.getTelemedConsultations(
+      status as string | undefined,
+      urgency as string | undefined
+    );
+    res.json(consultations);
+  });
+
+  app.get("/api/telemed/consultations/:id", async (req, res) => {
+    const consultation = await storage.getTelemedConsultation(req.params.id);
+    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    res.json(consultation);
+  });
+
+  app.post("/api/telemed/consultations/:id/accept", async (req, res) => {
+    const consultation = await storage.acceptTelemedConsultation(req.params.id, "u1");
+    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    res.json(consultation);
+  });
+
+  app.post("/api/telemed/consultations/:id/complete", async (req, res) => {
+    const schema = z.object({
+      notes: z.string().min(1),
+      diagnosis: z.string().min(1),
+      prescriptions: z.array(z.string()).default([]),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const consultation = await storage.completeTelemedConsultation(req.params.id, parsed.data);
+    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    res.json(consultation);
+  });
+
+  app.patch("/api/telemed/consultations/:id/notes", async (req, res) => {
+    const schema = z.object({ notes: z.string().min(1) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const consultation = await storage.updateTelemedNotes(req.params.id, parsed.data.notes);
+    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    res.json(consultation);
+  });
+
+  app.get("/api/telemed/earnings", async (_req, res) => {
+    const earnings = await storage.getTelemedEarnings("u1");
+    res.json(earnings);
+  });
+
+  app.get("/api/telemed/stats", async (_req, res) => {
+    const all = await storage.getTelemedConsultations();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCount = all.filter(c => new Date(c.scheduledAt) >= today && new Date(c.scheduledAt) < new Date(today.getTime() + 86400000)).length;
+    res.json({
+      total: all.length,
+      pending: all.filter(c => c.status === "pending").length,
+      accepted: all.filter(c => c.status === "accepted").length,
+      inProgress: all.filter(c => c.status === "in-progress").length,
+      completed: all.filter(c => c.status === "completed").length,
+      todayCount,
+    });
+  });
+
   return httpServer;
 }

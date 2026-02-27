@@ -25,6 +25,7 @@ import Team from "@/pages/team";
 import Chats from "@/pages/chats";
 import Training from "@/pages/training";
 import Doctors from "@/pages/doctors";
+import Telemed from "@/pages/telemed";
 import Login from "@/pages/login";
 import { AuthContext } from "@/lib/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/doctors" component={Doctors} />
       <Route path="/account" component={Account} />
       <Route path="/team" component={Team} />
+      <Route path="/telemed" component={Telemed} />
       <Route component={NotFound} />
     </Switch>
   );
