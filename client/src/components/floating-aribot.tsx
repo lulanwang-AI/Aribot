@@ -58,7 +58,7 @@ export function FloatingAribot() {
         <div className="fixed bottom-6 right-6 z-50 w-[700px] h-[600px] bg-background border rounded-xl shadow-2xl flex overflow-hidden" data-testid="panel-aribot-drawer">
           <div className="w-48 border-r flex flex-col bg-muted/30">
             <div className="p-3 border-b flex items-center justify-between">
-              <span className="text-sm font-semibold">Aribot</span>
+              <span className="text-sm font-semibold">Aribots AI</span>
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setOpen(false)}>
                 <X className="h-3.5 w-3.5" />
               </Button>

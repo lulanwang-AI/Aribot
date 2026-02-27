@@ -1,3 +1,4 @@
+import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -74,11 +75,9 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Bot className="h-4 w-4" />
-          </div>
+          <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded-md object-contain" />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold" data-testid="text-app-name">Aribot Portal</span>
+            <span className="text-sm font-semibold" data-testid="text-app-name">ARIbots</span>
             <span className="text-[10px] text-muted-foreground">For Clinicians</span>
           </div>
         </div>
@@ -94,7 +93,7 @@ export function AppSidebar() {
                 data-testid="nav-aribot"
               >
                 <Bot className="h-4 w-4" />
-                <span className="flex-1">Aribot</span>
+                <span className="flex-1">Aribots AI</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${aribotOpen ? "" : "-rotate-90"}`} />
               </SidebarMenuButton>
             </CollapsibleTrigger>

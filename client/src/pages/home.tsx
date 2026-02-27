@@ -185,7 +185,7 @@ export default function Home() {
         <Link href="/">
           <Button data-testid="button-open-aribot">
             <Bot className="h-4 w-4 mr-2" />
-            Open Aribot AI Assistant
+            Open Aribots AI Assistant
           </Button>
         </Link>
       </div>

@@ -100,7 +100,6 @@ export default function Aribot() {
           />
         </div>
       </div>
-
       <div className="w-80 border-l bg-card/50 flex flex-col shrink-0 hidden lg:flex" data-testid="panel-right-sidebar">
         <div className="p-3 border-b">
           <div className="flex items-center gap-2.5">
@@ -108,7 +107,7 @@ export default function Aribot() {
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold" data-testid="text-agent-title">Aribot Agent</p>
+              <p className="text-sm font-semibold" data-testid="text-agent-title">Agentic Customization</p>
               <p className="text-[11px] text-muted-foreground truncate">
                 {user.name} · {user.specialty}
               </p>

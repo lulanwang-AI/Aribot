@@ -1,4 +1,5 @@
 import { useState } from "react";
+import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,11 +24,9 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="h-14 w-14 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
-              <Bot className="h-7 w-7" />
-            </div>
+            <img src={aribotLogoPath} alt="ARIbots" className="h-14 w-14 rounded-xl shadow-lg object-contain" />
           </div>
-          <h1 className="text-2xl font-bold" data-testid="text-login-title">Aribot Portal</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-login-title">ARIbots</h1>
           <p className="text-sm text-muted-foreground">Clinical AI Community for Physicians</p>
         </div>
 

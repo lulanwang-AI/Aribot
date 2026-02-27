@@ -1,7 +1,7 @@
-# Aribot Portal - Clinical AI Community Platform
+# ARIbots - Clinical AI Community Platform
 
 ## Overview
-Aribot Portal is a doctor-only clinical AI community platform featuring an AI assistant (Aribot), clinical case discussions, medical news, professional groups, events, peer messaging, training modules, and team moderation tools.
+ARIbots is a doctor-only clinical AI community platform featuring an AI assistant (Aribots AI), clinical case discussions, medical news, professional groups, events, peer messaging, training modules, and team moderation tools.
 
 ## Architecture
 - **Frontend**: React + TypeScript with Vite, Tailwind CSS, shadcn/ui components
