@@ -84,6 +84,21 @@ export async function registerRoutes(
     res.json(docs.slice(0, 100).map(({ password: _, ...u }) => u));
   });
 
+  app.get("/api/triage/trending", async (req, res) => {
+    const posts = await storage.getTrendingTriagePosts(10);
+    const users = await storage.getAllUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const enriched = await Promise.all(posts.map(async p => {
+      const comments = await storage.getComments(p.id);
+      return {
+        ...p,
+        author: userMap[p.authorId] ? { name: userMap[p.authorId].name, specialty: userMap[p.authorId].specialty, avatarUrl: userMap[p.authorId].avatarUrl } : null,
+        commentCount: comments.length,
+      };
+    }));
+    res.json(enriched);
+  });
+
   app.get("/api/triage", async (req, res) => {
     const sort = req.query.sort as string | undefined;
     const posts = await storage.getTriagePosts(sort);

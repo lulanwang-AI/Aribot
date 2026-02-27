@@ -14,6 +14,7 @@ export interface IStorage {
   searchDoctors(query?: string, specialty?: string, sortBy?: string): Promise<User[]>;
 
   getTriagePosts(sort?: string): Promise<TriagePost[]>;
+  getTrendingTriagePosts(limit?: number): Promise<TriagePost[]>;
   getTriagePost(id: string): Promise<TriagePost | undefined>;
   createTriagePost(post: Omit<TriagePost, "id">): Promise<TriagePost>;
   likeTriagePost(postId: string, userId: string): Promise<TriagePost | undefined>;
@@ -159,6 +160,19 @@ export class MemStorage implements IStorage {
       posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return posts;
+  }
+  async getTrendingTriagePosts(limit = 10) {
+    const posts = Array.from(this.triagePosts.values());
+    const commentsArr = Array.from(this.comments.values());
+    const scored = posts.map(p => {
+      const commentCount = commentsArr.filter(c => c.postId === p.id).length;
+      const ageHours = (Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60);
+      const decay = Math.max(1, ageHours / 24);
+      const score = (p.likes.length * 3 + commentCount * 2) / decay;
+      return { post: p, score, commentCount };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit).map(s => s.post);
   }
   async getTriagePost(id: string) { return this.triagePosts.get(id); }
   async createTriagePost(post: Omit<TriagePost, "id">) {
