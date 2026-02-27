@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { recordEvent } from "@/lib/analytics";
-import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply, Share2, ChevronDown, ChevronUp, User as UserIcon, FileText, Bot, Settings, Sparkles, Zap, Filter, Bell, Plus, X, RefreshCw, Wand2, SlidersHorizontal } from "lucide-react";
+import { Newspaper, Search, ExternalLink, Clock, BookOpen, Heart, MessageSquare, Send, Reply, Share2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, User as UserIcon, FileText, Bot, Settings, Sparkles, Zap, Filter, Bell, Plus, X, RefreshCw, Wand2, SlidersHorizontal } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { NewsItem, NewsComment, User } from "@shared/schema";
