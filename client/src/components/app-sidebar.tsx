@@ -51,7 +51,6 @@ const mainNavItems = [
 
 const secondaryItems = [
   { title: "Chats", url: "/chats", icon: MessageCircle, notifKey: "chats" as const },
-  { title: "Training", url: "/training", icon: BookOpen, notifKey: null },
   { title: "My Team", url: "/team", icon: Shield, notifKey: null },
 ];
 
