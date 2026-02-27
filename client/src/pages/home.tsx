@@ -126,18 +126,37 @@ export default function Home() {
                   >
                     <span className={`text-[11px] font-medium ${isToday ? "text-primary" : ""}`}>{day}</span>
                     <div className="space-y-0.5 mt-0.5 overflow-hidden">
-                      {dayEvents.slice(0, 2).map(ev => (
-                        <div key={ev.id} className="text-[9px] leading-tight px-0.5 py-px rounded bg-primary/10 text-primary truncate" title={ev.title}>
-                          {ev.title.length > 14 ? ev.title.slice(0, 14) + "…" : ev.title}
-                        </div>
-                      ))}
+                      {dayEvents.slice(0, 2).map(ev => {
+                        const attending = ev.rsvps.includes("u1");
+                        return (
+                          <Link key={ev.id} href="/events">
+                            <div
+                              className={`text-[9px] leading-tight px-0.5 py-px rounded truncate cursor-pointer ${attending ? "bg-green-500/20 text-green-700 dark:text-green-400 font-medium" : "bg-primary/10 text-primary"}`}
+                              title={`${ev.title}${attending ? " (Attending)" : ""}`}
+                              data-testid={`calendar-event-${ev.id}`}
+                            >
+                              {attending && "● "}{ev.title.length > 12 ? ev.title.slice(0, 12) + "…" : ev.title}
+                            </div>
+                          </Link>
+                        );
+                      })}
                       {dayEvents.length > 2 && (
-                        <span className="text-[9px] text-muted-foreground px-0.5">+{dayEvents.length - 2}</span>
+                        <span className="text-[9px] text-muted-foreground px-0.5">+{dayEvents.length - 2} more</span>
                       )}
                     </div>
                   </div>
                 );
               })}
+            </div>
+            <div className="flex items-center gap-4 mt-3 pt-2 border-t">
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-500/20 border border-green-500/30" />
+                Attending
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <div className="w-2.5 h-2.5 rounded-sm bg-primary/10 border border-primary/20" />
+                Other events
+              </div>
             </div>
           </CardContent>
         </Card>
