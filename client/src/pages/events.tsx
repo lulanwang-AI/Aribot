@@ -84,22 +84,22 @@ function EventCard({ event }: { event: MedEvent }) {
     <Card data-testid={`card-event-${event.id}`} className={`overflow-hidden ${isPast ? "opacity-70" : ""}`}>
       <CardContent className="p-5">
         <div className="flex gap-4">
-          {event.imageUrl ? (
-            <div className="hidden sm:block shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+          <div className="hidden sm:block shrink-0 w-16 h-16 rounded-lg overflow-hidden relative">
+            {event.imageUrl ? (
               <img
                 src={event.imageUrl}
                 alt={event.title}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
+            ) : (
+              <div className="w-full h-full bg-primary/10" />
+            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white">
+              <span className="text-xl font-bold leading-none drop-shadow-sm">{eventDate.getDate()}</span>
+              <span className="text-[10px] uppercase mt-0.5 drop-shadow-sm">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
             </div>
-          ) : (
-            <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-16 h-16 rounded-lg bg-primary/10 text-primary">
-              <span className="text-xl font-bold leading-none">{eventDate.getDate()}</span>
-              <span className="text-[11px] uppercase mt-0.5">{eventDate.toLocaleDateString("en-US", { month: "short" })}</span>
-              <span className="text-[9px] opacity-60">{eventDate.getFullYear()}</span>
-            </div>
-          )}
+          </div>
           <div className="flex-1 min-w-0 space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">{event.title}</h3>
