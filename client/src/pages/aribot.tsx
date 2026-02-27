@@ -4,12 +4,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Copy, User as UserIcon, Shield, Sparkles, Stethoscope, FlaskConical, BookOpen, Scale, Globe, Microscope, FileText, Lightbulb, Activity, Brain } from "lucide-react";
+import { Bot, Copy, Shield, Sparkles, Stethoscope, FlaskConical, BookOpen, Scale, Globe, Microscope, FileText, Lightbulb, Activity, Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { recordEvent } from "@/lib/analytics";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { User } from "@shared/schema";
+
+const STORAGE_KEY = "aribot_agent_config";
 
 const SPECIALTIES = [
   "Cardiology", "Oncology", "Neurology", "Radiology", "Pediatrics",
@@ -30,28 +32,52 @@ const EVIDENCE_SOURCES = [
   { id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope },
 ];
 
-const RESPONSE_STYLES = [
-  { value: "concise", label: "Concise", desc: "Brief, bullet-point answers" },
-  { value: "detailed", label: "Detailed", desc: "Thorough explanations with citations" },
-  { value: "socratic", label: "Socratic", desc: "Guides through reasoning with questions" },
-  { value: "differential", label: "Differential", desc: "Structured differential diagnosis format" },
-];
+interface AgentConfig {
+  focusDept: string;
+  enabledSources: string[];
+  evidenceLevel: string;
+  citationFormat: string;
+  complexityLevel: string;
+  phiSafe: boolean;
+  useProfile: boolean;
+  drugInteractions: boolean;
+}
+
+const DEFAULT_CONFIG: AgentConfig = {
+  focusDept: "",
+  enabledSources: ["who", "cdc", "cochrane", "uptodate"],
+  evidenceLevel: "all",
+  citationFormat: "inline",
+  complexityLevel: "balanced",
+  phiSafe: true,
+  useProfile: true,
+  drugInteractions: true,
+};
+
+function loadConfig(): AgentConfig {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_CONFIG, ...parsed };
+    }
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
+function saveConfig(config: AgentConfig) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  } catch {}
+}
 
 export default function Aribot() {
   const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
   const { toast } = useToast();
+  const [saved, setSaved] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const [focusDept, setFocusDept] = useState("");
-  const [enabledSources, setEnabledSources] = useState<string[]>(["who", "cdc", "cochrane", "uptodate"]);
-  const [responseStyle, setResponseStyle] = useState("detailed");
-  const [evidenceLevel, setEvidenceLevel] = useState("all");
-  const [citationFormat, setCitationFormat] = useState("inline");
-  const [complexityLevel, setComplexityLevel] = useState("balanced");
-  const [phiSafe, setPhiSafe] = useState(true);
-  const [useProfile, setUseProfile] = useState(true);
-  const [drugInteractions, setDrugInteractions] = useState(true);
-  const [patientEducation, setPatientEducation] = useState(false);
-  const [includeImages, setIncludeImages] = useState(false);
+  const [config, setConfig] = useState<AgentConfig>(loadConfig);
 
   useEffect(() => {
     recordEvent("page_view", { section: "aribot" });
@@ -60,22 +86,38 @@ export default function Aribot() {
 
   useEffect(() => {
     if (user) {
-      setPhiSafe(user.phiSafeMode);
-      setFocusDept(user.specialty || "");
+      setConfig(prev => {
+        const stored = loadConfig();
+        if (stored.focusDept) return prev;
+        return { ...prev, focusDept: user.specialty || "", phiSafe: user.phiSafeMode };
+      });
     }
   }, [user]);
 
+  const updateConfig = useCallback((partial: Partial<AgentConfig>) => {
+    setConfig(prev => {
+      const next = { ...prev, ...partial };
+      saveConfig(next);
+      return next;
+    });
+    setSaved(true);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => setSaved(false), 1500);
+  }, []);
+
   function toggleSource(id: string) {
-    setEnabledSources(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
+    updateConfig({
+      enabledSources: config.enabledSources.includes(id)
+        ? config.enabledSources.filter(s => s !== id)
+        : [...config.enabledSources, id],
+    });
   }
 
   function handleCopyContext() {
     if (!user) return;
-    const ctx = buildContextBlock(user, phiSafe, focusDept, enabledSources, responseStyle, evidenceLevel);
+    const ctx = buildContextBlock(user, config);
     navigator.clipboard.writeText(ctx);
-    toast({ title: "Context copied", description: "Paste it into Aribot to personalize your session." });
+    toast({ title: "Context copied", description: "Paste it into Aribots AI to personalize your session." });
   }
 
   if (isLoading || !user) {
@@ -95,23 +137,30 @@ export default function Aribot() {
             src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
             frameBorder="0"
             allow="microphone"
-            title="Aribot Chat"
+            title="Aribots AI Chat"
             data-testid="iframe-aribot-chat"
           />
         </div>
       </div>
+
       <div className="w-80 border-l bg-card/50 flex flex-col shrink-0 hidden lg:flex" data-testid="panel-right-sidebar">
         <div className="p-3 border-b">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Bot className="h-4 w-4 text-primary" />
             </div>
-            <div className="min-w-0">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold" data-testid="text-agent-title">Agentic Customization</p>
               <p className="text-[11px] text-muted-foreground truncate">
                 {user.name} · {user.specialty}
               </p>
             </div>
+            {saved && (
+              <div className="flex items-center gap-1 text-[10px] text-green-600 animate-in fade-in duration-200" data-testid="text-saved-indicator">
+                <Check className="h-3 w-3" />
+                Saved
+              </div>
+            )}
           </div>
         </div>
 
@@ -126,16 +175,12 @@ export default function Aribot() {
                 <BookOpen className="h-3 w-3 mr-1" />
                 Evidence
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs h-9" data-testid="tab-behavior">
-                <Brain className="h-3 w-3 mr-1" />
-                Behavior
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="focus" className="mt-0 p-3 space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium">Department / Specialty Focus</Label>
-                <Select value={focusDept} onValueChange={setFocusDept}>
+                <Select value={config.focusDept} onValueChange={v => updateConfig({ focusDept: v })}>
                   <SelectTrigger className="h-8 text-xs" data-testid="select-focus-dept">
                     <SelectValue placeholder="Select specialty..." />
                   </SelectTrigger>
@@ -145,12 +190,12 @@ export default function Aribot() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[10px] text-muted-foreground">Aribot will tailor answers to this clinical area</p>
+                <p className="text-[10px] text-muted-foreground">Aribots AI will tailor answers to this clinical area</p>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-xs font-medium">Clinical Complexity</Label>
-                <Select value={complexityLevel} onValueChange={setComplexityLevel}>
+                <Select value={config.complexityLevel} onValueChange={v => updateConfig({ complexityLevel: v })}>
                   <SelectTrigger className="h-8 text-xs" data-testid="select-complexity">
                     <SelectValue />
                   </SelectTrigger>
@@ -172,21 +217,21 @@ export default function Aribot() {
                       <Sparkles className="h-3 w-3 text-primary/60" />
                       Use my profile
                     </label>
-                    <Switch checked={useProfile} onCheckedChange={setUseProfile} data-testid="switch-use-profile" />
+                    <Switch checked={config.useProfile} onCheckedChange={v => updateConfig({ useProfile: v })} data-testid="switch-use-profile" />
                   </div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer">
                       <Shield className="h-3 w-3 text-primary/60" />
                       PHI-safe mode
                     </label>
-                    <Switch checked={phiSafe} onCheckedChange={setPhiSafe} data-testid="switch-phi-safe" />
+                    <Switch checked={config.phiSafe} onCheckedChange={v => updateConfig({ phiSafe: v })} data-testid="switch-phi-safe" />
                   </div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer">
                       <Activity className="h-3 w-3 text-primary/60" />
                       Flag drug interactions
                     </label>
-                    <Switch checked={drugInteractions} onCheckedChange={setDrugInteractions} data-testid="switch-drug-interactions" />
+                    <Switch checked={config.drugInteractions} onCheckedChange={v => updateConfig({ drugInteractions: v })} data-testid="switch-drug-interactions" />
                   </div>
                 </div>
               </div>
@@ -195,11 +240,11 @@ export default function Aribot() {
             <TabsContent value="evidence" className="mt-0 p-3 space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium">Active Evidence Sources</Label>
-                <p className="text-[10px] text-muted-foreground">Select which sources Aribot prioritizes in responses</p>
+                <p className="text-[10px] text-muted-foreground">Select which sources Aribots AI prioritizes in responses</p>
                 <div className="space-y-1">
                   {EVIDENCE_SOURCES.map(source => {
                     const Icon = source.icon;
-                    const active = enabledSources.includes(source.id);
+                    const active = config.enabledSources.includes(source.id);
                     return (
                       <button
                         key={source.id}
@@ -218,7 +263,7 @@ export default function Aribot() {
 
               <div className="space-y-2 pt-2 border-t">
                 <Label className="text-xs font-medium">Evidence Level Filter</Label>
-                <Select value={evidenceLevel} onValueChange={setEvidenceLevel}>
+                <Select value={config.evidenceLevel} onValueChange={v => updateConfig({ evidenceLevel: v })}>
                   <SelectTrigger className="h-8 text-xs" data-testid="select-evidence-level">
                     <SelectValue />
                   </SelectTrigger>
@@ -235,7 +280,7 @@ export default function Aribot() {
 
               <div className="space-y-2 pt-2 border-t">
                 <Label className="text-xs font-medium">Citation Format</Label>
-                <Select value={citationFormat} onValueChange={setCitationFormat}>
+                <Select value={config.citationFormat} onValueChange={v => updateConfig({ citationFormat: v })}>
                   <SelectTrigger className="h-8 text-xs" data-testid="select-citation-format">
                     <SelectValue />
                   </SelectTrigger>
@@ -248,46 +293,13 @@ export default function Aribot() {
                 </Select>
               </div>
             </TabsContent>
-
-            <TabsContent value="behavior" className="mt-0 p-3 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">Response Style</Label>
-                <div className="space-y-1">
-                  {RESPONSE_STYLES.map(style => (
-                    <button
-                      key={style.value}
-                      onClick={() => setResponseStyle(style.value)}
-                      className={`flex flex-col gap-0.5 w-full p-2 rounded-md text-left transition-colors ${responseStyle === style.value ? "bg-primary/10" : "hover:bg-muted/50"}`}
-                      data-testid={`style-${style.value}`}
-                    >
-                      <span className={`text-xs ${responseStyle === style.value ? "font-medium text-foreground" : "text-muted-foreground"}`}>{style.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{style.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2 border-t">
-                <Label className="text-xs font-medium">Output Options</Label>
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-muted-foreground cursor-pointer">Generate patient handouts</label>
-                    <Switch checked={patientEducation} onCheckedChange={setPatientEducation} data-testid="switch-patient-ed" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-muted-foreground cursor-pointer">Include diagrams / images</label>
-                    <Switch checked={includeImages} onCheckedChange={setIncludeImages} data-testid="switch-images" />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
 
         <div className="p-3 border-t">
           <Button size="sm" className="w-full text-xs" onClick={handleCopyContext} data-testid="button-copy-context">
             <Copy className="h-3 w-3 mr-1.5" />
-            Copy Context to Aribot
+            Copy Context to Aribots AI
           </Button>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">
             Paste into chat to apply your configuration
@@ -298,36 +310,30 @@ export default function Aribot() {
   );
 }
 
-function buildContextBlock(
-  user: User,
-  phiSafe: boolean,
-  focusDept: string,
-  enabledSources: string[],
-  responseStyle: string,
-  evidenceLevel: string,
-): string {
-  const sourceLabels = EVIDENCE_SOURCES.filter(s => enabledSources.includes(s.id)).map(s => s.label);
+function buildContextBlock(user: User, config: AgentConfig): string {
+  const sourceLabels = EVIDENCE_SOURCES.filter(s => config.enabledSources.includes(s.id)).map(s => s.label);
   return `CLINICIAN PROFILE CONTEXT (for personalization)
 - Name: ${user.name}
 - Specialty: ${user.specialty}
 - Subspecialty: ${user.subspecialty}
 - Hospital: ${user.hospital}
-- Focus Area: ${focusDept || user.specialty}
+- Focus Area: ${config.focusDept || user.specialty}
 - Interests: ${user.interests.join(", ")}
 
 AGENT CONFIGURATION:
 - Evidence Sources: ${sourceLabels.join(", ")}
-- Evidence Level Filter: ${evidenceLevel}
-- Response Style: ${responseStyle}
-- Citation Format: inline
+- Evidence Level Filter: ${config.evidenceLevel}
+- Clinical Complexity: ${config.complexityLevel}
+- Citation Format: ${config.citationFormat}
+- Drug Interaction Alerts: ${config.drugInteractions ? "enabled" : "disabled"}
 
 INSTRUCTIONS:
-- Prioritize answers within the ${focusDept || user.specialty} domain
+- Prioritize answers within the ${config.focusDept || user.specialty} domain
 - Use evidence-first reasoning, citing primary sources
 - Format: concise clinician-facing language
 - Ask clarifying questions when the query is ambiguous
 
 SAFETY:
-- PHI-safe mode: ${phiSafe ? "ENABLED – do not include any patient identifiers" : "disabled"}
+- PHI-safe mode: ${config.phiSafe ? "ENABLED – do not include any patient identifiers" : "disabled"}
 - This is a clinician-to-AI discussion, not patient-facing advice`;
 }

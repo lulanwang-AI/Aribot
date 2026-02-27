@@ -78,11 +78,10 @@ export function AppSidebar() {
           <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded-md object-contain" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold" data-testid="text-app-name">ARIbots</span>
-            <span className="text-[10px] text-muted-foreground">For Clinicians</span>
+            <span className="text-[10px] text-muted-foreground">built by physicians for physicians</span>
           </div>
         </div>
       </SidebarHeader>
-
       <SidebarContent>
         <SidebarGroup>
           <Collapsible open={aribotOpen} onOpenChange={setAribotOpen}>
@@ -212,7 +211,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter>
         {user && (
           <div className="px-2 py-2">
