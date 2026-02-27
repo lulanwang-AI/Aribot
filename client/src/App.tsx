@@ -66,14 +66,11 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
         <SidebarProvider style={sidebarStyle as React.CSSProperties}>
           <div className="flex h-screen w-full">
             <AppSidebar />
-            <div className="flex flex-col flex-1 min-w-0">
-              <header className="flex items-center gap-2 p-2 border-b shrink-0">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <span className="text-sm font-medium text-muted-foreground">Aribot Portal</span>
-              </header>
+            <div className="flex flex-col flex-1 min-w-0 relative">
               <main className="flex-1 overflow-auto">
                 <Router />
               </main>
+              <SidebarTrigger className="absolute top-3 left-3 z-10 h-7 w-7 rounded-md bg-background/80 backdrop-blur-sm shadow-sm border" data-testid="button-sidebar-toggle" />
             </div>
           </div>
           <FloatingAribot />
