@@ -113,7 +113,7 @@ export default function News() {
         </div>
       </div>
 
-      <div className="relative shrink-0 hidden lg:block">
+      <div className="relative shrink-0 hidden lg:flex">
         <button
           onClick={() => setShowAgentPanel(!showAgentPanel)}
           data-testid="button-agent-panel-toggle"
@@ -121,7 +121,9 @@ export default function News() {
         >
           {showAgentPanel ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
         </button>
-        {showAgentPanel && <AgentConfigPanel />}
+        <div className={`overflow-hidden transition-[width] duration-300 ease-in-out ${showAgentPanel ? "w-[320px]" : "w-0"}`}>
+          <AgentConfigPanel />
+        </div>
       </div>
 
       <NewsDetailSheet newsId={selectedNewsId} open={!!selectedNewsId} onClose={() => setSelectedNewsId(null)} />
@@ -162,7 +164,7 @@ function AgentConfigPanel() {
   }
 
   return (
-    <div className="w-[320px] border-l bg-muted/10 overflow-y-auto shrink-0 hidden lg:block" data-testid="panel-agent-config">
+    <div className="w-[320px] border-l bg-muted/10 overflow-y-auto shrink-0" data-testid="panel-agent-config">
       <div className="p-4 border-b">
         <div className="mb-1">
           <h2 className="text-sm font-semibold flex items-center gap-2">
