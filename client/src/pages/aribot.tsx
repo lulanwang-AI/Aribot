@@ -44,15 +44,15 @@ export default function Aribot() {
   return (
     <div className="flex h-full" data-testid="page-aribot">
       <div className="flex-1 min-w-0 p-3">
-        <iframe
-          src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
-          className="w-full h-full rounded-md border bg-background"
-          style={{ minHeight: "700px" }}
-          frameBorder="0"
-          allow="microphone"
-          title="Aribot Chat"
-          data-testid="iframe-aribot-chat"
-        />
+        <div className="dify-embed w-full h-full">
+          <iframe
+            src="https://udify.app/chatbot/oFFtZasRPIbLOTGb"
+            frameBorder="0"
+            allow="microphone"
+            title="Aribot Chat"
+            data-testid="iframe-aribot-chat"
+          />
+        </div>
       </div>
 
       <div className="w-80 border-l bg-card/50 flex flex-col shrink-0 hidden lg:flex" data-testid="panel-right-sidebar">
