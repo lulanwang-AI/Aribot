@@ -120,7 +120,7 @@ function NewsCard({ item, onOpenComments }: { item: NewsItemWithCommenters; onOp
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold leading-snug">{item.title}</h3>
-            <span className="text-xs text-muted-foreground font-medium">{item.source}</span>
+            <span className="text-xs text-blue-500 font-medium">{item.source}</span>
           </div>
           <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
         </div>
@@ -198,7 +198,7 @@ function NewsDetailSheet({ newsId, open, onClose }: { newsId: string | null; ope
       <SheetContent className="w-[420px] sm:w-[480px] overflow-y-auto" data-testid="sheet-news-detail">
         <SheetHeader>
           <SheetTitle className="text-left text-sm leading-snug">{detail?.title}</SheetTitle>
-          {detail && <span className="text-xs text-muted-foreground font-medium">{detail.source}</span>}
+          {detail && <span className="text-xs text-blue-500 font-medium">{detail.source}</span>}
         </SheetHeader>
         {isLoading && <div className="py-8 text-center text-sm text-muted-foreground">Loading...</div>}
         {detail && (
