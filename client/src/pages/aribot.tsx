@@ -323,7 +323,6 @@ export default function Aribot() {
             </div>
           </div>
         </div>
-        </div>
       </div>
     </div>
   );
