@@ -528,6 +528,26 @@ function MeetAriSection() {
 function HowAriWorksSection() {
   const { ref, isVisible } = useInView();
   const [activeTab, setActiveTab] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const CYCLE_MS = 5000;
+
+  useEffect(() => {
+    if (paused) return;
+    const start = performance.now();
+    let rafId: number;
+    function tick(now: number) {
+      const elapsed = ((now - start) % CYCLE_MS) / CYCLE_MS;
+      setProgress(elapsed * 100);
+      if (now - start >= CYCLE_MS) {
+        setActiveTab((t) => (t + 1) % 5);
+        return;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [activeTab, paused]);
 
   const scenarios = [
     {
@@ -630,39 +650,74 @@ function HowAriWorksSection() {
         </p>
 
         <div ref={ref} className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+
           <div className="flex flex-wrap gap-2 mb-8 justify-center">
             {scenarios.map((s, i) => (
               <button
                 key={i}
-                onClick={() => setActiveTab(i)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                onClick={() => { setActiveTab(i); setPaused(true); }}
+                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden ${
                   activeTab === i
                     ? "bg-[#4A90D9] text-white shadow-[0_0_20px_rgba(74,144,217,0.3)]"
                     : "bg-[#1a1a1a] text-white/60 border border-white/10 hover:border-[#4A90D9]/40 hover:text-white"
                 }`}
                 data-testid={`tab-step-${i + 1}`}
               >
+                {activeTab === i && !paused && (
+                  <span
+                    className="absolute bottom-0 left-0 h-0.5 bg-white/40 transition-none"
+                    style={{ width: `${progress}%` }}
+                  />
+                )}
                 <s.icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{s.tabLabel}</span>
                 <span className="sm:hidden">{s.step}</span>
               </button>
             ))}
+            {paused && (
+              <button
+                onClick={() => setPaused(false)}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-white/40 border border-white/10 hover:text-white/70 transition-colors"
+                data-testid="button-resume-cycle"
+              >
+                <Activity className="w-3.5 h-3.5" /> Auto
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-2 bg-[#1a1a1a] border border-white/10 rounded-2xl p-6" data-testid={`step-${activeTab + 1}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#4A90D9]/10 flex items-center justify-center">
+            <div
+              key={`desc-${activeTab}`}
+              className="lg:col-span-2 bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 animate-[fadeSlideUp_0.4s_ease-out]"
+              data-testid={`step-${activeTab + 1}`}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-11 h-11 rounded-full bg-[#4A90D9]/15 border border-[#4A90D9]/30 flex items-center justify-center">
                   <active.icon className="w-5 h-5 text-[#4A90D9]" />
                 </div>
-                <span className="text-[#4A90D9] text-xs font-bold uppercase tracking-wider">{active.step}</span>
+                <div>
+                  <span className="text-[#4A90D9] text-[10px] font-bold uppercase tracking-widest block">{active.step} of 5</span>
+                  <h3 className="text-base font-semibold text-white leading-tight">{active.tabLabel}</h3>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">{active.tabLabel}</h3>
-              <p className="text-white/60 text-sm leading-relaxed">{active.description}</p>
+              <p className="text-white/55 text-sm leading-relaxed">{active.description}</p>
+
+              <div className="flex gap-1.5 mt-8">
+                {scenarios.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setActiveTab(i); setPaused(true); }}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      activeTab === i ? "bg-[#4A90D9] w-6" : "bg-white/15 w-3 hover:bg-white/30"
+                    }`}
+                    data-testid={`dot-step-${i + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="lg:col-span-3">
-              <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl overflow-hidden shadow-2xl" data-testid="card-platform-snapshot">
+              <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] border-b border-white/5">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-500/60" />
@@ -672,10 +727,14 @@ function HowAriWorksSection() {
                   <span className="text-white/40 text-xs ml-2 flex items-center gap-1.5">
                     <Bot className="w-3.5 h-3.5" /> ARI Clinical Assistant
                   </span>
+                  <span className="ml-auto flex items-center gap-1.5 text-[10px] text-[#4A90D9]/70">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-pulse" />
+                    {active.ariHighlight}
+                  </span>
                 </div>
 
-                <div className="p-5 space-y-4 min-h-[320px]" key={activeTab}>
-                  <div className="flex gap-3 justify-end animate-[fadeSlideUp_0.4s_ease-out]">
+                <div className="p-5 space-y-4 min-h-[320px]" key={activeTab} data-testid="card-platform-snapshot">
+                  <div className="flex gap-3 justify-end animate-[fadeSlideUp_0.35s_ease-out]">
                     <div className="max-w-[85%] bg-[#4A90D9]/10 border border-[#4A90D9]/20 rounded-2xl rounded-tr-sm px-4 py-3">
                       <div className="flex items-center gap-2 mb-1">
                         <User className="w-3.5 h-3.5 text-[#4A90D9]" />
@@ -685,7 +744,7 @@ function HowAriWorksSection() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 animate-[fadeSlideUp_0.5s_ease-out_0.2s_both]">
+                  <div className="flex gap-3 animate-[fadeSlideUp_0.45s_ease-out_0.15s_both]">
                     <div className="max-w-[90%] bg-[#1a1a1a] border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
@@ -693,17 +752,23 @@ function HowAriWorksSection() {
                         <span className="text-white/30 text-xs">· {active.ariLabel}</span>
                       </div>
                       <p className="text-white/80 text-sm mb-3">{active.ariSummary}</p>
-                      <div className="space-y-2 text-sm text-white/70">
+                      <div className="space-y-2.5 text-sm text-white/70">
                         {active.ariPoints.map((pt, j) => (
-                          <div key={j} className="flex items-start gap-2 animate-[fadeSlideUp_0.4s_ease-out_both]" style={{ animationDelay: `${0.4 + j * 0.15}s` }}>
-                            <pt.icon className="w-4 h-4 text-[#4A90D9] shrink-0 mt-0.5" />
+                          <div
+                            key={j}
+                            className="flex items-start gap-2 animate-[fadeSlideUp_0.4s_ease-out_both]"
+                            style={{ animationDelay: `${0.3 + j * 0.18}s` }}
+                          >
+                            <div className="w-5 h-5 rounded-md bg-[#4A90D9]/15 flex items-center justify-center shrink-0 mt-0.5">
+                              <pt.icon className="w-3 h-3 text-[#4A90D9]" />
+                            </div>
                             <span><span className="text-white/90 font-medium">{pt.title}</span> — {pt.detail}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-xs text-white/30">
-                        <FileText className="w-3 h-3" />
-                        <span>Sources: {active.sources}</span>
+                      <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-xs text-white/25 animate-[fadeSlideUp_0.4s_ease-out_0.7s_both]">
+                        <FileText className="w-3 h-3 shrink-0" />
+                        <span>{active.sources}</span>
                       </div>
                     </div>
                   </div>
@@ -716,7 +781,7 @@ function HowAriWorksSection() {
 
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(12px); }
+          from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
