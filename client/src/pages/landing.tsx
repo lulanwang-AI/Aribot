@@ -902,7 +902,7 @@ function TestimonialsSection() {
       hospital: "Johns Hopkins Hospital",
       rating: 5,
       quote: "ARI has transformed how I approach complex cardiac cases. The evidence-based recommendations are remarkably accurate and save me hours of literature review.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SarahChen&backgroundColor=b6e3f4&top=longHair&topColor=2c1b18&eyes=happy&mouth=smile",
+      gradient: "from-[#4A90D9] to-[#357abd]",
     },
     {
       name: "Dr. James Rodriguez",
@@ -910,7 +910,7 @@ function TestimonialsSection() {
       hospital: "Massachusetts General Hospital",
       rating: 5,
       quote: "In the ER, every second counts. ARI's real-time triage support has helped us reduce diagnostic errors by over 30% in our department.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=JamesRodriguez&backgroundColor=c0aede&top=shortHair&eyes=default&mouth=default",
+      gradient: "from-[#6366f1] to-[#4f46e5]",
     },
     {
       name: "Dr. Priya Patel",
@@ -918,7 +918,7 @@ function TestimonialsSection() {
       hospital: "Mayo Clinic",
       rating: 5,
       quote: "The drug interaction checks alone have prevented several potential adverse events. ARI is like having an expert colleague available 24/7.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=PriyaPatel&backgroundColor=ffd5dc&top=longHair&eyes=wink&mouth=smile",
+      gradient: "from-[#ec4899] to-[#be185d]",
     },
     {
       name: "Dr. Michael Thompson",
@@ -926,7 +926,7 @@ function TestimonialsSection() {
       hospital: "Cleveland Clinic",
       rating: 4,
       quote: "ARI's differential diagnosis feature is incredibly thorough. It consistently surfaces possibilities that even experienced clinicians might overlook.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=MichaelThompson&backgroundColor=d1d4f9&top=shortHair&eyes=default&mouth=serious",
+      gradient: "from-[#0ea5e9] to-[#0284c7]",
     },
     {
       name: "Dr. Emily Nakamura",
@@ -934,7 +934,7 @@ function TestimonialsSection() {
       hospital: "Stanford Health Care",
       rating: 5,
       quote: "During the latest outbreak response, ARI helped us stay on top of rapidly evolving guidelines from WHO and CDC in real-time. Invaluable tool.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=EmilyNakamura&backgroundColor=b6e3f4&top=longHair&eyes=happy&mouth=smile",
+      gradient: "from-[#14b8a6] to-[#0f766e]",
     },
     {
       name: "Dr. David Okafor",
@@ -942,7 +942,7 @@ function TestimonialsSection() {
       hospital: "UCLA Medical Center",
       rating: 5,
       quote: "The integration with our EHR is seamless. ARI fits naturally into our workflow without adding friction. My team adopted it within days.",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DavidOkafor&backgroundColor=c0aede&top=shortHair&eyes=default&mouth=smile",
+      gradient: "from-[#f59e0b] to-[#d97706]",
     },
   ];
 
@@ -968,13 +968,13 @@ function TestimonialsSection() {
               data-testid={`card-testimonial-${i}`}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-[#4A90D9]/30 bg-[#2a2a2a]">
-                  <img
-                    src={t.avatar}
-                    alt={t.name}
-                    className="w-full h-full object-cover"
-                    data-testid={`avatar-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
-                  />
+                <div
+                  className={`w-12 h-12 rounded-full shrink-0 bg-gradient-to-br ${t.gradient} flex items-center justify-center ring-2 ring-white/10 shadow-lg`}
+                  data-testid={`avatar-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
+                >
+                  <span className="text-white font-bold text-sm tracking-wide">
+                    {t.name.split(" ").filter(w => w !== "Dr.").map(w => w[0]).join("").slice(0, 2)}
+                  </span>
                 </div>
                 <div>
                   <div className="text-white font-semibold text-sm">{t.name}</div>
