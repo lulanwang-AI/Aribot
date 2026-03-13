@@ -69,7 +69,14 @@ import featureSecurityImg from "@assets/feature-security.png";
 import featureEvidenceImg from "@assets/feature-evidence.png";
 import featureSpecialtiesImg from "@assets/feature-specialties.png";
 
-function NeuralNetworkCanvas() {
+const SPECIALTIES = [
+  "Cardiology", "Neurology", "Oncology", "Surgery", "Pediatrics",
+  "Radiology", "EM", "Internal Med", "Psychiatry", "Anesthesiology",
+  "Dermatology", "Gastro", "Pulmonology", "Nephrology", "Endocrinology",
+  "Orthopedics", "Pathology", "Rheumatology", "Urology", "OB/GYN",
+];
+
+function DoctorNetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -79,7 +86,27 @@ function NeuralNetworkCanvas() {
     if (!ctx) return;
 
     let animationId: number;
-    let nodes: { x: number; y: number; vx: number; vy: number }[] = [];
+    let t = 0;
+
+    type DoctorNode = {
+      x: number; y: number;
+      vx: number; vy: number;
+      specialty: string;
+      pulsePhase: number;
+      avatarColor: string;
+    };
+    type PulseTrail = {
+      from: number; to: number;
+      progress: number; speed: number;
+    };
+
+    let nodes: DoctorNode[] = [];
+    let trails: PulseTrail[] = [];
+
+    const AVATAR_COLORS = [
+      "#4A90D9", "#5BA3E8", "#3B7DD8", "#6AADE0",
+      "#4DB8C4", "#4A9DD9", "#5594CC",
+    ];
 
     function resize() {
       if (!canvas || !ctx) return;
@@ -91,51 +118,148 @@ function NeuralNetworkCanvas() {
 
     function initNodes() {
       if (!canvas) return;
-      const count = Math.min(80, Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 8000));
-      nodes = Array.from({ length: count }, () => ({
+      const count = Math.min(32, Math.max(16, Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 20000)));
+      nodes = Array.from({ length: count }, (_, i) => ({
         x: Math.random() * canvas.offsetWidth,
         y: Math.random() * canvas.offsetHeight,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        specialty: SPECIALTIES[i % SPECIALTIES.length],
+        pulsePhase: Math.random() * Math.PI * 2,
+        avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
       }));
+      trails = [];
+      for (let i = 0; i < Math.floor(count / 3); i++) {
+        trails.push({
+          from: Math.floor(Math.random() * count),
+          to: Math.floor(Math.random() * count),
+          progress: Math.random(),
+          speed: 0.003 + Math.random() * 0.004,
+        });
+      }
+    }
+
+    function drawDoctorIcon(x: number, y: number, r: number, color: string, pulse: number) {
+      if (!ctx) return;
+      const ringR = r + 4 + 2 * Math.sin(pulse);
+      const glowHex = Math.floor((0.25 + 0.15 * Math.abs(Math.sin(pulse))) * 255).toString(16).padStart(2, "0");
+
+      ctx.beginPath();
+      ctx.arc(x, y, ringR, 0, Math.PI * 2);
+      ctx.strokeStyle = `${color}${glowHex}`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `${color}33`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `${color}cc`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.beginPath();
+      ctx.arc(x, y - r * 0.25, r * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      const shoulderY = y + r * 0.05;
+      const bodyW = r * 0.55;
+      const bodyH = r * 0.42;
+      ctx.ellipse(x, shoulderY + bodyH * 0.5, bodyW, bodyH, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `${color}ee`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.18, shoulderY + r * 0.12);
+      ctx.quadraticCurveTo(x - r * 0.28, shoulderY + r * 0.45, x - r * 0.18, shoulderY + r * 0.55);
+      ctx.quadraticCurveTo(x, shoulderY + r * 0.65, x + r * 0.18, shoulderY + r * 0.55);
+      ctx.quadraticCurveTo(x + r * 0.28, shoulderY + r * 0.45, x + r * 0.18, shoulderY + r * 0.12);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x, shoulderY + r * 0.55, r * 0.1, 0, Math.PI * 2);
+      ctx.fillStyle = `${color}dd`;
+      ctx.fill();
+    }
+
+    function drawSpecialtyLabel(x: number, y: number, r: number, specialty: string) {
+      if (!ctx) return;
+      ctx.font = `bold ${Math.max(8, r * 0.55)}px 'Open Sans', sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fillText(specialty, x, y + r + 5);
     }
 
     function animate() {
       if (!canvas || !ctx) return;
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
+      t += 0.016;
+
       ctx.clearRect(0, 0, w, h);
 
       nodes.forEach((node) => {
         node.x += node.vx;
         node.y += node.vy;
-        if (node.x < 0 || node.x > w) node.vx *= -1;
-        if (node.y < 0 || node.y > h) node.vy *= -1;
+        if (node.x < 20 || node.x > w - 20) node.vx *= -1;
+        if (node.y < 20 || node.y > h - 20) node.vy *= -1;
       });
 
-      const maxDist = 150;
+      const maxDist = 200;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * 0.3;
+            const alpha = (1 - dist / maxDist) * 0.22;
             ctx.beginPath();
             ctx.strokeStyle = `rgba(74, 144, 217, ${alpha})`;
-            ctx.lineWidth = 0.5;
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([4, 6]);
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
+            ctx.setLineDash([]);
           }
         }
       }
 
-      nodes.forEach((node) => {
+      trails.forEach((trail) => {
+        trail.progress += trail.speed;
+        if (trail.progress > 1) {
+          trail.progress = 0;
+          const newTo = Math.floor(Math.random() * nodes.length);
+          trail.from = trail.to;
+          trail.to = newTo;
+        }
+        const from = nodes[trail.from];
+        const to = nodes[trail.to];
+        if (!from || !to) return;
+        const px = from.x + (to.x - from.x) * trail.progress;
+        const py = from.y + (to.y - from.y) * trail.progress;
+        const dotAlpha = Math.sin(trail.progress * Math.PI) * 0.9;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(74, 144, 217, 0.6)";
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100, 200, 255, ${dotAlpha})`;
         ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100, 200, 255, ${dotAlpha * 0.3})`;
+        ctx.fill();
+      });
+
+      const r = Math.max(14, Math.min(20, w / 50));
+      nodes.forEach((node) => {
+        const pulse = node.pulsePhase + t * 1.5;
+        drawDoctorIcon(node.x, node.y, r, node.avatarColor, pulse);
+        drawSpecialtyLabel(node.x, node.y, r, node.specialty);
       });
 
       animationId = requestAnimationFrame(animate);
@@ -319,7 +443,7 @@ function HeroSection() {
   return (
     <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-[#111]" />
-      <NeuralNetworkCanvas />
+      <DoctorNetworkCanvas />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img
           src={heroDoctorsImg}
