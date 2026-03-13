@@ -444,8 +444,8 @@ function HeroSection() {
 
             <div className="flex items-center gap-6 mt-10 pt-10 border-t border-white/8">
               {[
-                { value: "10K+", label: "Physicians" },
-                { value: "50+", label: "Specialties" },
+                { value: "131", label: "Active Physicians" },
+                { value: "40+", label: "Specialties" },
                 { value: "HIPAA", label: "Compliant" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
@@ -1103,10 +1103,10 @@ function CommunitySection() {
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedCounter target={12500} suffix="+" label="Active Physicians" />
-          <AnimatedCounter target={350} suffix="+" label="Partner Hospitals" />
+          <AnimatedCounter target={131} suffix="" label="Active Physicians" />
+          <AnimatedCounter target={12} suffix="" label="Partner Hospitals" />
+          <AnimatedCounter target={500} suffix="+" label="Support Notes Created" />
           <AnimatedCounter target={40} suffix="+" label="Specialties Supported" />
-          <AnimatedCounter target={28} suffix="" label="Countries" />
         </div>
       </div>
 
