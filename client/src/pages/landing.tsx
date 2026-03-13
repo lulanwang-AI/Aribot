@@ -902,6 +902,7 @@ function TestimonialsSection() {
       hospital: "Johns Hopkins Hospital",
       rating: 5,
       quote: "ARI has transformed how I approach complex cardiac cases. The evidence-based recommendations are remarkably accurate and save me hours of literature review.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SarahChen&backgroundColor=b6e3f4&top=longHair&topColor=2c1b18&eyes=happy&mouth=smile",
     },
     {
       name: "Dr. James Rodriguez",
@@ -909,6 +910,7 @@ function TestimonialsSection() {
       hospital: "Massachusetts General Hospital",
       rating: 5,
       quote: "In the ER, every second counts. ARI's real-time triage support has helped us reduce diagnostic errors by over 30% in our department.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=JamesRodriguez&backgroundColor=c0aede&top=shortHair&eyes=default&mouth=default",
     },
     {
       name: "Dr. Priya Patel",
@@ -916,6 +918,7 @@ function TestimonialsSection() {
       hospital: "Mayo Clinic",
       rating: 5,
       quote: "The drug interaction checks alone have prevented several potential adverse events. ARI is like having an expert colleague available 24/7.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=PriyaPatel&backgroundColor=ffd5dc&top=longHair&eyes=wink&mouth=smile",
     },
     {
       name: "Dr. Michael Thompson",
@@ -923,6 +926,7 @@ function TestimonialsSection() {
       hospital: "Cleveland Clinic",
       rating: 4,
       quote: "ARI's differential diagnosis feature is incredibly thorough. It consistently surfaces possibilities that even experienced clinicians might overlook.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=MichaelThompson&backgroundColor=d1d4f9&top=shortHair&eyes=default&mouth=serious",
     },
     {
       name: "Dr. Emily Nakamura",
@@ -930,6 +934,7 @@ function TestimonialsSection() {
       hospital: "Stanford Health Care",
       rating: 5,
       quote: "During the latest outbreak response, ARI helped us stay on top of rapidly evolving guidelines from WHO and CDC in real-time. Invaluable tool.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=EmilyNakamura&backgroundColor=b6e3f4&top=longHair&eyes=happy&mouth=smile",
     },
     {
       name: "Dr. David Okafor",
@@ -937,6 +942,7 @@ function TestimonialsSection() {
       hospital: "UCLA Medical Center",
       rating: 5,
       quote: "The integration with our EHR is seamless. ARI fits naturally into our workflow without adding friction. My team adopted it within days.",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DavidOkafor&backgroundColor=c0aede&top=shortHair&eyes=default&mouth=smile",
     },
   ];
 
@@ -962,8 +968,13 @@ function TestimonialsSection() {
               data-testid={`card-testimonial-${i}`}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-[#4A90D9]/20 flex items-center justify-center text-[#4A90D9] font-bold text-sm shrink-0">
-                  {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-[#4A90D9]/30 bg-[#2a2a2a]">
+                  <img
+                    src={t.avatar}
+                    alt={t.name}
+                    className="w-full h-full object-cover"
+                    data-testid={`avatar-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
+                  />
                 </div>
                 <div>
                   <div className="text-white font-semibold text-sm">{t.name}</div>
@@ -989,18 +1000,7 @@ function TestimonialsSection() {
 
 function CapabilitiesSection() {
   const { ref, isVisible } = useInView();
-  const [activeSource, setActiveSource] = useState<string | null>(null);
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
-
-  const evidenceSources = [
-    { id: "who", label: "WHO Guidelines", icon: Globe },
-    { id: "cdc", label: "CDC Recommendations", icon: Shield },
-    { id: "nice", label: "NICE Guidelines", icon: Scale },
-    { id: "cochrane", label: "Cochrane Reviews", icon: BookOpen },
-    { id: "uptodate", label: "UpToDate", icon: FileText },
-    { id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical },
-    { id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb },
-  ];
 
   const features = [
     {
@@ -1037,7 +1037,7 @@ function CapabilitiesSection() {
           ARI <span className="text-[#4A90D9]">Capabilities</span> & AI in Healthcare
         </h2>
         <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
-          Powered by 7 configurable evidence sources, advanced AI, and built for clinical safety
+          Advanced AI built for clinical safety, seamlessly integrated into your workflow
         </p>
 
         <div
@@ -1074,34 +1074,6 @@ function CapabilitiesSection() {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 mb-16">
-            <h3 className="text-xl font-semibold text-white mb-6">Evidence Sources</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {evidenceSources.map((src) => {
-                const isActive = activeSource === src.id;
-                return (
-                  <button
-                    key={src.id}
-                    onClick={() => setActiveSource(isActive ? null : src.id)}
-                    className={`relative p-4 rounded-xl border text-left transition-all duration-300 group cursor-pointer ${
-                      isActive
-                        ? "bg-[#4A90D9]/15 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.2)] scale-[1.02]"
-                        : "bg-[#222] border-white/10 hover:border-[#4A90D9]/40 hover:shadow-[0_0_15px_rgba(74,144,217,0.1)] hover:scale-[1.01]"
-                    }`}
-                    data-testid={`toggle-source-${src.id}`}
-                  >
-                    <div className={`text-xs font-medium transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/70"}`}>
-                      {src.label}
-                    </div>
-                    {isActive && (
-                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
         </div>
