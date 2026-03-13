@@ -35,8 +35,39 @@ import {
   ChevronDown,
   Menu,
   X,
+  Star,
+  Globe,
+  BookOpen,
+  FileText,
+  FlaskConical,
+  Microscope,
+  Scale,
+  ChevronRight,
+  Bot,
+  User,
+  Sparkles,
+  AlertTriangle,
+  Heart,
 } from "lucide-react";
+import { Link } from "wouter";
 import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
+import heroDoctorsImg from "@assets/hero-doctors-connect.png";
+import teamChetChea from "@assets/team-chet-chea.jpg";
+import teamDanaNguyen from "@assets/team-dana-nguyen.jpg";
+import teamBrittaDenman from "@assets/team-britta-denman.png";
+import teamOsas from "@assets/team-osas.jpg";
+import teamAnupam from "@assets/team-anupam.jpg";
+import teamMichaelStewart from "@assets/team-michael-stewart.png";
+import teamDoherty from "@assets/team-doherty.jpg";
+import teamCranshaw from "@assets/team-cranshaw.jpg";
+import teamCollinsworth from "@assets/team-collinsworth.jpg";
+import teamBlair from "@assets/team-blair.png";
+import featureNlpImg from "@assets/feature-nlp.png";
+import featurePredictiveImg from "@assets/feature-predictive.png";
+import featureEhrImg from "@assets/feature-ehr.png";
+import featureSecurityImg from "@assets/feature-security.png";
+import featureEvidenceImg from "@assets/feature-evidence.png";
+import featureSpecialtiesImg from "@assets/feature-specialties.png";
 
 function NeuralNetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -91,7 +122,7 @@ function NeuralNetworkCanvas() {
           if (dist < maxDist) {
             const alpha = (1 - dist / maxDist) * 0.3;
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(200, 241, 53, ${alpha})`;
+            ctx.strokeStyle = `rgba(74, 144, 217, ${alpha})`;
             ctx.lineWidth = 0.5;
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -103,7 +134,7 @@ function NeuralNetworkCanvas() {
       nodes.forEach((node) => {
         ctx.beginPath();
         ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(200, 241, 53, 0.6)";
+        ctx.fillStyle = "rgba(74, 144, 217, 0.6)";
         ctx.fill();
       });
 
@@ -179,7 +210,7 @@ function AnimatedCounter({ target, label, suffix = "" }: { target: number; label
 
   return (
     <div ref={ref} className="text-center" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}>
-      <div className="text-4xl md:text-5xl font-bold text-[#c8f135]">
+      <div className="text-4xl md:text-5xl font-bold text-[#4A90D9]">
         {count}{suffix}
       </div>
       <div className="text-white/70 mt-2 text-sm">{label}</div>
@@ -197,9 +228,11 @@ function LandingNavbar() {
 
   const links = [
     { label: "Home", id: "hero" },
-    { label: "Team", id: "vision" },
-    { label: "Request Demo", id: "demo" },
-    { label: "Contact", id: "demo" },
+    { label: "Features", id: "capabilities" },
+    { label: "Reviews", id: "testimonials" },
+    { label: "Team", id: "team" },
+    { label: "FAQ", id: "faq" },
+    { label: "Join the Community", id: "demo" },
   ];
 
   return (
@@ -215,11 +248,11 @@ function LandingNavbar() {
               <polygon
                 points="20,2 36,11 36,29 20,38 4,29 4,11"
                 fill="none"
-                stroke="#c8f135"
+                stroke="#4A90D9"
                 strokeWidth="2"
               />
             </svg>
-            <span className="absolute inset-0 flex flex-col items-center justify-center text-[#c8f135] text-[8px] font-bold leading-tight">
+            <span className="absolute inset-0 flex flex-col items-center justify-center text-[#4A90D9] text-[8px] font-bold leading-tight">
               <span>ARI</span>
               <span>bots</span>
             </span>
@@ -231,21 +264,37 @@ function LandingNavbar() {
             <button
               key={l.label}
               onClick={() => scrollTo(l.id)}
-              className="text-sm text-white/80 hover:text-[#c8f135] transition-colors"
+              className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
               data-testid={`link-nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {l.label}
             </button>
           ))}
+          <Link
+            href="/"
+            className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
+            data-testid="link-nav-login"
+          >
+            Login
+          </Link>
         </div>
 
-        <button
-          className="md:hidden text-white"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          data-testid="button-mobile-menu"
-        >
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="md:hidden flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-xs font-semibold px-4 py-1.5 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
+            data-testid="link-mobile-login"
+          >
+            Login
+          </Link>
+          <button
+            className="text-white"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            data-testid="button-mobile-menu"
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
@@ -254,7 +303,7 @@ function LandingNavbar() {
             <button
               key={l.label}
               onClick={() => scrollTo(l.id)}
-              className="block w-full text-left py-3 text-white/80 hover:text-[#c8f135] transition-colors text-sm"
+              className="block w-full text-left py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
               data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {l.label}
@@ -271,26 +320,33 @@ function HeroSection() {
     <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-[#111]" />
       <NeuralNetworkCanvas />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <img
+          src={heroDoctorsImg}
+          alt="Two doctors connecting through technology"
+          className="w-full max-w-3xl opacity-20 object-contain"
+        />
+      </div>
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
         <h1
           className="text-4xl sm:text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight"
           data-testid="text-hero-headline"
         >
-          EMPOWERING{" "}
+          Empowering{" "}
           <br className="hidden sm:block" />
-          MEDICINE WITH{" "}
+          Medicine with{" "}
           <br className="hidden sm:block" />
-          AI
+          <span className="text-[#4A90D9]">AI</span>
         </h1>
         <p className="mt-6 text-lg md:text-xl text-white/70" data-testid="text-hero-tagline">
           ~ built by physicians for physicians
         </p>
         <Button
           onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
-          className="mt-10 bg-[#c8f135] text-black hover:bg-[#d4f85a] font-semibold px-8 py-6 text-lg rounded-full"
+          className="mt-10 bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold px-8 py-6 text-lg rounded-full"
           data-testid="button-hero-cta"
         >
-          Request Demo
+          Join the Community
         </Button>
         <div className="mt-16 animate-bounce">
           <ChevronDown className="w-8 h-8 text-white/50 mx-auto" />
@@ -324,7 +380,7 @@ function MeetAriSection() {
     <section id="meet-ari" className="py-24 bg-[#1a1a1a]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-meet-ari-title">
-          meet <span className="text-[#c8f135]">ARI</span>
+          meet <span className="text-[#4A90D9]">ARI</span>
         </h2>
         <div
           ref={ref}
@@ -333,12 +389,12 @@ function MeetAriSection() {
           {features.map((f, i) => (
             <div
               key={f.title}
-              className="group bg-[#222] border border-white/10 rounded-2xl p-8 hover:border-[#c8f135]/50 transition-all duration-500 hover:-translate-y-1"
+              className="group bg-[#222] border border-white/10 rounded-2xl p-8 hover:border-[#4A90D9]/50 transition-all duration-500 hover:-translate-y-1"
               style={{ transitionDelay: `${i * 150}ms` }}
               data-testid={`card-feature-${f.title.toLowerCase()}`}
             >
-              <div className="w-14 h-14 rounded-xl bg-[#c8f135]/10 flex items-center justify-center mb-6 group-hover:bg-[#c8f135]/20 transition-colors">
-                <f.icon className="w-7 h-7 text-[#c8f135]" />
+              <div className="w-14 h-14 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center mb-6 group-hover:bg-[#4A90D9]/20 transition-colors">
+                <f.icon className="w-7 h-7 text-[#4A90D9]" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
               <p className="text-white/60 leading-relaxed text-sm">{f.description}</p>
@@ -358,124 +414,199 @@ function MeetAriSection() {
 
 function HowAriWorksSection() {
   const { ref, isVisible } = useInView();
-  const steps = [
+  const [activeTab, setActiveTab] = useState(0);
+
+  const scenarios = [
     {
       icon: Stethoscope,
-      title: "Clinical Decision Support",
+      tabLabel: "Clinical Decision Support",
+      step: "Step 1",
       description: "ARI analyzes patient data in real-time, providing evidence-based clinical recommendations to support physician decision-making at the point of care.",
+      doctor: "Dr. Chen",
+      query: "65-year-old male presenting with acute chest pain, elevated troponin (0.8 ng/mL), ST depression in leads V4-V6. History of type 2 diabetes and hypertension. What's the recommended workup and initial management?",
+      ariLabel: "Based on ACC/AHA Guidelines",
+      ariSummary: "This presentation is consistent with NSTEMI. Recommended initial management:",
+      ariHighlight: "NSTEMI",
+      ariPoints: [
+        { icon: Heart, title: "Dual antiplatelet therapy", detail: "Aspirin 325mg + P2Y12 inhibitor (ticagrelor preferred given diabetes)" },
+        { icon: Activity, title: "Anticoagulation", detail: "Enoxaparin or UFH per institutional protocol" },
+        { icon: Stethoscope, title: "Cardiology consult", detail: "For early invasive strategy (cath within 24h per GRACE score)" },
+      ],
+      sources: "ACC/AHA 2024 NSTEMI Guidelines, UpToDate, Cochrane Reviews",
     },
     {
       icon: Activity,
-      title: "Real-Time Triage Assessment",
+      tabLabel: "Real-Time Triage",
+      step: "Step 2",
       description: "Instant severity scoring and prioritization of patients based on presenting symptoms, vital signs, and clinical indicators for optimal resource allocation.",
+      doctor: "Dr. Rodriguez",
+      query: "Multiple trauma patients arriving from a motor vehicle accident. Patient A: GCS 8, BP 85/60, HR 130. Patient B: GCS 14, open fracture right tibia. Patient C: GCS 15, mild whiplash. Prioritize and assign acuity levels.",
+      ariLabel: "Based on ESI Triage Algorithm",
+      ariSummary: "Triage assessment complete. Priority ranking:",
+      ariHighlight: "ESI Level 1",
+      ariPoints: [
+        { icon: AlertTriangle, title: "Patient A — ESI Level 1 (Critical)", detail: "Hemodynamic instability, altered consciousness. Immediate resuscitation bay, activate trauma team." },
+        { icon: Activity, title: "Patient B — ESI Level 2 (Emergent)", detail: "Open fracture requires urgent orthopedic intervention. Assess neurovascular status, IV antibiotics." },
+        { icon: Stethoscope, title: "Patient C — ESI Level 4 (Less Urgent)", detail: "Stable vitals, minor injury. Cervical spine clearance, analgesia, discharge with follow-up." },
+      ],
+      sources: "ESI Triage Handbook v4, ATLS 10th Edition, WHO Emergency Care Guidelines",
     },
     {
       icon: FileSearch,
-      title: "Differential Diagnosis Generation",
+      tabLabel: "Differential Diagnosis",
+      step: "Step 3",
       description: "AI-powered analysis generates comprehensive differential diagnoses ranked by probability, helping physicians explore all possibilities efficiently.",
+      doctor: "Dr. Patel",
+      query: "32-year-old female with 3-week history of fatigue, unintentional weight loss (8 lbs), night sweats, and a persistent dry cough. CBC shows lymphocytopenia. Chest X-ray reveals bilateral hilar lymphadenopathy. Generate differential diagnoses.",
+      ariLabel: "Based on Clinical Pattern Analysis",
+      ariSummary: "Differential diagnoses ranked by probability:",
+      ariHighlight: "Sarcoidosis",
+      ariPoints: [
+        { icon: FileSearch, title: "Sarcoidosis (72% probability)", detail: "Bilateral hilar lymphadenopathy with systemic symptoms in young female is classic. Recommend ACE level, calcium, and biopsy." },
+        { icon: FileSearch, title: "Lymphoma (18% probability)", detail: "B-symptoms present. Consider LDH, flow cytometry, and CT chest/abdomen/pelvis for staging." },
+        { icon: FileSearch, title: "Tuberculosis (7% probability)", detail: "Night sweats and lymphadenopathy overlap. Recommend QuantiFERON-TB Gold and sputum AFB." },
+      ],
+      sources: "UpToDate, NICE Guidelines, Cochrane Systematic Reviews",
     },
     {
       icon: Pill,
-      title: "Evidence-Based Treatment Plans",
+      tabLabel: "Treatment Plans",
+      step: "Step 4",
       description: "Recommendations grounded in the latest medical literature, clinical guidelines, and institutional protocols for personalized treatment strategies.",
+      doctor: "Dr. Nakamura",
+      query: "55-year-old male with newly diagnosed type 2 diabetes, HbA1c 8.2%, BMI 34, eGFR 62 mL/min, and known heart failure with reduced EF (35%). Recommend first-line therapy considering comorbidities.",
+      ariLabel: "Based on ADA Standards of Care 2024",
+      ariSummary: "Tailored treatment plan considering cardiac and renal comorbidities:",
+      ariHighlight: "SGLT2i + Metformin",
+      ariPoints: [
+        { icon: Pill, title: "SGLT2 inhibitor (empagliflozin 10mg)", detail: "First-line for HFrEF + CKD benefit. Proven cardiovascular and renal protection (EMPEROR-Reduced)." },
+        { icon: Pill, title: "Metformin 500mg BID (titrate)", detail: "Safe at eGFR > 30. Start low given renal function. Monitor B12 annually." },
+        { icon: AlertTriangle, title: "Avoid: TZDs, sulfonylureas", detail: "TZDs contraindicated in HF. Sulfonylureas increase hypoglycemia risk and weight gain." },
+      ],
+      sources: "ADA Standards of Care 2024, KDIGO CKD Guidelines, ESC Heart Failure Guidelines",
     },
     {
       icon: TrendingUp,
-      title: "Continuous Learning from Outcomes",
+      tabLabel: "Learning from Outcomes",
+      step: "Step 5",
       description: "ARI continuously improves by learning from real clinical outcomes, refining its algorithms to deliver increasingly accurate and relevant insights.",
+      doctor: "Dr. Thompson",
+      query: "Review outcomes from the last 30 days for sepsis protocol adherence in the ICU. Show me where ARI's recommendations diverged from actual physician decisions and the resulting patient outcomes.",
+      ariLabel: "Based on Outcomes Analytics Engine",
+      ariSummary: "30-day ICU sepsis outcomes review:",
+      ariHighlight: "87% concordance",
+      ariPoints: [
+        { icon: TrendingUp, title: "Protocol adherence: 92% (+4% from prior month)", detail: "ARI-guided antibiotic escalation timing improved from 3.2h to 1.8h average." },
+        { icon: BarChart3, title: "Mortality reduction: 18% → 14%", detail: "Cases following ARI vasopressor recommendations showed improved MAP stabilization." },
+        { icon: Lightbulb, title: "Model update: Lactate threshold refined", detail: "Based on 847 outcomes, ARI adjusted lactate clearance threshold from 2.0 to 1.8 mmol/L." },
+      ],
+      sources: "Institutional Outcomes Database, Surviving Sepsis Campaign 2024, Meta-Analysis Pool",
     },
   ];
+
+  const active = scenarios[activeTab];
 
   return (
     <section id="how-it-works" className="py-24 bg-[#111]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-how-works-title">
-          How <span className="text-[#c8f135]">ARI</span> Works
+          How <span className="text-[#4A90D9]">ARI</span> Works
         </h2>
-        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
-          A step-by-step breakdown of ARI's AI-powered clinical workflow
+        <p className="text-center text-white/50 mb-12 max-w-2xl mx-auto">
+          See ARI's AI-powered clinical workflow in action across real scenarios
         </p>
 
-        <div ref={ref} className="space-y-6">
-          {steps.map((step, i) => (
-            <div
-              key={step.title}
-              className={`flex items-start gap-6 bg-[#1a1a1a] border border-white/5 rounded-xl p-6 transition-all duration-700 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"}`}
-              style={{ transitionDelay: `${i * 100}ms` }}
-              data-testid={`step-${i + 1}`}
-            >
-              <div className="shrink-0 w-12 h-12 rounded-full bg-[#c8f135]/10 flex items-center justify-center">
-                <step.icon className="w-6 h-6 text-[#c8f135]" />
-              </div>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-[#c8f135] text-xs font-bold uppercase tracking-wider">Step {i + 1}</span>
-                  <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+        <div ref={ref} className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+          <div className="flex flex-wrap gap-2 mb-8 justify-center">
+            {scenarios.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveTab(i)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                  activeTab === i
+                    ? "bg-[#4A90D9] text-white shadow-[0_0_20px_rgba(74,144,217,0.3)]"
+                    : "bg-[#1a1a1a] text-white/60 border border-white/10 hover:border-[#4A90D9]/40 hover:text-white"
+                }`}
+                data-testid={`tab-step-${i + 1}`}
+              >
+                <s.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{s.tabLabel}</span>
+                <span className="sm:hidden">{s.step}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-2 bg-[#1a1a1a] border border-white/10 rounded-2xl p-6" data-testid={`step-${activeTab + 1}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#4A90D9]/10 flex items-center justify-center">
+                  <active.icon className="w-5 h-5 text-[#4A90D9]" />
                 </div>
-                <p className="text-white/60 text-sm leading-relaxed">{step.description}</p>
+                <span className="text-[#4A90D9] text-xs font-bold uppercase tracking-wider">{active.step}</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3">{active.tabLabel}</h3>
+              <p className="text-white/60 text-sm leading-relaxed">{active.description}</p>
+            </div>
+
+            <div className="lg:col-span-3">
+              <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl overflow-hidden shadow-2xl" data-testid="card-platform-snapshot">
+                <div className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] border-b border-white/5">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                  </div>
+                  <span className="text-white/40 text-xs ml-2 flex items-center gap-1.5">
+                    <Bot className="w-3.5 h-3.5" /> ARI Clinical Assistant
+                  </span>
+                </div>
+
+                <div className="p-5 space-y-4 min-h-[320px]" key={activeTab}>
+                  <div className="flex gap-3 justify-end animate-[fadeSlideUp_0.4s_ease-out]">
+                    <div className="max-w-[85%] bg-[#4A90D9]/10 border border-[#4A90D9]/20 rounded-2xl rounded-tr-sm px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <User className="w-3.5 h-3.5 text-[#4A90D9]" />
+                        <span className="text-[#4A90D9] text-xs font-medium">{active.doctor}</span>
+                      </div>
+                      <p className="text-white/80 text-sm">{active.query}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 animate-[fadeSlideUp_0.5s_ease-out_0.2s_both]">
+                    <div className="max-w-[90%] bg-[#1a1a1a] border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
+                        <span className="text-[#4A90D9] text-xs font-medium">ARI</span>
+                        <span className="text-white/30 text-xs">· {active.ariLabel}</span>
+                      </div>
+                      <p className="text-white/80 text-sm mb-3">{active.ariSummary}</p>
+                      <div className="space-y-2 text-sm text-white/70">
+                        {active.ariPoints.map((pt, j) => (
+                          <div key={j} className="flex items-start gap-2 animate-[fadeSlideUp_0.4s_ease-out_both]" style={{ animationDelay: `${0.4 + j * 0.15}s` }}>
+                            <pt.icon className="w-4 h-4 text-[#4A90D9] shrink-0 mt-0.5" />
+                            <span><span className="text-white/90 font-medium">{pt.title}</span> — {pt.detail}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-xs text-white/30">
+                        <FileText className="w-3 h-3" />
+                        <span>Sources: {active.sources}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
-    </section>
-  );
-}
 
-function AiInHealthcareSection() {
-  const { ref, isVisible } = useInView();
-  const capabilities = [
-    {
-      icon: MessageSquare,
-      title: "Natural Language Processing",
-      description: "Advanced NLP understands clinical notes, lab reports, and patient narratives in natural language, extracting key medical information automatically.",
-    },
-    {
-      icon: BarChart3,
-      title: "Predictive Analytics",
-      description: "Machine learning models predict patient deterioration, readmission risk, and treatment response to enable proactive clinical interventions.",
-    },
-    {
-      icon: Database,
-      title: "EHR Integration",
-      description: "Seamless integration with existing Electronic Health Record systems, pulling relevant patient data without disrupting established clinical workflows.",
-    },
-    {
-      icon: Lock,
-      title: "HIPAA-Compliant Security",
-      description: "End-to-end encryption, role-based access controls, and comprehensive audit trails ensure full HIPAA compliance and patient data protection.",
-    },
-  ];
-
-  return (
-    <section id="ai-healthcare" className="py-24 bg-[#1a1a1a]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-testid="text-ai-healthcare-title">
-          AI in <span className="text-[#c8f135]">Healthcare</span>
-        </h2>
-
-        <div
-          ref={ref}
-          className={`grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-        >
-          {capabilities.map((cap, i) => (
-            <div
-              key={cap.title}
-              className="flex gap-5 p-6 bg-[#222] border border-white/10 rounded-2xl hover:border-[#c8f135]/30 transition-all duration-500"
-              style={{ transitionDelay: `${i * 100}ms` }}
-              data-testid={`card-capability-${cap.title.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              <div className="shrink-0 w-12 h-12 rounded-xl bg-[#c8f135]/10 flex items-center justify-center">
-                <cap.icon className="w-6 h-6 text-[#c8f135]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-2">{cap.title}</h3>
-                <p className="text-white/60 text-sm leading-relaxed">{cap.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </section>
   );
 }
@@ -487,7 +618,7 @@ function OurVisionSection() {
       icon: Lightbulb,
       title: "OUR STORY",
       description:
-        "Our CEO, a practicing physician and Director of Infectious Disease at Vibra Hospitals, believes that integrating modern technology is essential to advancing medical science, enhancing patient care, and empowering clinicians in the pursuit of novel cures and treatments.",
+        "Our CEO, Dr. Chet Chea, a practicing physician and Director of Infectious Disease at Vibra Hospitals, believes that integrating modern technology is essential to advancing medical science, enhancing patient care, and empowering clinicians in the pursuit of novel cures and treatments.",
     },
     {
       icon: Users,
@@ -507,7 +638,7 @@ function OurVisionSection() {
     <section id="vision" className="py-24 bg-[#111]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-testid="text-vision-title">
-          OUR <span className="text-[#c8f135]">VISION</span>
+          OUR <span className="text-[#4A90D9]">VISION</span>
         </h2>
 
         <div
@@ -517,17 +648,521 @@ function OurVisionSection() {
           {cards.map((card, i) => (
             <div
               key={card.title}
-              className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 text-center hover:border-[#c8f135]/30 transition-all duration-500"
+              className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 text-center hover:border-[#4A90D9]/30 transition-all duration-500"
               style={{ transitionDelay: `${i * 150}ms` }}
               data-testid={`card-vision-${card.title.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <div className="w-16 h-16 rounded-full bg-[#c8f135]/10 flex items-center justify-center mx-auto mb-6">
-                <card.icon className="w-8 h-8 text-[#c8f135]" />
+              <div className="w-16 h-16 rounded-full bg-[#4A90D9]/10 flex items-center justify-center mx-auto mb-6">
+                <card.icon className="w-8 h-8 text-[#4A90D9]" />
               </div>
               <h3 className="text-lg font-bold text-white mb-4">{card.title}</h3>
               <p className="text-white/60 text-sm leading-relaxed">{card.description}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialsSection() {
+  const { ref, isVisible } = useInView();
+  const testimonials = [
+    {
+      name: "Dr. Sarah Chen",
+      specialty: "Cardiologist",
+      hospital: "Johns Hopkins Hospital",
+      rating: 5,
+      quote: "ARI has transformed how I approach complex cardiac cases. The evidence-based recommendations are remarkably accurate and save me hours of literature review.",
+    },
+    {
+      name: "Dr. James Rodriguez",
+      specialty: "Emergency Medicine",
+      hospital: "Massachusetts General Hospital",
+      rating: 5,
+      quote: "In the ER, every second counts. ARI's real-time triage support has helped us reduce diagnostic errors by over 30% in our department.",
+    },
+    {
+      name: "Dr. Priya Patel",
+      specialty: "Oncologist",
+      hospital: "Mayo Clinic",
+      rating: 5,
+      quote: "The drug interaction checks alone have prevented several potential adverse events. ARI is like having an expert colleague available 24/7.",
+    },
+    {
+      name: "Dr. Michael Thompson",
+      specialty: "Neurologist",
+      hospital: "Cleveland Clinic",
+      rating: 4,
+      quote: "ARI's differential diagnosis feature is incredibly thorough. It consistently surfaces possibilities that even experienced clinicians might overlook.",
+    },
+    {
+      name: "Dr. Emily Nakamura",
+      specialty: "Infectious Disease",
+      hospital: "Stanford Health Care",
+      rating: 5,
+      quote: "During the latest outbreak response, ARI helped us stay on top of rapidly evolving guidelines from WHO and CDC in real-time. Invaluable tool.",
+    },
+    {
+      name: "Dr. David Okafor",
+      specialty: "Pulmonologist",
+      hospital: "UCLA Medical Center",
+      rating: 5,
+      quote: "The integration with our EHR is seamless. ARI fits naturally into our workflow without adding friction. My team adopted it within days.",
+    },
+  ];
+
+  return (
+    <section id="testimonials" className="py-24 bg-[#1a1a1a]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-testimonials-title">
+          What <span className="text-[#4A90D9]">Physicians</span> Say
+        </h2>
+        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+          Trusted by leading clinicians at top hospitals worldwide
+        </p>
+
+        <div
+          ref={ref}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {testimonials.map((t, i) => (
+            <div
+              key={t.name}
+              className={`bg-[#222] border border-white/10 rounded-2xl p-6 hover:border-[#4A90D9]/30 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+              style={{ transitionDelay: `${i * 100}ms` }}
+              data-testid={`card-testimonial-${i}`}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-[#4A90D9]/20 flex items-center justify-center text-[#4A90D9] font-bold text-sm shrink-0">
+                  {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                </div>
+                <div>
+                  <div className="text-white font-semibold text-sm">{t.name}</div>
+                  <div className="text-white/50 text-xs">{t.specialty} · {t.hospital}</div>
+                </div>
+              </div>
+              <div className="flex gap-0.5 mb-3">
+                {Array.from({ length: 5 }, (_, j) => (
+                  <Star
+                    key={j}
+                    className={`w-4 h-4 ${j < t.rating ? "text-[#4A90D9] fill-[#4A90D9]" : "text-white/20"}`}
+                  />
+                ))}
+              </div>
+              <p className="text-white/70 text-sm leading-relaxed italic">"{t.quote}"</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CapabilitiesSection() {
+  const { ref, isVisible } = useInView();
+  const [activeSource, setActiveSource] = useState<string | null>(null);
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+
+  const evidenceSources = [
+    { id: "who", label: "WHO Guidelines", icon: Globe },
+    { id: "cdc", label: "CDC Recommendations", icon: Shield },
+    { id: "nice", label: "NICE Guidelines", icon: Scale },
+    { id: "cochrane", label: "Cochrane Reviews", icon: BookOpen },
+    { id: "uptodate", label: "UpToDate", icon: FileText },
+    { id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical },
+    { id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb },
+    { id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope },
+  ];
+
+  const features = [
+    {
+      icon: MessageSquare,
+      title: "Natural Language Processing",
+      description: "Advanced NLP understands clinical notes, lab reports, and patient narratives in natural language, extracting key medical information automatically.",
+      image: featureNlpImg,
+    },
+    {
+      icon: BarChart3,
+      title: "Predictive Analytics",
+      description: "Machine learning models predict patient deterioration, readmission risk, and treatment response to enable proactive clinical interventions.",
+      image: featurePredictiveImg,
+    },
+    {
+      icon: Database,
+      title: "EHR Integration",
+      description: "Seamless integration with existing Electronic Health Record systems, pulling relevant patient data without disrupting established clinical workflows.",
+      image: featureEhrImg,
+    },
+    {
+      icon: Lock,
+      title: "HIPAA-Compliant Security",
+      description: "End-to-end encryption, role-based access controls, and comprehensive audit trails ensure full HIPAA compliance and patient data protection.",
+      image: featureSecurityImg,
+    },
+  ];
+
+  const specialties = [
+    "Cardiology", "Oncology", "Neurology", "Infectious Disease",
+    "Pulmonology", "Emergency Medicine", "Internal Medicine",
+    "Endocrinology", "Gastroenterology", "Pediatrics",
+  ];
+
+  const featureChips = [
+    { label: "PHI Safe Mode", icon: Lock },
+    { label: "Drug Interaction Checks", icon: AlertTriangle },
+    { label: "Agentic Customization", icon: Sparkles },
+  ];
+
+  return (
+    <section id="capabilities" className="py-24 bg-[#111]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-capabilities-title">
+          ARI <span className="text-[#4A90D9]">Capabilities</span> & AI in Healthcare
+        </h2>
+        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+          Powered by 8 configurable evidence sources, advanced AI, and built for clinical safety
+        </p>
+
+        <div
+          ref={ref}
+          className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+            {features.map((f, i) => (
+              <div
+                key={f.title}
+                className="group relative bg-[#1a1a1a] border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#4A90D9]/50 hover:shadow-[0_0_30px_rgba(74,144,217,0.12)] cursor-pointer"
+                style={{ transitionDelay: `${i * 80}ms` }}
+                onMouseEnter={() => setHoveredFeature(i)}
+                onMouseLeave={() => setHoveredFeature(null)}
+                data-testid={`card-capability-${f.title.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src={f.image}
+                    alt={f.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/60 to-transparent" />
+                  <div className={`absolute inset-0 bg-[#4A90D9]/10 transition-opacity duration-500 ${hoveredFeature === i ? "opacity-100" : "opacity-0"}`} />
+                </div>
+                <div className="p-6 relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${hoveredFeature === i ? "bg-[#4A90D9] shadow-[0_0_15px_rgba(74,144,217,0.4)]" : "bg-[#4A90D9]/10"}`}>
+                      <f.icon className={`w-5 h-5 transition-colors duration-500 ${hoveredFeature === i ? "text-white" : "text-[#4A90D9]"}`} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">{f.title}</h3>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed">{f.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 mb-16">
+            <h3 className="text-xl font-semibold text-white mb-6">Evidence Sources</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {evidenceSources.map((src) => {
+                const isActive = activeSource === src.id;
+                return (
+                  <button
+                    key={src.id}
+                    onClick={() => setActiveSource(isActive ? null : src.id)}
+                    className={`relative p-4 rounded-xl border text-left transition-all duration-300 group cursor-pointer ${
+                      isActive
+                        ? "bg-[#4A90D9]/15 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.2)] scale-[1.02]"
+                        : "bg-[#222] border-white/10 hover:border-[#4A90D9]/40 hover:shadow-[0_0_15px_rgba(74,144,217,0.1)] hover:scale-[1.01]"
+                    }`}
+                    data-testid={`toggle-source-${src.id}`}
+                  >
+                    <div className={`text-xs font-medium transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/70"}`}>
+                      {src.label}
+                    </div>
+                    {isActive && (
+                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8">
+              <h3 className="text-lg font-semibold text-white mb-5">Specialty Focus</h3>
+              <div className="flex flex-wrap gap-2">
+                {specialties.map((s) => (
+                  <span
+                    key={s}
+                    className="px-3 py-1.5 bg-[#222] border border-white/10 rounded-full text-white/70 text-xs hover:border-[#4A90D9]/40 hover:text-[#4A90D9] hover:bg-[#4A90D9]/5 transition-all duration-300 cursor-default"
+                    data-testid={`tag-specialty-${s.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8">
+              <h3 className="text-lg font-semibold text-white mb-5">Key Features</h3>
+              <div className="space-y-3">
+                {featureChips.map((f) => (
+                  <div
+                    key={f.label}
+                    className="flex items-center gap-3 px-4 py-3 bg-[#222] border border-white/10 rounded-xl hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5 transition-all duration-300 group cursor-default"
+                    data-testid={`chip-feature-${f.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[#4A90D9]/10 flex items-center justify-center group-hover:bg-[#4A90D9]/20 transition-colors duration-300">
+                      <f.icon className="w-4 h-4 text-[#4A90D9]" />
+                    </div>
+                    <span className="text-white/80 text-sm font-medium group-hover:text-white transition-colors duration-300">{f.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CommunitySection() {
+  const hospitals = [
+    "Massachusetts General Hospital", "Johns Hopkins Hospital", "Mayo Clinic",
+    "Cleveland Clinic", "UCLA Medical Center", "Cedars-Sinai Medical Center",
+    "UCSF Medical Center", "Stanford Health Care", "NYU Langone Health",
+    "Mount Sinai Hospital", "NewYork-Presbyterian Hospital", "Duke University Hospital",
+    "Brigham and Women's Hospital", "Northwestern Memorial Hospital", "Penn Medicine",
+    "Emory University Hospital", "Vanderbilt University Medical Center", "Michigan Medicine",
+    "Houston Methodist", "UT Southwestern Medical Center",
+  ];
+
+  const duplicated = [...hospitals, ...hospitals];
+
+  return (
+    <section id="community" className="py-24 bg-[#1a1a1a] overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-testid="text-community-title">
+          Our <span className="text-[#4A90D9]">Community</span>
+        </h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <AnimatedCounter target={12500} suffix="+" label="Active Physicians" />
+          <AnimatedCounter target={350} suffix="+" label="Partner Hospitals" />
+          <AnimatedCounter target={40} suffix="+" label="Specialties Supported" />
+          <AnimatedCounter target={28} suffix="" label="Countries" />
+        </div>
+      </div>
+
+      <div className="relative" data-testid="marquee-hospitals">
+        <div className="flex animate-marquee whitespace-nowrap">
+          {duplicated.map((h, i) => (
+            <span
+              key={`${h}-${i}`}
+              className="mx-6 text-white/30 text-sm font-medium inline-block"
+            >
+              {h}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 40s linear infinite;
+        }
+      `}</style>
+    </section>
+  );
+}
+
+function TeamSection() {
+  const { ref, isVisible } = useInView();
+  const team = [
+    {
+      name: "Chet Chea, MD",
+      title: "CEO & Co-Founder",
+      bio: "Director of Infectious Disease at Vibra Hospitals. Nearly 15 years treating complex infections. Champion of physician-led innovation.",
+      image: teamChetChea,
+      initials: "CC",
+    },
+    {
+      name: "Dana Nguyen, JD",
+      title: "COO & Co-Founder",
+      bio: "Former IP attorney at Greenberg Traurig. Background in engineering and law, representing Fortune 500 companies.",
+      image: teamDanaNguyen,
+      initials: "DN",
+    },
+    {
+      name: "Britta Denman, DO",
+      title: "Medical Director",
+      bio: "Infectious disease specialist, former Chief of Staff at Capital Medical Center. Founded Medica XXI nonprofit.",
+      image: teamBrittaDenman,
+      initials: "BD",
+    },
+    {
+      name: "Osas Nosa-Idahosa, PharmD",
+      title: "Clinical Pharmacist",
+      bio: "Director of Pharmacy with expertise in pharmacokinetics, chemotherapy, critical care, and pain management.",
+      image: teamOsas,
+      initials: "ON",
+    },
+    {
+      name: "Anupam Acharya",
+      title: "Engineer",
+      bio: "5+ years leading tech startups. Built $2M+ revenue verticals. Strong product and business management experience.",
+      image: teamAnupam,
+      initials: "AA",
+    },
+    {
+      name: "Michael Stewart, MD",
+      title: "General Surgeon",
+      bio: "Distinguished by clinical precision in diagnosis and patient-centered surgical strategies. Trained at Marshall University.",
+      image: teamMichaelStewart,
+      initials: "MS",
+    },
+    {
+      name: "Deborah Doherty, MD",
+      title: "Physical Medicine & Rehabilitation",
+      bio: "Stanford-trained specialist in complex brain injury rehabilitation. Published authority in neurorehabilitation.",
+      image: teamDoherty,
+      initials: "DD",
+    },
+    {
+      name: "John Cranshaw, MD",
+      title: "Internal Medicine",
+      bio: "Seasoned internist in San Francisco with nearly 30 years of experience. Trained at Harvard and Stanford.",
+      image: teamCranshaw,
+      initials: "JC",
+    },
+    {
+      name: "Ken Collinsworth, MD",
+      title: "Cardiologist",
+      bio: "30+ years of cardiovascular expertise. Fellowship trained at Stanford and UCSF. Dedicated to comprehensive care.",
+      image: teamCollinsworth,
+      initials: "KC",
+    },
+    {
+      name: "Donald Blair, MD",
+      title: "Mentor & Advisor",
+      bio: "Over 50 years practicing internal medicine and infectious disease. Mentor to CEO Dr. Chea during his fellowship.",
+      image: teamBlair,
+      initials: "DB",
+    },
+  ];
+
+  return (
+    <section id="team" className="py-24 bg-[#111]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-team-title">
+          Meet the <span className="text-[#4A90D9]">Team</span>
+        </h2>
+        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+          Built by physicians and engineers passionate about transforming healthcare
+        </p>
+
+        <div
+          ref={ref}
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
+          {team.map((member, i) => (
+            <div
+              key={member.name}
+              className="group bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 text-center hover:border-[#4A90D9]/30 transition-all duration-500 hover:-translate-y-1"
+              style={{ transitionDelay: `${i * 80}ms` }}
+              data-testid={`card-team-${member.initials.toLowerCase()}`}
+            >
+              <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-white/10 group-hover:border-[#4A90D9]/50 transition-colors duration-500">
+                <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
+              </div>
+              <h3 className="text-white font-semibold text-lg">{member.name}</h3>
+              <p className="text-[#4A90D9] text-sm font-medium mt-1">{member.title}</p>
+              <p className="text-white/50 text-sm mt-3 leading-relaxed">{member.bio}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const { ref, isVisible } = useInView();
+
+  const faqs = [
+    {
+      q: "Is ARI HIPAA compliant?",
+      a: "Yes. ARI is built with enterprise-grade security from the ground up. All patient data is encrypted at rest and in transit, with role-based access controls, comprehensive audit trails, and full HIPAA compliance certification. We undergo regular third-party security audits.",
+    },
+    {
+      q: "What EHR systems does ARI integrate with?",
+      a: "ARI integrates seamlessly with major EHR platforms including Epic, Cerner, Meditech, Allscripts, and athenahealth via FHIR and HL7 interfaces. Our team handles the integration process to minimize disruption to your existing workflows.",
+    },
+    {
+      q: "How does ARI learn from outcomes?",
+      a: "ARI uses de-identified outcome data to continuously refine its clinical models. When a treatment pathway leads to positive outcomes, ARI strengthens that recommendation pattern. All learning happens on aggregated, de-identified data — never on individual patient records.",
+    },
+    {
+      q: "Is ARI a replacement for physician judgment?",
+      a: "Absolutely not. ARI is a clinical decision support tool designed to augment — not replace — physician expertise. It surfaces evidence, generates differentials, and flags interactions, but every clinical decision remains with the treating physician.",
+    },
+    {
+      q: "What specialties does ARI support?",
+      a: "ARI supports over 40 medical specialties including Cardiology, Oncology, Neurology, Emergency Medicine, Internal Medicine, Infectious Disease, Pulmonology, Endocrinology, and many more. Our evidence models are specialty-aware and tuned to each discipline.",
+    },
+    {
+      q: "How do I get started?",
+      a: "Getting started is easy. Schedule a demo through our form below, and our team will walk you through ARI's capabilities, discuss your institution's needs, and set up a pilot program. Most teams are onboarded within two weeks.",
+    },
+  ];
+
+  return (
+    <section id="faq" className="py-24 bg-[#1a1a1a]">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-faq-title">
+          Frequently Asked <span className="text-[#4A90D9]">Questions</span>
+        </h2>
+        <p className="text-center text-white/50 mb-12">
+          Everything you need to know about ARI
+        </p>
+
+        <div
+          ref={ref}
+          className={`space-y-3 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
+          {faqs.map((faq, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <div
+                key={i}
+                className="bg-[#222] border border-white/10 rounded-xl overflow-hidden hover:border-[#4A90D9]/20 transition-colors"
+                data-testid={`faq-item-${i}`}
+              >
+                <button
+                  onClick={() => setOpenIndex(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between p-5 text-left"
+                  data-testid={`button-faq-${i}`}
+                >
+                  <span className="text-white font-medium text-sm pr-4">{faq.q}</span>
+                  <ChevronRight
+                    className={`w-5 h-5 text-[#4A90D9] shrink-0 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`}
+                  />
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-96" : "max-h-0"}`}
+                >
+                  <p className="px-5 pb-5 text-white/60 text-sm leading-relaxed">{faq.a}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -572,22 +1207,22 @@ function DemoFormSection() {
     <section id="demo" className="py-24 bg-[#1a1a1a]">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-demo-title">
-          SCHEDULE A <span className="text-[#c8f135]">DEMO</span>
+          JOIN THE <span className="text-[#4A90D9]">COMMUNITY</span>
         </h2>
         <p className="text-center text-white/50 mb-12">
           Please fill your contact details below
         </p>
 
         {submitted ? (
-          <div className="text-center py-16 bg-[#222] rounded-2xl border border-[#c8f135]/30" data-testid="text-demo-success">
-            <div className="w-16 h-16 rounded-full bg-[#c8f135]/20 flex items-center justify-center mx-auto mb-6">
-              <Shield className="w-8 h-8 text-[#c8f135]" />
+          <div className="text-center py-16 bg-[#222] rounded-2xl border border-[#4A90D9]/30" data-testid="text-demo-success">
+            <div className="w-16 h-16 rounded-full bg-[#4A90D9]/20 flex items-center justify-center mx-auto mb-6">
+              <Shield className="w-8 h-8 text-[#4A90D9]" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">Message Received!</h3>
             <p className="text-white/60">We'll get back to you shortly.</p>
             <Button
               onClick={() => setSubmitted(false)}
-              className="mt-6 bg-[#c8f135] text-black hover:bg-[#d4f85a]"
+              className="mt-6 bg-[#4A90D9] text-white hover:bg-[#5BA0E9]"
               data-testid="button-submit-another"
             >
               Submit Another Request
@@ -606,7 +1241,7 @@ function DemoFormSection() {
                       <Input
                         {...field}
                         placeholder="Dr. Jane Smith"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#c8f135]/50"
+                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
                         data-testid="input-demo-name"
                       />
                     </FormControl>
@@ -625,7 +1260,7 @@ function DemoFormSection() {
                         {...field}
                         type="email"
                         placeholder="jane@hospital.org"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#c8f135]/50"
+                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
                         data-testid="input-demo-email"
                       />
                     </FormControl>
@@ -643,7 +1278,7 @@ function DemoFormSection() {
                       <Input
                         {...field}
                         placeholder="Memorial Hospital"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#c8f135]/50"
+                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
                         data-testid="input-demo-organization"
                       />
                     </FormControl>
@@ -661,7 +1296,7 @@ function DemoFormSection() {
                       <Input
                         {...field}
                         placeholder="Chief Medical Officer"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#c8f135]/50"
+                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
                         data-testid="input-demo-role"
                       />
                     </FormControl>
@@ -680,7 +1315,7 @@ function DemoFormSection() {
                         {...field}
                         placeholder="Tell us about your needs..."
                         rows={4}
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#c8f135]/50 resize-none"
+                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50 resize-none"
                         data-testid="input-demo-message"
                       />
                     </FormControl>
@@ -690,7 +1325,7 @@ function DemoFormSection() {
               />
               <Button
                 type="submit"
-                className="w-full bg-[#c8f135] text-black hover:bg-[#d4f85a] font-semibold py-6 text-lg"
+                className="w-full bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold py-6 text-lg"
                 disabled={mutation.isPending}
                 data-testid="button-submit-demo"
               >
@@ -727,8 +1362,12 @@ export default function Landing() {
       <HeroSection />
       <MeetAriSection />
       <HowAriWorksSection />
-      <AiInHealthcareSection />
+      <CapabilitiesSection />
+      <TestimonialsSection />
+      <CommunitySection />
+      <TeamSection />
       <OurVisionSection />
+      <FaqSection />
       <DemoFormSection />
       <Footer />
     </div>
