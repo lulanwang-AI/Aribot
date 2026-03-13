@@ -1,7 +1,7 @@
 import type {
   User, InsertUser, TriagePost, Comment, NewsItem, NewsComment, Group, MedEvent, FlaggedItem,
   ChatThread, ChatMessage, TrainingModule, AribotHistory, AribotFolder, Team,
-  TelemedConsultation
+  TelemedConsultation, DemoRequest, InsertDemoRequest
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { seedAllData } from "./seed";
@@ -71,6 +71,9 @@ export interface IStorage {
   completeTelemedConsultation(id: string, data: { notes: string; diagnosis: string; prescriptions: string[] }): Promise<TelemedConsultation | undefined>;
   updateTelemedNotes(id: string, notes: string): Promise<TelemedConsultation | undefined>;
   getTelemedEarnings(doctorId: string): Promise<{ totalEarnings: number; thisMonth: number; thisWeek: number; pendingPayout: number; completedConsultations: number; avgPerConsultation: number }>;
+
+  createDemoRequest(data: InsertDemoRequest): Promise<DemoRequest>;
+  getDemoRequests(): Promise<DemoRequest[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -89,6 +92,7 @@ export class MemStorage implements IStorage {
   private aribotFolders: Map<string, AribotFolder> = new Map();
   private teams: Map<string, Team> = new Map();
   private telemedConsultations: Map<string, TelemedConsultation> = new Map();
+  private demoRequests: Map<string, DemoRequest> = new Map();
 
   constructor() {
     this.seed();
@@ -449,6 +453,26 @@ export class MemStorage implements IStorage {
     const avgPerConsultation = completedConsultations > 0 ? Math.round(totalEarnings / completedConsultations) : 0;
 
     return { totalEarnings, thisMonth, thisWeek, pendingPayout, completedConsultations, avgPerConsultation };
+  }
+
+  async createDemoRequest(data: InsertDemoRequest): Promise<DemoRequest> {
+    const id = randomUUID();
+    const req: DemoRequest = {
+      id,
+      name: data.name,
+      email: data.email,
+      organization: data.organization,
+      role: data.role,
+      message: data.message || "",
+      createdAt: new Date(),
+    };
+    this.demoRequests.set(id, req);
+    return req;
+  }
+
+  async getDemoRequests(): Promise<DemoRequest[]> {
+    return Array.from(this.demoRequests.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 }
 

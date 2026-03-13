@@ -7,7 +7,7 @@ import { Lock, Mail, ShieldCheck } from "lucide-react";
 
 const BG_IMAGE_URL = "https://static.wixstatic.com/media/43c038_4ad81e81714f4860b60080b8f9a15a16~mv2_d_5773_3331_s_4_2.jpg/v1/fill/w_1920,h_1080,al_c,q_85,usm_0.66_1.00_0.01,blur_3,enc_auto/43c038_4ad81e81714f4860b60080b8f9a15a16~mv2_d_5773_3331_s_4_2.jpg";
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+export default function Login({ onLogin, onNavigateToLanding }: { onLogin: () => void; onNavigateToLanding?: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,16 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         <p className="text-center text-[10px] text-white/50">
           By signing in, you confirm that you are a licensed medical professional.
         </p>
+
+        {onNavigateToLanding && (
+          <button
+            onClick={onNavigateToLanding}
+            className="block w-full text-center text-sm text-white/60 hover:text-white transition-colors mt-2"
+            data-testid="link-learn-more"
+          >
+            Learn More about ARI bots →
+          </button>
+        )}
       </div>
     </div>
   );

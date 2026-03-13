@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { useState } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -27,6 +27,7 @@ import Training from "@/pages/training";
 import Doctors from "@/pages/doctors";
 import Telemed from "@/pages/telemed";
 import Login from "@/pages/login";
+import Landing from "@/pages/landing";
 import { AuthContext } from "@/lib/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -94,16 +95,16 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <FloatingAribot />
         </SidebarProvider>
-        <Toaster />
       </ProfileSheetProvider>
     </AuthContext.Provider>
   );
 }
 
-function App() {
+function AppContent() {
   const [authenticated, setAuthenticated] = useState(() => {
     return localStorage.getItem("aribot_authenticated") === "true";
   });
+  const [location, setLocation] = useLocation();
 
   function handleSignOut() {
     localStorage.removeItem("aribot_authenticated");
@@ -111,14 +112,28 @@ function App() {
     setAuthenticated(false);
   }
 
+  if (location === "/landing") {
+    return <Landing />;
+  }
+
+  if (authenticated) {
+    return <AuthenticatedApp onSignOut={handleSignOut} />;
+  }
+
+  return (
+    <Login
+      onLogin={() => setAuthenticated(true)}
+      onNavigateToLanding={() => setLocation("/landing")}
+    />
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {authenticated ? (
-          <AuthenticatedApp onSignOut={handleSignOut} />
-        ) : (
-          <Login onLogin={() => setAuthenticated(true)} />
-        )}
+        <Toaster />
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );

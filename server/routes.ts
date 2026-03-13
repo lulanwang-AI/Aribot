@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { insertDemoRequestSchema } from "@shared/schema";
 
 const createPostSchema = z.object({
   title: z.string().min(1),
@@ -537,6 +538,13 @@ export async function registerRoutes(
       completed: all.filter(c => c.status === "completed").length,
       todayCount,
     });
+  });
+
+  app.post("/api/demo-requests", async (req, res) => {
+    const parsed = insertDemoRequestSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    const demoRequest = await storage.createDemoRequest(parsed.data);
+    res.status(201).json(demoRequest);
   });
 
   return httpServer;
