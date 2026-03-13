@@ -40,12 +40,10 @@ import {
   BookOpen,
   FileText,
   FlaskConical,
-  Microscope,
   Scale,
   ChevronRight,
   Bot,
   User,
-  Sparkles,
   AlertTriangle,
   Heart,
 } from "lucide-react";
@@ -66,8 +64,6 @@ import featureNlpImg from "@assets/feature-nlp.png";
 import featurePredictiveImg from "@assets/feature-predictive.png";
 import featureEhrImg from "@assets/feature-ehr.png";
 import featureSecurityImg from "@assets/feature-security.png";
-import featureEvidenceImg from "@assets/feature-evidence.png";
-import featureSpecialtiesImg from "@assets/feature-specialties.png";
 
 function DotsCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -950,7 +946,6 @@ function CapabilitiesSection() {
     { id: "uptodate", label: "UpToDate", icon: FileText },
     { id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical },
     { id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb },
-    { id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope },
   ];
 
   const features = [
@@ -980,17 +975,6 @@ function CapabilitiesSection() {
     },
   ];
 
-  const specialties = [
-    "Cardiology", "Oncology", "Neurology", "Infectious Disease",
-    "Pulmonology", "Emergency Medicine", "Internal Medicine",
-    "Endocrinology", "Gastroenterology", "Pediatrics",
-  ];
-
-  const featureChips = [
-    { label: "PHI Safe Mode", icon: Lock },
-    { label: "Drug Interaction Checks", icon: AlertTriangle },
-    { label: "Agentic Customization", icon: Sparkles },
-  ];
 
   return (
     <section id="capabilities" className="py-24 bg-[#111]">
@@ -999,7 +983,7 @@ function CapabilitiesSection() {
           ARI <span className="text-[#4A90D9]">Capabilities</span> & AI in Healthcare
         </h2>
         <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
-          Powered by 8 configurable evidence sources, advanced AI, and built for clinical safety
+          Powered by 7 configurable evidence sources, advanced AI, and built for clinical safety
         </p>
 
         <div
@@ -1066,40 +1050,6 @@ function CapabilitiesSection() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8">
-              <h3 className="text-lg font-semibold text-white mb-5">Specialty Focus</h3>
-              <div className="flex flex-wrap gap-2">
-                {specialties.map((s) => (
-                  <span
-                    key={s}
-                    className="px-3 py-1.5 bg-[#222] border border-white/10 rounded-full text-white/70 text-xs hover:border-[#4A90D9]/40 hover:text-[#4A90D9] hover:bg-[#4A90D9]/5 transition-all duration-300 cursor-default"
-                    data-testid={`tag-specialty-${s.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8">
-              <h3 className="text-lg font-semibold text-white mb-5">Key Features</h3>
-              <div className="space-y-3">
-                {featureChips.map((f) => (
-                  <div
-                    key={f.label}
-                    className="flex items-center gap-3 px-4 py-3 bg-[#222] border border-white/10 rounded-xl hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5 transition-all duration-300 group cursor-default"
-                    data-testid={`chip-feature-${f.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#4A90D9]/10 flex items-center justify-center group-hover:bg-[#4A90D9]/20 transition-colors duration-300">
-                      <f.icon className="w-4 h-4 text-[#4A90D9]" />
-                    </div>
-                    <span className="text-white/80 text-sm font-medium group-hover:text-white transition-colors duration-300">{f.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
