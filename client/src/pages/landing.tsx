@@ -41,6 +41,7 @@ import {
   FileText,
   FlaskConical,
   Scale,
+  Microscope,
   ChevronRight,
   Bot,
   User,
@@ -467,6 +468,20 @@ function HeroSection() {
 
 function MeetAriSection() {
   const { ref, isVisible } = useInView();
+  const { ref: srcRef, isVisible: srcVisible } = useInView();
+  const [activeSource, setActiveSource] = useState<string | null>(null);
+
+  const evidenceSources = [
+    { id: "who", label: "WHO Guidelines", icon: Globe },
+    { id: "cdc", label: "CDC Recommendations", icon: Shield },
+    { id: "nice", label: "NICE Guidelines", icon: Scale },
+    { id: "cochrane", label: "Cochrane Reviews", icon: BookOpen },
+    { id: "uptodate", label: "UpToDate", icon: FileText },
+    { id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical },
+    { id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb },
+    { id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope },
+  ];
+
   const features = [
     {
       icon: Zap,
@@ -509,6 +524,45 @@ function MeetAriSection() {
               <p className="text-white/60 leading-relaxed text-sm">{f.description}</p>
             </div>
           ))}
+        </div>
+
+        <div
+          ref={srcRef}
+          className={`mt-20 transition-all duration-1000 delay-200 ${srcVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+        >
+          <p className="text-center text-white/40 text-xs uppercase tracking-widest mb-6 font-medium">
+            Powered by 8 trusted evidence sources
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {evidenceSources.map((src, i) => {
+              const isActive = activeSource === src.id;
+              return (
+                <button
+                  key={src.id}
+                  onClick={() => setActiveSource(isActive ? null : src.id)}
+                  className={`group relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-300 ${
+                    isActive
+                      ? "bg-[#4A90D9]/15 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.15)]"
+                      : "bg-[#2a2a2a] border-white/8 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
+                  }`}
+                  style={{ transitionDelay: `${i * 40}ms` }}
+                  data-testid={`source-${src.id}`}
+                >
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                    isActive ? "bg-[#4A90D9]/30" : "bg-white/5 group-hover:bg-[#4A90D9]/15"
+                  }`}>
+                    <src.icon className={`w-3.5 h-3.5 transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/40 group-hover:text-[#4A90D9]"}`} />
+                  </div>
+                  <span className={`text-xs font-medium leading-snug transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/55 group-hover:text-white/80"}`}>
+                    {src.label}
+                  </span>
+                  {isActive && (
+                    <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-pulse" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-20">
