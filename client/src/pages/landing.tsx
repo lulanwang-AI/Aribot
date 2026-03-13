@@ -69,14 +69,7 @@ import featureSecurityImg from "@assets/feature-security.png";
 import featureEvidenceImg from "@assets/feature-evidence.png";
 import featureSpecialtiesImg from "@assets/feature-specialties.png";
 
-const SPECIALTIES = [
-  "Cardiology", "Neurology", "Oncology", "Surgery", "Pediatrics",
-  "Radiology", "EM", "Internal Med", "Psychiatry", "Anesthesiology",
-  "Dermatology", "Gastro", "Pulmonology", "Nephrology", "Endocrinology",
-  "Orthopedics", "Pathology", "Rheumatology", "Urology", "OB/GYN",
-];
-
-function DoctorNetworkCanvas() {
+function DotsCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -86,27 +79,7 @@ function DoctorNetworkCanvas() {
     if (!ctx) return;
 
     let animationId: number;
-    let t = 0;
-
-    type DoctorNode = {
-      x: number; y: number;
-      vx: number; vy: number;
-      specialty: string;
-      pulsePhase: number;
-      avatarColor: string;
-    };
-    type PulseTrail = {
-      from: number; to: number;
-      progress: number; speed: number;
-    };
-
-    let nodes: DoctorNode[] = [];
-    let trails: PulseTrail[] = [];
-
-    const AVATAR_COLORS = [
-      "#4A90D9", "#5BA3E8", "#3B7DD8", "#6AADE0",
-      "#4DB8C4", "#4A9DD9", "#5594CC",
-    ];
+    let nodes: { x: number; y: number; vx: number; vy: number }[] = [];
 
     function resize() {
       if (!canvas || !ctx) return;
@@ -118,177 +91,66 @@ function DoctorNetworkCanvas() {
 
     function initNodes() {
       if (!canvas) return;
-      const count = Math.min(32, Math.max(16, Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 20000)));
-      nodes = Array.from({ length: count }, (_, i) => ({
+      const count = Math.min(50, Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 12000));
+      nodes = Array.from({ length: count }, () => ({
         x: Math.random() * canvas.offsetWidth,
         y: Math.random() * canvas.offsetHeight,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        specialty: SPECIALTIES[i % SPECIALTIES.length],
-        pulsePhase: Math.random() * Math.PI * 2,
-        avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
       }));
-      trails = [];
-      for (let i = 0; i < Math.floor(count / 3); i++) {
-        trails.push({
-          from: Math.floor(Math.random() * count),
-          to: Math.floor(Math.random() * count),
-          progress: Math.random(),
-          speed: 0.003 + Math.random() * 0.004,
-        });
-      }
-    }
-
-    function drawDoctorIcon(x: number, y: number, r: number, color: string, pulse: number) {
-      if (!ctx) return;
-      const ringR = r + 4 + 2 * Math.sin(pulse);
-      const glowHex = Math.floor((0.25 + 0.15 * Math.abs(Math.sin(pulse))) * 255).toString(16).padStart(2, "0");
-
-      ctx.beginPath();
-      ctx.arc(x, y, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = `${color}${glowHex}`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = `${color}33`;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = `${color}cc`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.beginPath();
-      ctx.arc(x, y - r * 0.25, r * 0.34, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      const shoulderY = y + r * 0.05;
-      const bodyW = r * 0.55;
-      const bodyH = r * 0.42;
-      ctx.ellipse(x, shoulderY + bodyH * 0.5, bodyW, bodyH, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = `${color}ee`;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(x - r * 0.18, shoulderY + r * 0.12);
-      ctx.quadraticCurveTo(x - r * 0.28, shoulderY + r * 0.45, x - r * 0.18, shoulderY + r * 0.55);
-      ctx.quadraticCurveTo(x, shoulderY + r * 0.65, x + r * 0.18, shoulderY + r * 0.55);
-      ctx.quadraticCurveTo(x + r * 0.28, shoulderY + r * 0.45, x + r * 0.18, shoulderY + r * 0.12);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(x, shoulderY + r * 0.55, r * 0.1, 0, Math.PI * 2);
-      ctx.fillStyle = `${color}dd`;
-      ctx.fill();
-    }
-
-    function drawSpecialtyLabel(x: number, y: number, r: number, specialty: string) {
-      if (!ctx) return;
-      ctx.font = `bold ${Math.max(8, r * 0.55)}px 'Open Sans', sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.fillText(specialty, x, y + r + 5);
     }
 
     function animate() {
       if (!canvas || !ctx) return;
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
-      t += 0.016;
-
       ctx.clearRect(0, 0, w, h);
 
-      nodes.forEach((node) => {
-        node.x += node.vx;
-        node.y += node.vy;
-        if (node.x < 20 || node.x > w - 20) node.vx *= -1;
-        if (node.y < 20 || node.y > h - 20) node.vy *= -1;
+      nodes.forEach((n) => {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
       });
 
-      const maxDist = 200;
+      const maxDist = 140;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * 0.22;
+            const alpha = (1 - dist / maxDist) * 0.15;
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(74, 144, 217, ${alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = `rgba(74,144,217,${alpha})`;
+            ctx.lineWidth = 0.6;
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
-            ctx.setLineDash([]);
           }
         }
       }
 
-      trails.forEach((trail) => {
-        trail.progress += trail.speed;
-        if (trail.progress > 1) {
-          trail.progress = 0;
-          const newTo = Math.floor(Math.random() * nodes.length);
-          trail.from = trail.to;
-          trail.to = newTo;
-        }
-        const from = nodes[trail.from];
-        const to = nodes[trail.to];
-        if (!from || !to) return;
-        const px = from.x + (to.x - from.x) * trail.progress;
-        const py = from.y + (to.y - from.y) * trail.progress;
-        const dotAlpha = Math.sin(trail.progress * Math.PI) * 0.9;
+      nodes.forEach((n) => {
         ctx.beginPath();
-        ctx.arc(px, py, 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(100, 200, 255, ${dotAlpha})`;
+        ctx.arc(n.x, n.y, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(74,144,217,0.4)";
         ctx.fill();
-        ctx.beginPath();
-        ctx.arc(px, py, 6, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(100, 200, 255, ${dotAlpha * 0.3})`;
-        ctx.fill();
-      });
-
-      const r = Math.max(14, Math.min(20, w / 50));
-      nodes.forEach((node) => {
-        const pulse = node.pulsePhase + t * 1.5;
-        drawDoctorIcon(node.x, node.y, r, node.avatarColor, pulse);
-        drawSpecialtyLabel(node.x, node.y, r, node.specialty);
       });
 
       animationId = requestAnimationFrame(animate);
     }
 
-    function handleResize() {
-      resize();
-      initNodes();
-    }
+    function handleResize() { resize(); initNodes(); }
 
     resize();
     initNodes();
     animate();
-
     window.addEventListener("resize", handleResize);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => { cancelAnimationFrame(animationId); window.removeEventListener("resize", handleResize); };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      data-testid="canvas-neural-network"
-    />
-  );
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" data-testid="canvas-dots" />;
 }
 
 function useInView(threshold = 0.15) {
@@ -439,41 +301,168 @@ function LandingNavbar() {
   );
 }
 
+function AribotMockup() {
+  const messages = [
+    { role: "user", text: "What's the latest evidence on SGLT2 inhibitors for HFpEF?" },
+    { role: "assistant", text: "Recent trials including EMPEROR-Preserved show Empagliflozin reduces HF hospitalization by 21% in HFpEF patients. ACC/AHA 2022 guidelines now give a Class IIa recommendation. Key benefit appears independent of ejection fraction." },
+    { role: "user", text: "Any contraindications I should watch for?" },
+    { role: "assistant", text: "Avoid in eGFR <20, active UTI, or DKA. Monitor for genital mycotic infections and volume depletion, especially in elderly patients on loop diuretics." },
+  ];
+
+  return (
+    <div className="relative w-full max-w-[520px] mx-auto">
+      <div
+        className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+        style={{ background: "linear-gradient(135deg, #181c24 0%, #1a1f2e 100%)" }}
+        data-testid="mockup-aribot"
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-[#13161d]">
+          <div className="flex gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+            <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+            <span className="w-3 h-3 rounded-full bg-[#28c840]" />
+          </div>
+          <div className="flex items-center gap-2 ml-3">
+            <img src={aribotLogoPath} alt="ARIbots" className="w-5 h-5 object-contain" />
+            <span className="text-white/70 text-xs font-medium tracking-wide">ARIbots — Clinical AI Assistant</span>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-green-400 text-[10px] font-medium">Live</span>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-3 h-[340px] overflow-hidden">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
+                </div>
+              )}
+              {msg.role === "user" && (
+                <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Stethoscope className="w-3.5 h-3.5 text-white/70" />
+                </div>
+              )}
+              <div
+                className={`rounded-xl px-3 py-2 text-xs leading-relaxed max-w-[78%] ${
+                  msg.role === "user"
+                    ? "bg-[#4A90D9]/20 border border-[#4A90D9]/30 text-white/90 text-right"
+                    : "bg-white/5 border border-white/10 text-white/80"
+                }`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          <div className="flex gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0">
+              <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex gap-1 items-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 pb-4">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <input
+              readOnly
+              value="Ask a clinical question…"
+              className="flex-1 bg-transparent text-white/30 text-xs outline-none cursor-default"
+            />
+            <div className="w-6 h-6 rounded-lg bg-[#4A90D9] flex items-center justify-center">
+              <ChevronRight className="w-3.5 h-3.5 text-white" />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-2.5 flex-wrap">
+            {["Evidence-based", "HIPAA Safe", "Specialist-reviewed"].map((tag) => (
+              <span key={tag} className="text-[9px] bg-[#4A90D9]/10 border border-[#4A90D9]/20 text-[#4A90D9]/80 rounded-full px-2 py-0.5">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute -inset-px rounded-2xl pointer-events-none"
+        style={{ boxShadow: "0 0 60px rgba(74,144,217,0.12), 0 0 120px rgba(74,144,217,0.06)" }} />
+    </div>
+  );
+}
+
 function HeroSection() {
   return (
-    <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-0 bg-[#111]" />
-      <DoctorNetworkCanvas />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img
-          src={heroDoctorsImg}
-          alt="Two doctors connecting through technology"
-          className="w-full max-w-3xl opacity-20 object-contain"
-        />
-      </div>
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-        <h1
-          className="text-4xl sm:text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight"
-          data-testid="text-hero-headline"
-        >
-          Empowering{" "}
-          <br className="hidden sm:block" />
-          Medicine with{" "}
-          <br className="hidden sm:block" />
-          <span className="text-[#4A90D9]">AI</span>
-        </h1>
-        <p className="mt-6 text-lg md:text-xl text-white/70" data-testid="text-hero-tagline">
-          ~ built by physicians for physicians
-        </p>
-        <Button
-          onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
-          className="mt-10 bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold px-8 py-6 text-lg rounded-full"
-          data-testid="button-hero-cta"
-        >
-          Join the Community
-        </Button>
-        <div className="mt-16 animate-bounce">
-          <ChevronDown className="w-8 h-8 text-white/50 mx-auto" />
+    <section id="hero" className="relative min-h-screen flex items-center overflow-hidden">
+      <div className="absolute inset-0 bg-[#0e1117]" />
+      <DotsCanvas />
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-8 py-24 lg:py-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-screen lg:min-h-0 lg:py-32">
+
+          <div className="flex flex-col justify-center order-1 lg:order-1">
+            <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-8 w-fit">
+              <span className="w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
+              <span className="text-[#4A90D9] text-sm font-medium tracking-wide">Doctor-Only Platform</span>
+            </div>
+
+            <h1
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]"
+              data-testid="text-hero-headline"
+            >
+              Empowering
+              <br />
+              Medicine with{" "}
+              <span className="text-[#4A90D9]">AI</span>
+            </h1>
+
+            <p className="mt-6 text-lg text-white/60 leading-relaxed max-w-md" data-testid="text-hero-tagline">
+              The clinical AI community built by physicians, for physicians. Evidence-based answers, peer collaboration, and intelligent decision support — all in one place.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 mt-10">
+              <Button
+                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                className="bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold px-8 py-6 text-base rounded-xl"
+                data-testid="button-hero-cta"
+              >
+                Join the Community
+              </Button>
+              <Button
+                onClick={() => document.getElementById("capabilities")?.scrollIntoView({ behavior: "smooth" })}
+                variant="outline"
+                className="border-white/20 text-white/80 hover:bg-white/5 hover:border-white/30 font-medium px-8 py-6 text-base rounded-xl bg-transparent"
+                data-testid="button-hero-learn"
+              >
+                See How It Works
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-6 mt-10 pt-10 border-t border-white/8">
+              {[
+                { value: "10K+", label: "Physicians" },
+                { value: "50+", label: "Specialties" },
+                { value: "HIPAA", label: "Compliant" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <div className="text-xl font-bold text-[#4A90D9]">{stat.value}</div>
+                  <div className="text-white/40 text-xs mt-0.5">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center order-2 lg:order-2">
+            <AribotMockup />
+          </div>
+
         </div>
       </div>
     </section>
