@@ -218,6 +218,8 @@ function LandingNavbar() {
     { label: "Join the Community", id: "demo" },
   ];
 
+  const CONTACT_URL = "https://www.aribots.com/contact-8";
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#111]/90 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
@@ -253,6 +255,15 @@ function LandingNavbar() {
               {l.label}
             </button>
           ))}
+          <a
+            href={CONTACT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
+            data-testid="link-nav-contact"
+          >
+            Contact
+          </a>
           <Link
             href="/"
             className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
@@ -292,6 +303,15 @@ function LandingNavbar() {
               {l.label}
             </button>
           ))}
+          <a
+            href={CONTACT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
+            data-testid="link-mobile-contact"
+          >
+            Contact
+          </a>
         </div>
       )}
     </nav>
@@ -1494,16 +1514,66 @@ function DemoFormSection() {
 }
 
 function Footer() {
+  const CONTACT_URL = "https://www.aribots.com/contact-8";
   return (
-    <footer className="py-8 bg-[#111] border-t border-white/5">
-      <div className="max-w-6xl mx-auto px-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded object-contain" />
-          <span className="text-white font-semibold">ARI bots</span>
+    <footer className="py-12 bg-[#111] border-t border-white/5">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded object-contain" />
+              <span className="text-white font-semibold text-lg">ARI bots</span>
+            </div>
+            <p className="text-white/40 text-sm leading-relaxed">
+              Empowering clinicians with AI-driven clinical decision support — built by physicians, for physicians.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2">
+              {[
+                { label: "Features", id: "capabilities" },
+                { label: "Reviews", id: "testimonials" },
+                { label: "Team", id: "team" },
+                { label: "FAQ", id: "faq" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
+                    className="text-white/40 hover:text-[#4A90D9] text-sm transition-colors"
+                    data-testid={`link-footer-${item.id}`}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-4">Contact Us</h4>
+            <a
+              href={CONTACT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4A90D9]/10 border border-[#4A90D9]/30 text-[#4A90D9] text-sm font-medium hover:bg-[#4A90D9]/20 transition-colors"
+              data-testid="link-footer-contact"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Get in Touch
+            </a>
+            <p className="text-white/30 text-xs mt-4 leading-relaxed">
+              Have a question or want to learn more about ARI bots? Reach out via our contact page.
+            </p>
+          </div>
         </div>
-        <p className="text-white/40 text-sm">
-          © {new Date().getFullYear()} ARI bots. All rights reserved. Empowering medicine with AI.
-        </p>
+
+        <div className="border-t border-white/5 pt-6 text-center">
+          <p className="text-white/30 text-xs">
+            © {new Date().getFullYear()} ARI bots. All rights reserved. Empowering medicine with AI.
+          </p>
+        </div>
       </div>
     </footer>
   );
