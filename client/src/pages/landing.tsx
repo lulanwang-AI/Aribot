@@ -321,10 +321,57 @@ function LandingNavbar() {
 function AribotMockup() {
   const messages = [
     { role: "user", text: "What's the latest evidence on SGLT2 inhibitors for HFpEF?" },
-    { role: "assistant", text: "Recent trials including EMPEROR-Preserved show Empagliflozin reduces HF hospitalization by 21% in HFpEF patients. ACC/AHA 2022 guidelines now give a Class IIa recommendation. Key benefit appears independent of ejection fraction." },
+    { role: "assistant", text: "Recent trials including EMPEROR-Preserved show Empagliflozin reduces HF hospitalization by 21% in HFpEF patients. ACC/AHA 2022 guidelines now give a Class IIa recommendation." },
     { role: "user", text: "Any contraindications I should watch for?" },
     { role: "assistant", text: "Avoid in eGFR <20, active UTI, or DKA. Monitor for genital mycotic infections and volume depletion, especially in elderly patients on loop diuretics." },
   ];
+
+  type Step =
+    | { type: "show"; msgIdx: number; delay: number }
+    | { type: "typing"; delay: number }
+    | { type: "pause"; delay: number }
+    | { type: "reset"; delay: number };
+
+  const sequence: Step[] = [
+    { type: "show",   msgIdx: 0, delay: 700  },
+    { type: "typing",            delay: 1600 },
+    { type: "show",   msgIdx: 1, delay: 500  },
+    { type: "show",   msgIdx: 2, delay: 1100 },
+    { type: "typing",            delay: 1800 },
+    { type: "show",   msgIdx: 3, delay: 500  },
+    { type: "pause",             delay: 3200 },
+    { type: "reset",             delay: 150  },
+  ];
+
+  const [step, setStep] = useState(0);
+  const [shown, setShown] = useState<number[]>([]);
+  const [typing, setTyping] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (step >= sequence.length) {
+      setStep(0);
+      return;
+    }
+    const current = sequence[step];
+    const timer = setTimeout(() => {
+      if (current.type === "show") {
+        setTyping(false);
+        setShown(prev => [...prev, current.msgIdx]);
+      } else if (current.type === "typing") {
+        setTyping(true);
+      } else if (current.type === "reset") {
+        setShown([]);
+        setTyping(false);
+      }
+      setStep(s => s + 1);
+    }, current.delay);
+    return () => clearTimeout(timer);
+  }, [step]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [shown, typing]);
 
   return (
     <div className="relative w-full max-w-[520px] mx-auto">
@@ -349,43 +396,55 @@ function AribotMockup() {
           </div>
         </div>
 
-        <div className="p-4 space-y-3 h-[340px] overflow-hidden">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-            >
-              {msg.role === "assistant" && (
-                <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
-                </div>
-              )}
-              {msg.role === "user" && (
-                <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Stethoscope className="w-3.5 h-3.5 text-white/70" />
-                </div>
-              )}
+        <div className="p-4 h-[320px] overflow-y-auto flex flex-col gap-3 scroll-smooth" style={{ scrollbarWidth: "none" }}>
+          {shown.map((msgIdx) => {
+            const msg = messages[msgIdx];
+            return (
               <div
-                className={`rounded-xl px-3 py-2 text-xs leading-relaxed max-w-[78%] ${
-                  msg.role === "user"
-                    ? "bg-[#4A90D9]/20 border border-[#4A90D9]/30 text-white/90 text-right"
-                    : "bg-white/5 border border-white/10 text-white/80"
-                }`}
+                key={msgIdx}
+                className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                style={{ animation: "chatBubbleIn 0.35s ease-out both" }}
               >
-                {msg.text}
+                {msg.role === "assistant" && (
+                  <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
+                  </div>
+                )}
+                {msg.role === "user" && (
+                  <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <Stethoscope className="w-3.5 h-3.5 text-white/70" />
+                  </div>
+                )}
+                <div
+                  className={`rounded-xl px-3 py-2 text-xs leading-relaxed max-w-[78%] ${
+                    msg.role === "user"
+                      ? "bg-[#4A90D9]/20 border border-[#4A90D9]/30 text-white/90 text-right"
+                      : "bg-white/5 border border-white/10 text-white/80"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            );
+          })}
+
+          {typing && (
+            <div
+              className="flex gap-2.5"
+              style={{ animation: "chatBubbleIn 0.25s ease-out both" }}
+            >
+              <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0">
+                <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 flex gap-1 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9]" style={{ animation: "typingDot 1.2s ease-in-out infinite", animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9]" style={{ animation: "typingDot 1.2s ease-in-out infinite", animationDelay: "200ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9]" style={{ animation: "typingDot 1.2s ease-in-out infinite", animationDelay: "400ms" }} />
               </div>
             </div>
-          ))}
-          <div className="flex gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-[#4A90D9]/20 border border-[#4A90D9]/40 flex items-center justify-center shrink-0">
-              <Bot className="w-3.5 h-3.5 text-[#4A90D9]" />
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex gap-1 items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4A90D9] animate-bounce" style={{ animationDelay: "300ms" }} />
-            </div>
-          </div>
+          )}
+
+          <div ref={bottomRef} />
         </div>
 
         <div className="px-4 pb-4">
@@ -411,6 +470,17 @@ function AribotMockup() {
 
       <div className="absolute -inset-px rounded-2xl pointer-events-none"
         style={{ boxShadow: "0 0 60px rgba(74,144,217,0.12), 0 0 120px rgba(74,144,217,0.06)" }} />
+
+      <style>{`
+        @keyframes chatBubbleIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30%            { transform: translateY(-4px); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
