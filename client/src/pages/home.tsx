@@ -182,7 +182,7 @@ export default function Home() {
       </div>
 
       <div className="flex justify-center">
-        <Link href="/">
+        <Link href="/aribot">
           <Button data-testid="button-open-aribot">
             <Bot className="h-4 w-4 mr-2" />
             Open Aribots AI Assistant

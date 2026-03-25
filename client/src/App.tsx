@@ -48,7 +48,7 @@ function SidebarEdgeTrigger() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Aribot} />
+      <Route path="/aribot" component={Aribot} />
       <Route path="/aribot/history" component={AribotHistoryPage} />
       <Route path="/aribot/folders" component={AribotFoldersPage} />
       <Route path="/home" component={Home} />
@@ -110,22 +110,26 @@ function AppContent() {
     localStorage.removeItem("aribot_authenticated");
     queryClient.clear();
     setAuthenticated(false);
+    setLocation("/");
   }
 
-  if (location === "/landing") {
+  if (location === "/" || location === "/landing") {
     return <Landing />;
   }
 
-  if (authenticated) {
-    return <AuthenticatedApp onSignOut={handleSignOut} />;
+  if (!authenticated) {
+    return (
+      <Login
+        onLogin={() => {
+          setAuthenticated(true);
+          setLocation("/aribot");
+        }}
+        onNavigateToLanding={() => setLocation("/")}
+      />
+    );
   }
 
-  return (
-    <Login
-      onLogin={() => setAuthenticated(true)}
-      onNavigateToLanding={() => setLocation("/landing")}
-    />
-  );
+  return <AuthenticatedApp onSignOut={handleSignOut} />;
 }
 
 function App() {

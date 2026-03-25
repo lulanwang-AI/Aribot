@@ -267,7 +267,7 @@ function LandingNavbar() {
             Contact
           </a>
           <Link
-            href="/"
+            href="/login"
             className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
             data-testid="link-nav-login"
           >
@@ -277,7 +277,7 @@ function LandingNavbar() {
 
         <div className="md:hidden flex items-center gap-3">
           <Link
-            href="/"
+            href="/login"
             className="text-xs font-semibold px-4 py-1.5 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
             data-testid="link-mobile-login"
           >

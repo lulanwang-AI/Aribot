@@ -101,8 +101,8 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarMenu className="ml-6 mt-1 space-y-0.5">
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild data-active={location === "/"} data-testid="nav-aribot-chat">
-                    <Link href="/">
+                  <SidebarMenuButton asChild data-active={location === "/aribot"} data-testid="nav-aribot-chat">
+                    <Link href="/aribot">
                       <MessageCircle className="h-3.5 w-3.5" />
                       <span className="text-xs">Chat</span>
                     </Link>
