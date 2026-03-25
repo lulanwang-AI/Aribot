@@ -117,7 +117,7 @@ function AppContent() {
     return <Landing />;
   }
 
-  if (!authenticated) {
+  if (!authenticated || location === "/login") {
     return (
       <Login
         onLogin={() => {
