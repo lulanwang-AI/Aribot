@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -488,6 +489,7 @@ function AribotMockup() {
 }
 
 function HeroSection() {
+  const [, setLocation] = useLocation();
   return (
     <section id="hero" className="relative min-h-screen flex items-center overflow-hidden bg-[#0e1117]">
       <div className="absolute inset-0 bg-[#0e1117]" />
@@ -525,7 +527,7 @@ function HeroSection() {
                 Join the Community
               </Button>
               <Button
-                onClick={() => document.getElementById("capabilities")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => setLocation("/whitepaper")}
                 variant="outline"
                 className="border-white/20 text-white/80 hover:bg-white/5 hover:border-white/30 font-medium px-8 py-6 text-base rounded-xl bg-transparent"
                 data-testid="button-hero-learn"

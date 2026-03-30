@@ -29,6 +29,7 @@ import Telemed from "@/pages/telemed";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
+import Whitepaper from "@/pages/whitepaper";
 import { AuthContext } from "@/lib/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -117,6 +118,10 @@ function AppContent() {
 
   if (location === "/" || location === "/landing") {
     return <Landing />;
+  }
+
+  if (location === "/whitepaper") {
+    return <Whitepaper />;
   }
 
   if (!authenticated || location === "/login") {
