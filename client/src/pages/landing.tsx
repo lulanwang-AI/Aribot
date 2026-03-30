@@ -554,7 +554,8 @@ function HeroSection() {
 
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-b from-transparent to-[#f3f4f6] z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#f3f4f6] z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#f3f4f6] z-20 pointer-events-none" />
     </section>
   );
 }
