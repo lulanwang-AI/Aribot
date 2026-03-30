@@ -70,6 +70,32 @@ const hospitals = [
 
 const badgeOptions = ["Top Contributor","Research Leader","Peer Reviewer","Mentor","Case Champion","Grand Rounds Speaker","Clinical Innovator","Rising Star","Community Builder"];
 
+const credentialOptions: { value: string; weight: number }[] = [
+  { value: "MD", weight: 38 },
+  { value: "DO", weight: 14 },
+  { value: "MD, PhD", weight: 10 },
+  { value: "DO, PhD", weight: 4 },
+  { value: "MBBS", weight: 8 },
+  { value: "PA-C", weight: 8 },
+  { value: "NP", weight: 7 },
+  { value: "CRNA", weight: 3 },
+  { value: "PharmD", weight: 2 },
+  { value: "M1", weight: 1 },
+  { value: "M2", weight: 1 },
+  { value: "M3", weight: 2 },
+  { value: "M4", weight: 2 },
+];
+
+function pickCredential(): string {
+  const total = credentialOptions.reduce((s, c) => s + c.weight, 0);
+  let r = rand() * total;
+  for (const c of credentialOptions) {
+    r -= c.weight;
+    if (r <= 0) return c.value;
+  }
+  return "MD";
+}
+
 const interests = ["Heart Failure","Clinical Trials","Structural Heart Disease","Cardiac Imaging","Stroke","Epilepsy","Brain Tumors","Sepsis","Trauma","ARDS","Diabetes","Thyroid","Breast Cancer","Lung Cancer","Melanoma","Joint Replacement","Spine Surgery","IBD","Hepatology","Transplant","HIV/AIDS","Pediatric Oncology","Neonatology","Pain Medicine","Addiction","AI in Medicine","Telemedicine","Point-of-Care Ultrasound","Genomics","Immunotherapy","Precision Medicine","Global Health","Health Equity","Medical Education"];
 
 function generateDoctors(count: number): User[] {
@@ -99,6 +125,7 @@ function generateDoctors(count: number): User[] {
       badges: pickN(badgeOptions, randInt(0, 3)),
       bio: generateBio(fn, ln, spec.name, hosp.name, yrsExp),
       avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fn.toLowerCase()}${ln.toLowerCase()}${i}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`,
+      credential: pickCredential(),
     });
   }
   return docs;
@@ -726,6 +753,7 @@ export function seedAllData() {
     badges: ["Top Contributor","Research Leader","Grand Rounds Speaker"],
     bio: "Board-certified interventional cardiologist with expertise in structural heart disease and heart failure. 14 years at MGH with an active clinical research program.",
     avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ChetChea&mouth[]=smile&eyes[]=happy&eyebrows[]=defaultNatural&top[]=shortHairShortFlat&clothing[]=blazerAndShirt&skinColor[]=d08b5b&backgroundColor=b6e3f4",
+    credential: "MD",
   };
 
   const news = generateNews(80, doctors);

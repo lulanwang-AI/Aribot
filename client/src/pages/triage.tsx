@@ -40,7 +40,7 @@ import type { TriagePost } from "@shared/schema";
 import { useEffect } from "react";
 
 type EnrichedPost = TriagePost & {
-  author: { name: string; specialty: string; avatarUrl: string } | null;
+  author: { name: string; specialty: string; credential?: string; avatarUrl: string } | null;
   commentCount: number;
   participants?: { id: string; name: string; avatarUrl: string }[];
 };
@@ -289,6 +289,7 @@ function PostCard({ post, onClick }: { post: EnrichedPost; onClick: () => void }
             <ClickableDoctor
               userId={post.authorId}
               name={post.author.name}
+              credential={post.author.credential}
               avatarUrl={post.author.avatarUrl}
               showAvatar={true}
               avatarSize="sm"

@@ -28,6 +28,7 @@ export interface User {
   badges: string[];
   bio: string;
   avatarUrl: string;
+  credential: string;
 }
 
 export const insertUserSchema = z.object({
@@ -48,6 +49,7 @@ export const insertUserSchema = z.object({
   badges: z.array(z.string()).default([]),
   bio: z.string().default(""),
   avatarUrl: z.string().default(""),
+  credential: z.string().default("MD"),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

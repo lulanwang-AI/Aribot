@@ -101,8 +101,13 @@ function DoctorCard({ doctor, compact, selectable, onSelect }: {
         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">{initials}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <p className={`${compact ? "text-xs" : "text-sm"} font-medium truncate`}>{doctor.name}</p>
+          {doctor.credential && (
+            <span className="text-[9px] font-semibold px-1.5 py-0 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0" data-testid={`credential-${doctor.id}`}>
+              {doctor.credential}
+            </span>
+          )}
           {doctor.verified && <CheckCircle className="h-3 w-3 text-primary shrink-0" />}
         </div>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">

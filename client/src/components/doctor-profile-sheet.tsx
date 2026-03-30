@@ -32,6 +32,7 @@ interface DoctorProfile {
   role: string;
   verified: boolean;
   avatarUrl: string;
+  credential?: string;
   caseCount: number;
   commentCount: number;
   groupCount: number;
@@ -110,8 +111,13 @@ function DoctorProfileSheet({ userId, open, onOpenChange }: { userId: string | n
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <h2 className="text-base font-bold truncate" data-testid="text-profile-name">{profile.name}</h2>
+                  {profile.credential && (
+                    <Badge className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-semibold shrink-0" data-testid="badge-credential">
+                      {profile.credential}
+                    </Badge>
+                  )}
                   {profile.verified && (
                     <BadgeCheck className="h-4 w-4 text-primary shrink-0" />
                   )}
@@ -260,13 +266,14 @@ interface ClickableDoctorProps {
   userId: string;
   name: string;
   specialty?: string;
+  credential?: string;
   avatarUrl?: string;
   showAvatar?: boolean;
   avatarSize?: "sm" | "md";
   className?: string;
 }
 
-export function ClickableDoctor({ userId, name, specialty, avatarUrl, showAvatar = true, avatarSize = "sm", className = "" }: ClickableDoctorProps) {
+export function ClickableDoctor({ userId, name, specialty, credential, avatarUrl, showAvatar = true, avatarSize = "sm", className = "" }: ClickableDoctorProps) {
   const { openProfile } = useProfileSheet();
 
   const initials = name
@@ -300,9 +307,9 @@ export function ClickableDoctor({ userId, name, specialty, avatarUrl, showAvatar
       <span className={`${textSizeClass} font-medium text-foreground group-hover:text-primary transition-colors`}>
         {name}
       </span>
-      {specialty && (
-        <Badge variant="secondary" className="text-xs">
-          {specialty}
+      {(credential || specialty) && (
+        <Badge className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border border-primary/20 font-semibold shrink-0">
+          {credential || specialty}
         </Badge>
       )}
     </button>

@@ -542,7 +542,7 @@ function ShareNewsDialog({ open, onClose, newsItem }: { open: boolean; onClose: 
               </Avatar>
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{doctor.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{doctor.specialty}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{doctor.credential ? `${doctor.credential} · ${doctor.specialty}` : doctor.specialty}</p>
               </div>
               <Send className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
             </button>

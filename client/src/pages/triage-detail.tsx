@@ -18,9 +18,9 @@ import { ArrowLeft, Heart, Flag, Clock, Send, Reply, UserX, Image as ImageIcon, 
 import { useRole } from "@/lib/role";
 import type { TriagePost, Comment } from "@shared/schema";
 
-type DetailComment = Comment & { author: { name: string; specialty: string } | null };
+type DetailComment = Comment & { author: { name: string; specialty: string; credential?: string } | null };
 type DetailPost = TriagePost & {
-  author: { name: string; specialty: string } | null;
+  author: { name: string; specialty: string; credential?: string } | null;
   comments: DetailComment[];
 };
 
@@ -80,7 +80,7 @@ export default function TriageDetail({ id }: { id: string }) {
 
           {post.author && (
             <div className="flex items-center gap-2">
-              <ClickableDoctor userId={post.authorId} name={post.author.name} specialty={post.author.specialty} avatarUrl={post.author.avatarUrl} showAvatar={true} avatarSize="md" />
+              <ClickableDoctor userId={post.authorId} name={post.author.name} credential={post.author.credential} avatarUrl={post.author.avatarUrl} showAvatar={true} avatarSize="md" />
               <span className="text-xs text-muted-foreground flex items-center gap-1 ml-2">
                 <Clock className="h-3 w-3" />
                 {formatTimeAgo(post.createdAt)}
@@ -193,7 +193,7 @@ function CommentCard({ comment, postId, isReply }: { comment: DetailComment; pos
             <span className="text-xs font-medium text-muted-foreground">Anonymous Clinician</span>
           </div>
         ) : comment.author ? (
-          <ClickableDoctor userId={comment.authorId} name={comment.author.name} specialty={comment.author.specialty} avatarUrl={comment.author.avatarUrl} showAvatar={true} avatarSize="sm" />
+          <ClickableDoctor userId={comment.authorId} name={comment.author.name} credential={comment.author.credential} avatarUrl={comment.author.avatarUrl} showAvatar={true} avatarSize="sm" />
         ) : (
           <span className="text-xs font-medium">Unknown</span>
         )}
