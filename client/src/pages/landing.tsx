@@ -594,26 +594,26 @@ function MeetAriSection() {
   ];
 
   return (
-    <section id="meet-ari" className="py-24 bg-gray-100 -mt-px">
+    <section id="meet-ari" className="py-12 md:py-24 bg-gray-100 -mt-px">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-meet-ari-title">
           meet <span className="text-[#4A90D9]">ARI</span>
         </h2>
         <div
           ref={ref}
-          className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          className={`grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mt-8 md:mt-16 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
           {features.map((f, i) => (
             <div
               key={f.title}
-              className="group bg-white border border-gray-200 rounded-2xl p-8 hover:border-[#4A90D9]/50 hover:shadow-md transition-all duration-500 hover:-translate-y-1"
+              className="group bg-white border border-gray-200 rounded-2xl p-5 md:p-8 hover:border-[#4A90D9]/50 hover:shadow-md transition-all duration-500 hover:-translate-y-1"
               style={{ transitionDelay: `${i * 150}ms` }}
               data-testid={`card-feature-${f.title.toLowerCase()}`}
             >
-              <div className="w-14 h-14 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center mb-6 group-hover:bg-[#4A90D9]/20 transition-colors">
-                <f.icon className="w-7 h-7 text-[#4A90D9]" />
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-[#4A90D9]/20 transition-colors">
+                <f.icon className="w-6 h-6 md:w-7 md:h-7 text-[#4A90D9]" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{f.title}</h3>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{f.title}</h3>
               <p className="text-gray-600 leading-relaxed text-sm">{f.description}</p>
             </div>
           ))}
@@ -621,19 +621,19 @@ function MeetAriSection() {
 
         <div
           ref={srcRef}
-          className={`mt-20 transition-all duration-1000 delay-200 ${srcVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`mt-10 md:mt-20 transition-all duration-1000 delay-200 ${srcVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          <p className="text-center text-gray-400 text-xs uppercase tracking-widest mb-6 font-medium">
+          <p className="text-center text-gray-400 text-xs uppercase tracking-widest mb-4 md:mb-6 font-medium">
             Powered by 8 trusted evidence sources
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
             {evidenceSources.map((src, i) => {
               const isActive = activeSource === src.id;
               return (
                 <button
                   key={src.id}
                   onClick={() => setActiveSource(isActive ? null : src.id)}
-                  className={`group relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-300 ${
+                  className={`group relative flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl border text-left transition-all duration-300 ${
                     isActive
                       ? "bg-[#4A90D9]/10 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.10)]"
                       : "bg-white border-gray-200 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
@@ -658,7 +658,7 @@ function MeetAriSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-20">
+        <div className="grid grid-cols-3 gap-4 md:gap-8 mt-10 md:mt-20">
           <AnimatedCounter target={40} suffix="%" label="Reduce mortality rates" />
           <AnimatedCounter target={30} suffix="%" label="Shorten hospital stays" />
           <AnimatedCounter target={25} suffix="%" label="Lower healthcare costs" />
