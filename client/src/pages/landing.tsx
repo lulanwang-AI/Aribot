@@ -499,7 +499,7 @@ function HeroSection() {
           <div className="flex flex-col justify-center order-1 lg:order-1">
             <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-8 w-fit">
               <span className="w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
-              <span className="text-[#4A90D9] text-sm font-medium tracking-wide">Doctor-Only Platform</span>
+              <span className="text-[#4A90D9] text-sm font-medium tracking-wide">Doctor-Powered Platform</span>
             </div>
 
             <h1
@@ -742,7 +742,7 @@ function PhysicianFeaturesSection() {
             <span className="text-[#4A90D9]">in one place</span>
           </h2>
           <p className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto">
-            ARIbots gives physicians the tools to practice smarter, stay informed, and earn more — all within a trusted physician-only community.
+            ARIbots gives physicians the tools to practice smarter, stay informed, and earn more — all within a trusted doctor-powered community.
           </p>
         </div>
 
