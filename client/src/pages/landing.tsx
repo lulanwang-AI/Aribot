@@ -1091,7 +1091,7 @@ function OurVisionSection() {
       icon: Lightbulb,
       title: "OUR STORY",
       description:
-        "Our CEO, Dr. Chet Chea, a practicing physician and Director of Infectious Disease at Vibra Hospitals, believes that integrating modern technology is essential to advancing medical science, enhancing patient care, and empowering clinicians in the pursuit of novel cures and treatments.",
+        "Our CEO, Dr. Chet Chea (Anucheat Chea, MD), is a board-certified Infectious Disease specialist in Kentfield, CA with 21 years of clinical experience treating HIV/AIDS, sepsis, antimicrobial resistance, and complex infections. A graduate of Ross University School of Medicine, Dr. Chea believes that integrating modern AI technology is essential to advancing medical science, enhancing patient care, and empowering clinicians in the pursuit of better outcomes.",
     },
     {
       icon: Users,
@@ -1387,7 +1387,7 @@ function TeamSection() {
     {
       name: "Chet Chea, MD",
       title: "CEO & Co-Founder",
-      bio: "Director of Infectious Disease at Vibra Hospitals. Nearly 15 years treating complex infections. Champion of physician-led innovation.",
+      bio: "Board-certified Infectious Disease specialist in Kentfield, CA. 21 years of clinical experience treating HIV/AIDS, sepsis, and complex infections. Graduate of Ross University School of Medicine.",
       image: teamChetChea,
       initials: "CC",
     },
