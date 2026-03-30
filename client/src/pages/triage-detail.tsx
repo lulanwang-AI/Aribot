@@ -14,7 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { recordEvent } from "@/lib/analytics";
 import { detectPHI } from "@/lib/phi";
-import { ArrowLeft, Heart, Flag, Clock, Send, Reply, UserX, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Heart, Flag, Clock, Send, Reply, UserX, Image as ImageIcon, GraduationCap, Lock } from "lucide-react";
+import { useRole } from "@/lib/role";
 import type { TriagePost, Comment } from "@shared/schema";
 
 type DetailComment = Comment & { author: { name: string; specialty: string } | null };
@@ -25,6 +26,8 @@ type DetailPost = TriagePost & {
 
 export default function TriageDetail({ id }: { id: string }) {
   const [, setLocation] = useLocation();
+  const [role] = useRole();
+  const isMedStudent = role === "medstudent";
   const { data: post, isLoading } = useQuery<DetailPost>({
     queryKey: ["/api/triage", id],
   });
@@ -113,7 +116,17 @@ export default function TriageDetail({ id }: { id: string }) {
         {topLevel.map(comment => (
           <CommentThread key={comment.id} comment={comment} postId={id} childrenMap={childrenMap} depth={0} />
         ))}
-        <AddCommentForm postId={id} />
+        {isMedStudent ? (
+          <div className="flex items-center gap-3 p-3 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800/30" data-testid="banner-medstudent-comment">
+            <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Commenting requires MD/DO verification</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Switch to Physician mode in the sidebar to comment on cases.</p>
+            </div>
+          </div>
+        ) : (
+          <AddCommentForm postId={id} />
+        )}
       </div>
     </div>
   );
@@ -157,6 +170,8 @@ function CommentThread({ comment, postId, childrenMap, depth }: {
 
 function CommentCard({ comment, postId, isReply }: { comment: DetailComment; postId: string; isReply?: boolean }) {
   const [showReply, setShowReply] = useState(false);
+  const [role] = useRole();
+  const isMedStudent = role === "medstudent";
 
   const likeMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/comments/${comment.id}/like`),
@@ -191,7 +206,7 @@ function CommentCard({ comment, postId, isReply }: { comment: DetailComment; pos
           <Heart className={`h-3 w-3 mr-1 ${isLiked ? "fill-current text-red-500" : ""}`} />
           {comment.likes?.length || 0}
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setShowReply(!showReply)}>
+        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => !isMedStudent && setShowReply(!showReply)} disabled={isMedStudent} title={isMedStudent ? "Replying requires MD/DO verification" : undefined}>
           <Reply className="h-3 w-3 mr-1" />
           Reply
         </Button>

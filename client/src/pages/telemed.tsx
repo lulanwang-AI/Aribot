@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useRole } from "@/lib/role";
 import type { TelemedConsultation, TelemedEarnings } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import {
   Video, Phone, PhoneOff, Mic, MicOff, Monitor, Camera, CameraOff,
   Clock, DollarSign, Activity, User, Heart, Thermometer, AlertCircle,
   CheckCircle, XCircle, Filter, Calendar, FileText, Stethoscope, Plus,
-  Send, Timer,
+  Send, Timer, GraduationCap,
 } from "lucide-react";
 
 function formatTimeAgo(dateStr: string): string {
@@ -95,8 +96,11 @@ type TelemedStats = {
 export default function Telemed() {
   const [activeTab, setActiveTab] = useState("inquiries");
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  const [role] = useRole();
+  const isMedStudent = role === "medstudent";
 
   function handleJoinCall(consultationId: string) {
+    if (isMedStudent) return;
     setActiveCallId(consultationId);
     setActiveTab("video");
   }
@@ -107,6 +111,17 @@ export default function Telemed() {
 
   return (
     <div className="flex flex-col h-full" data-testid="page-telemed">
+      {isMedStudent && (
+        <div className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800/30 p-3" data-testid="banner-medstudent-telemed">
+          <GraduationCap className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Observer Access — Med Student Mode</p>
+            <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+              You can view telemedicine consultations and inquiries, but joining video calls requires a verified MD/DO license. Switch to Physician mode in the sidebar if you hold a license.
+            </p>
+          </div>
+        </div>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
         <div className="border-b px-4 pt-4 pb-0">
           <TabsList data-testid="tabs-telemed">
@@ -321,6 +336,8 @@ function ConsultationCard({
   isAccepting: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [role] = useRole();
+  const isMedStudent = role === "medstudent";
   const v = consultation.vitals;
   const hasVitals = v && (v.bp || v.heartRate || v.temp || v.spo2 || v.weight);
 
@@ -451,6 +468,8 @@ function ConsultationCard({
             <Button
               onClick={onJoinCall}
               data-testid={`button-join-call-${consultation.id}`}
+              disabled={isMedStudent}
+              title={isMedStudent ? "Joining calls requires MD/DO verification" : undefined}
             >
               <Video className="h-4 w-4 mr-1.5" />
               Join Call

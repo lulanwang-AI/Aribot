@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useRole } from "@/lib/role";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import {
   Search,
   Stethoscope,
   Flame,
+  GraduationCap,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TriagePost } from "@shared/schema";
@@ -48,6 +50,8 @@ export default function Triage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [role] = useRole();
+  const isMedStudent = role === "medstudent";
 
   const { data: posts, isLoading } = useQuery<EnrichedPost[]>({
     queryKey: ["/api/triage", sortBy],
@@ -70,6 +74,17 @@ export default function Triage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
+      {isMedStudent && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800/30 p-3" data-testid="banner-medstudent-triage">
+          <GraduationCap className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Observer Access — Med Student Mode</p>
+            <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+              You can read all clinical case discussions, but posting new cases and commenting require a verified MD/DO license. Switch to Physician mode if you hold a license.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-triage-title">
@@ -80,9 +95,13 @@ export default function Triage() {
             Discuss complex cases with verified clinicians
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={isMedStudent ? false : dialogOpen} onOpenChange={isMedStudent ? undefined : setDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-case">
+            <Button
+              data-testid="button-create-case"
+              disabled={isMedStudent}
+              title={isMedStudent ? "Available to verified physicians only" : undefined}
+            >
               <Plus className="h-4 w-4 mr-1.5" />
               Create Case
             </Button>

@@ -26,6 +26,7 @@ import Chats from "@/pages/chats";
 import Training from "@/pages/training";
 import Doctors from "@/pages/doctors";
 import Telemed from "@/pages/telemed";
+import Admin from "@/pages/admin";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
 import { AuthContext } from "@/lib/auth";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/account" component={Account} />
       <Route path="/team" component={Team} />
       <Route path="/telemed" component={Telemed} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );
