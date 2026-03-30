@@ -543,6 +543,7 @@ function HeroSection() {
 
         </div>
       </div>
+      <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-b from-transparent to-[#f3f4f6] z-20 pointer-events-none" />
     </section>
   );
 }
@@ -582,7 +583,7 @@ function MeetAriSection() {
   ];
 
   return (
-    <section id="meet-ari" className="py-24 bg-gray-50">
+    <section id="meet-ari" className="py-24 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-meet-ari-title">
           meet <span className="text-[#4A90D9]">ARI</span>
@@ -624,7 +625,7 @@ function MeetAriSection() {
                   className={`group relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-300 ${
                     isActive
                       ? "bg-[#4A90D9]/10 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.10)]"
-                      : "bg-gray-50 border-gray-200 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
+                      : "bg-white border-gray-200 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
                   }`}
                   style={{ transitionDelay: `${i * 40}ms` }}
                   data-testid={`source-${src.id}`}
@@ -944,7 +945,7 @@ function OurVisionSection() {
   ];
 
   return (
-    <section id="vision" className="py-24 bg-gray-50">
+    <section id="vision" className="py-24 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16" data-testid="text-vision-title">
           OUR <span className="text-[#4A90D9]">VISION</span>
@@ -1112,7 +1113,7 @@ function CapabilitiesSection() {
 
 
   return (
-    <section id="capabilities" className="py-24 bg-gray-50">
+    <section id="capabilities" className="py-24 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-capabilities-title">
           ARI <span className="text-[#4A90D9]">Capabilities</span> & AI in Healthcare
@@ -1293,7 +1294,7 @@ function TeamSection() {
   ];
 
   return (
-    <section id="team" className="py-24 bg-gray-50">
+    <section id="team" className="py-24 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-team-title">
           Meet the <span className="text-[#4A90D9]">Team</span>
@@ -1480,7 +1481,7 @@ function DemoFormSection() {
   }
 
   return (
-    <section id="demo" className="py-24 bg-gray-50">
+    <section id="demo" className="py-24 bg-gray-100">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-demo-title">
           JOIN THE <span className="text-[#4A90D9]">COMMUNITY</span>
@@ -1762,7 +1763,7 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-100 min-h-screen">
       <LandingNavbar />
       <HeroSection />
       <MeetAriSection />
