@@ -489,7 +489,7 @@ function AribotMockup() {
 
 function HeroSection() {
   return (
-    <section id="hero" className="relative min-h-screen flex items-center overflow-hidden">
+    <section id="hero" className="relative min-h-screen flex items-center overflow-hidden bg-[#0e1117]">
       <div className="absolute inset-0 bg-[#0e1117]" />
       <DotsCanvas />
 
@@ -594,7 +594,7 @@ function MeetAriSection() {
   ];
 
   return (
-    <section id="meet-ari" className="py-24 bg-gray-100">
+    <section id="meet-ari" className="py-24 bg-gray-100 -mt-px">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-meet-ari-title">
           meet <span className="text-[#4A90D9]">ARI</span>
