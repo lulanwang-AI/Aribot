@@ -566,14 +566,86 @@ function MeetAriSection() {
   const [activeSource, setActiveSource] = useState<string | null>(null);
 
   const evidenceSources = [
-    { id: "who", label: "WHO Guidelines", icon: Globe },
-    { id: "cdc", label: "CDC Recommendations", icon: Shield },
-    { id: "nice", label: "NICE Guidelines", icon: Scale },
-    { id: "cochrane", label: "Cochrane Reviews", icon: BookOpen },
-    { id: "uptodate", label: "UpToDate", icon: FileText },
-    { id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical },
-    { id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb },
-    { id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope },
+    {
+      id: "who", label: "WHO Guidelines", icon: Globe,
+      volume: "2,400+", volumeLabel: "Guidelines & Recommendations",
+      stats: [
+        { value: "194", label: "Member countries covered" },
+        { value: "45+", label: "Health topic areas" },
+        { value: "Quarterly", label: "Update frequency" },
+      ],
+      description: "Real-time access to WHO clinical guidelines spanning infectious disease, maternal health, nutrition, and non-communicable diseases — covering global and regional health standards.",
+    },
+    {
+      id: "cdc", label: "CDC Recommendations", icon: Shield,
+      volume: "1,800+", volumeLabel: "Clinical Recommendations",
+      stats: [
+        { value: "500+", label: "Vaccine & immunization protocols" },
+        { value: "12", label: "Disease surveillance categories" },
+        { value: "Weekly", label: "MMWR update cadence" },
+      ],
+      description: "Comprehensive CDC guidance on infectious disease, vaccines, chronic conditions, and occupational health — integrated with live MMWR updates and emerging outbreak alerts.",
+    },
+    {
+      id: "nice", label: "NICE Guidelines", icon: Scale,
+      volume: "1,200+", volumeLabel: "Evidence-Based Guidelines",
+      stats: [
+        { value: "600+", label: "Technology appraisals" },
+        { value: "50+", label: "Clinical specialties" },
+        { value: "GRADE", label: "Evidence rating standard" },
+      ],
+      description: "UK National Institute for Health and Care Excellence guidelines, including health technology assessments and quality standards applicable across international clinical practice.",
+    },
+    {
+      id: "cochrane", label: "Cochrane Reviews", icon: BookOpen,
+      volume: "8,500+", volumeLabel: "Systematic Reviews",
+      stats: [
+        { value: "30,000+", label: "Included clinical trials" },
+        { value: "98%", label: "GRADE-rated evidence" },
+        { value: "Gold", label: "Standard for meta-analysis" },
+      ],
+      description: "The world's most trusted body of systematic reviews and meta-analyses. ARI uses Cochrane as the highest-confidence evidence tier for clinical recommendations.",
+    },
+    {
+      id: "uptodate", label: "UpToDate", icon: FileText,
+      volume: "11,000+", volumeLabel: "Clinical Topics",
+      stats: [
+        { value: "7,000+", label: "Physician authors & editors" },
+        { value: "50+", label: "Medical specialties" },
+        { value: "Daily", label: "Content update cadence" },
+      ],
+      description: "Physician-authored, evidence-based clinical content covering diagnosis, treatment, and prevention across all major specialties — the most widely used point-of-care resource worldwide.",
+    },
+    {
+      id: "clinical-trials", label: "Clinical Trial Data", icon: FlaskConical,
+      volume: "450,000+", volumeLabel: "Registered Trials",
+      stats: [
+        { value: "200+", label: "Countries with active trials" },
+        { value: "Real-time", label: "Enrollment status tracking" },
+        { value: "Phase I–IV", label: "All trial phases indexed" },
+      ],
+      description: "Live integration with ClinicalTrials.gov and the EU Clinical Trials Registry. ARI surfaces eligible trials for your patients and tracks status changes automatically.",
+    },
+    {
+      id: "novel-research", label: "Novel Research / Preprints", icon: Lightbulb,
+      volume: "3M+", volumeLabel: "Preprints Indexed",
+      stats: [
+        { value: "medRxiv", label: "Primary medical preprint server" },
+        { value: "bioRxiv", label: "Biological sciences coverage" },
+        { value: "AI-filtered", label: "Quality scoring applied" },
+      ],
+      description: "Pre-publication research from medRxiv, bioRxiv, and SSRN — AI-scored for methodology quality so ARI surfaces emerging evidence without overweighting unvalidated findings.",
+    },
+    {
+      id: "meta-analyses", label: "Meta-Analyses & Systematic Reviews", icon: Microscope,
+      volume: "120,000+", volumeLabel: "Systematic Reviews",
+      stats: [
+        { value: "PRISMA", label: "Compliance standard" },
+        { value: "Network", label: "Meta-analyses included" },
+        { value: "PubMed", label: "Primary index source" },
+      ],
+      description: "Broad corpus of peer-reviewed systematic reviews and network meta-analyses from PubMed and EMBASE, parsed for PICO structure and integrated into ARI's reasoning chain.",
+    },
   ];
 
   const features = [
@@ -657,12 +729,38 @@ function MeetAriSection() {
               );
             })}
           </div>
-        </div>
 
-        <div className="grid grid-cols-3 gap-4 md:gap-8 mt-10 md:mt-20">
-          <AnimatedCounter target={40} suffix="%" label="Reduce mortality rates" />
-          <AnimatedCounter target={30} suffix="%" label="Shorten hospital stays" />
-          <AnimatedCounter target={25} suffix="%" label="Lower healthcare costs" />
+          {(() => {
+            const active = evidenceSources.find(s => s.id === activeSource);
+            if (!active) return (
+              <p className="text-center text-gray-400 text-xs mt-6 italic">Select a source above to explore its data integration</p>
+            );
+            return (
+              <div className="mt-5 rounded-2xl border border-[#4A90D9]/25 bg-white p-5 md:p-7 transition-all duration-300 animate-in fade-in slide-in-from-top-2" data-testid="source-detail-panel">
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center shrink-0">
+                    <active.icon className="w-5 h-5 text-[#4A90D9]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-3xl font-bold text-[#4A90D9]">{active.volume}</span>
+                      <span className="text-gray-500 text-sm font-medium">{active.volumeLabel}</span>
+                    </div>
+                    <h4 className="text-gray-900 font-semibold mt-0.5">{active.label}</h4>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-sm leading-relaxed mb-5">{active.description}</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {active.stats.map(stat => (
+                    <div key={stat.label} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                      <div className="text-base font-bold text-gray-800">{stat.value}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 leading-snug">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </section>
