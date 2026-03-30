@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -58,6 +58,7 @@ import {
   Play,
   TrendingDown,
   Sparkles,
+  GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
 import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
@@ -1568,12 +1569,57 @@ function FaqSection() {
   );
 }
 
+type MemberType = "physician" | "nurse" | "medstudent" | "other";
+
+const MEMBER_TYPES: { id: MemberType; label: string; sub: string; icon: ReactNode; badge?: string }[] = [
+  {
+    id: "physician",
+    label: "Physician",
+    sub: "MD · DO · MBBS",
+    icon: <Stethoscope className="w-5 h-5" />,
+    badge: "NPI required",
+  },
+  {
+    id: "nurse",
+    label: "Nurse / NP / PA",
+    sub: "RN · NP · PA-C · CRNA",
+    icon: <Heart className="w-5 h-5" />,
+  },
+  {
+    id: "medstudent",
+    label: "Medical Student",
+    sub: "MS1 – MS4 · Intern · Resident",
+    icon: <GraduationCap className="w-5 h-5" />,
+  },
+  {
+    id: "other",
+    label: "Other Provider",
+    sub: "Pharmacist · PT · Allied Health",
+    icon: <Users className="w-5 h-5" />,
+  },
+];
+
 function DemoFormSection() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [memberType, setMemberType] = useState<MemberType>("physician");
   const [npiNumber, setNpiNumber] = useState("");
   const [npiStatus, setNpiStatus] = useState<"idle" | "verifying" | "verified" | "failed">("idle");
   const [npiData, setNpiData] = useState<{ name: string; credential: string; taxonomy: string } | null>(null);
+  const [school, setSchool] = useState("");
+  const [gradYear, setGradYear] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+
+  const isPhysician = memberType === "physician";
+  const isMedStudent = memberType === "medstudent";
+  const canSubmit = isPhysician ? npiStatus === "verified" : true;
+
+  function handleTypeChange(t: MemberType) {
+    setMemberType(t);
+    setNpiNumber("");
+    setNpiStatus("idle");
+    setNpiData(null);
+  }
 
   async function verifyNpi() {
     if (npiNumber.length !== 10 || !/^\d+$/.test(npiNumber)) {
@@ -1587,10 +1633,10 @@ function DemoFormSection() {
       if (data.result_count > 0) {
         const result = data.results[0];
         const cred = (result.basic?.credential || "").trim();
-        const isPhysician = /^(MD|DO|MBBS|MBBCh|MBBChB)/i.test(cred);
+        const isPhysicianCred = /^(MD|DO|MBBS|MBBCh|MBBChB)/i.test(cred);
         const enumType = result.enumeration_type;
         const status = result.basic?.status;
-        if (enumType === "NPI-1" && status === "A" && isPhysician) {
+        if (enumType === "NPI-1" && status === "A" && isPhysicianCred) {
           const primaryTax = result.taxonomies?.find((t: { primary: boolean }) => t.primary) || result.taxonomies?.[0];
           setNpiData({
             name: `${result.basic.first_name} ${result.basic.last_name}, ${cred}`,
@@ -1615,13 +1661,7 @@ function DemoFormSection() {
 
   const form = useForm<InsertDemoRequest>({
     resolver: zodResolver(insertDemoRequestSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      organization: "",
-      role: "",
-      message: "",
-    },
+    defaultValues: { name: "", email: "", organization: "", role: "", message: "" },
   });
 
   const mutation = useMutation({
@@ -1631,7 +1671,7 @@ function DemoFormSection() {
     },
     onSuccess: () => {
       setSubmitted(true);
-      toast({ title: "Success!", description: "Your demo request has been submitted. We'll be in touch soon." });
+      toast({ title: "Application received!", description: "We'll review your request and be in touch soon." });
       form.reset();
     },
     onError: () => {
@@ -1640,8 +1680,24 @@ function DemoFormSection() {
   });
 
   function onSubmit(data: InsertDemoRequest) {
-    mutation.mutate(data);
+    mutation.mutate({ ...data, role: data.role || memberType });
   }
+
+  const namePlaceholder =
+    memberType === "physician" ? "Dr. Jane Smith" :
+    memberType === "nurse" ? "Jane Smith, RN" :
+    memberType === "medstudent" ? "Jane Smith (MS3)" :
+    "Jane Smith";
+
+  const orgPlaceholder =
+    memberType === "medstudent" ? "University of California – SF School of Medicine" :
+    "Memorial Hospital / Health System";
+
+  const rolePlaceholder =
+    memberType === "physician" ? "Cardiologist, Hospitalist, etc." :
+    memberType === "nurse" ? "ICU Nurse, ER NP, PA-C, etc." :
+    memberType === "medstudent" ? "MS1, MS2, MS3, PGY-1 Resident, etc." :
+    "Pharmacist, Physical Therapist, etc.";
 
   return (
     <section id="demo" className="py-24 bg-gray-100">
@@ -1649,8 +1705,8 @@ function DemoFormSection() {
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-demo-title">
           JOIN THE <span className="text-[#4A90D9]">COMMUNITY</span>
         </h2>
-        <p className="text-center text-gray-500 mb-3">
-          Board-certified physicians only. Enter your NPI number to verify your credentials.
+        <p className="text-center text-gray-500 mb-8">
+          ARIbots welcomes physicians, nurses, NPs, PAs, medical students, and allied health professionals.
         </p>
 
         {submitted ? (
@@ -1658,10 +1714,10 @@ function DemoFormSection() {
             <div className="w-16 h-16 rounded-full bg-[#4A90D9]/10 flex items-center justify-center mx-auto mb-6">
               <Shield className="w-8 h-8 text-[#4A90D9]" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Received!</h3>
-            <p className="text-gray-600">We'll get back to you shortly.</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Application Received!</h3>
+            <p className="text-gray-600">We'll review your request and be in touch shortly.</p>
             <Button
-              onClick={() => setSubmitted(false)}
+              onClick={() => { setSubmitted(false); setMemberType("physician"); }}
               className="mt-6 bg-[#4A90D9] text-white hover:bg-[#5BA0E9]"
               data-testid="button-submit-another"
             >
@@ -1672,51 +1728,143 @@ function DemoFormSection() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
-              {/* NPI Verification */}
-              <div className={`rounded-xl border p-4 transition-colors ${npiStatus === "verified" ? "bg-green-50 border-green-300" : npiStatus === "failed" ? "bg-red-50 border-red-300" : "bg-blue-50 border-blue-200"}`}>
-                <label className="text-gray-700 font-medium text-sm block mb-1">
-                  NPI Number <span className="text-red-500">*</span>
-                  <span className="text-gray-400 font-normal ml-2 text-xs">Board-certified MD/DO only</span>
-                </label>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    value={npiNumber}
-                    onChange={(e) => {
-                      setNpiNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
-                      setNpiStatus("idle");
-                      setNpiData(null);
-                    }}
-                    placeholder="10-digit NPI number"
-                    className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 font-mono tracking-wider"
-                    maxLength={10}
-                    data-testid="input-npi-number"
-                  />
-                  <Button
+              {/* Member type selector */}
+              <div className="grid grid-cols-2 gap-3" data-testid="member-type-selector">
+                {MEMBER_TYPES.map(mt => (
+                  <button
+                    key={mt.id}
                     type="button"
-                    onClick={verifyNpi}
-                    disabled={npiNumber.length !== 10 || npiStatus === "verifying"}
-                    className="shrink-0 bg-[#4A90D9] text-white hover:bg-[#357abd] disabled:opacity-50"
-                    data-testid="button-verify-npi"
+                    onClick={() => handleTypeChange(mt.id)}
+                    data-testid={`btn-member-type-${mt.id}`}
+                    className={`relative flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                      memberType === mt.id
+                        ? "border-[#4A90D9] bg-[#4A90D9]/5"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
                   >
-                    {npiStatus === "verifying" ? "Verifying…" : "Verify"}
-                  </Button>
-                </div>
-                {npiStatus === "verified" && npiData && (
-                  <div className="mt-2 flex items-center gap-2 text-green-700 text-xs" data-testid="text-npi-verified">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>Verified: <strong>{npiData.name}</strong> · {npiData.taxonomy}</span>
-                  </div>
-                )}
-                {npiStatus === "failed" && (
-                  <div className="mt-2 flex items-center gap-2 text-red-600 text-xs" data-testid="text-npi-failed">
-                    <XCircle className="w-4 h-4 shrink-0" />
-                    <span>Verification failed. Only active MD/DO providers are eligible.</span>
-                  </div>
-                )}
-                {npiStatus === "idle" && (
-                  <p className="mt-2 text-gray-400 text-xs">Don't know your NPI? Look it up at <a href="https://npiregistry.cms.hhs.gov" target="_blank" rel="noopener noreferrer" className="text-[#4A90D9] hover:underline">npiregistry.cms.hhs.gov</a></p>
-                )}
+                    <span className={`mt-0.5 shrink-0 ${memberType === mt.id ? "text-[#4A90D9]" : "text-gray-400"}`}>
+                      {mt.icon}
+                    </span>
+                    <span>
+                      <span className={`block text-sm font-semibold ${memberType === mt.id ? "text-[#4A90D9]" : "text-gray-800"}`}>
+                        {mt.label}
+                      </span>
+                      <span className="block text-xs text-gray-500 mt-0.5">{mt.sub}</span>
+                    </span>
+                    {mt.badge && (
+                      <span className="absolute top-2 right-2 text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                        {mt.badge}
+                      </span>
+                    )}
+                    {memberType === mt.id && (
+                      <CheckCircle2 className="absolute bottom-2 right-2 w-4 h-4 text-[#4A90D9]" />
+                    )}
+                  </button>
+                ))}
               </div>
+
+              {/* NPI block — physicians only */}
+              {isPhysician && (
+                <div className={`rounded-xl border p-4 transition-colors ${npiStatus === "verified" ? "bg-green-50 border-green-300" : npiStatus === "failed" ? "bg-red-50 border-red-300" : "bg-blue-50 border-blue-200"}`}>
+                  <label className="text-gray-700 font-medium text-sm block mb-1">
+                    NPI Number <span className="text-red-500">*</span>
+                    <span className="text-gray-400 font-normal ml-2 text-xs">Required for MD / DO verification</span>
+                  </label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      value={npiNumber}
+                      onChange={(e) => {
+                        setNpiNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
+                        setNpiStatus("idle");
+                        setNpiData(null);
+                      }}
+                      placeholder="10-digit NPI number"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 font-mono tracking-wider"
+                      maxLength={10}
+                      data-testid="input-npi-number"
+                    />
+                    <Button
+                      type="button"
+                      onClick={verifyNpi}
+                      disabled={npiNumber.length !== 10 || npiStatus === "verifying"}
+                      className="shrink-0 bg-[#4A90D9] text-white hover:bg-[#357abd] disabled:opacity-50"
+                      data-testid="button-verify-npi"
+                    >
+                      {npiStatus === "verifying" ? "Verifying…" : "Verify"}
+                    </Button>
+                  </div>
+                  {npiStatus === "verified" && npiData && (
+                    <div className="mt-2 flex items-center gap-2 text-green-700 text-xs" data-testid="text-npi-verified">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Verified: <strong>{npiData.name}</strong> · {npiData.taxonomy}</span>
+                    </div>
+                  )}
+                  {npiStatus === "failed" && (
+                    <div className="mt-2 flex items-center gap-2 text-red-600 text-xs" data-testid="text-npi-failed">
+                      <XCircle className="w-4 h-4 shrink-0" />
+                      <span>Verification failed. Only active MD/DO providers are accepted.</span>
+                    </div>
+                  )}
+                  {npiStatus === "idle" && (
+                    <p className="mt-2 text-gray-400 text-xs">
+                      Don't know your NPI? Look it up at{" "}
+                      <a href="https://npiregistry.cms.hhs.gov" target="_blank" rel="noopener noreferrer" className="text-[#4A90D9] hover:underline">
+                        npiregistry.cms.hhs.gov
+                      </a>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Nurse / NP / PA — optional license */}
+              {memberType === "nurse" && (
+                <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+                  <label className="text-gray-700 font-medium text-sm block mb-1">
+                    License / Certification Number
+                    <span className="text-gray-400 font-normal ml-2 text-xs">Optional — RN, NP, PA, or CRNA license</span>
+                  </label>
+                  <Input
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    placeholder="e.g. RN1234567 or NPI (if applicable)"
+                    className="mt-2 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-purple-300"
+                    data-testid="input-license-number"
+                  />
+                  <p className="mt-2 text-purple-600 text-xs">No NPI? No problem — your work email will be used for identity verification.</p>
+                </div>
+              )}
+
+              {/* Medical student — school + year */}
+              {isMedStudent && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-amber-600" />
+                    Medical School Details
+                  </p>
+                  <div>
+                    <label className="text-gray-600 text-xs font-medium block mb-1">School Name</label>
+                    <Input
+                      value={school}
+                      onChange={(e) => setSchool(e.target.value)}
+                      placeholder="e.g. Harvard Medical School"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-amber-300"
+                      data-testid="input-med-school"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-600 text-xs font-medium block mb-1">Expected Graduation Year</label>
+                    <Input
+                      value={gradYear}
+                      onChange={(e) => setGradYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="e.g. 2027"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-amber-300"
+                      maxLength={4}
+                      data-testid="input-grad-year"
+                    />
+                  </div>
+                  <p className="text-amber-700 text-xs">Medical students get full access. No NPI required — your .edu email is used for verification.</p>
+                </div>
+              )}
 
               <FormField
                 control={form.control}
@@ -1727,7 +1875,7 @@ function DemoFormSection() {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Dr. Jane Smith"
+                        placeholder={namePlaceholder}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-name"
                       />
@@ -1741,12 +1889,15 @@ function DemoFormSection() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Work Email</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">
+                      Work / School Email
+                      {isMedStudent && <span className="text-amber-600 font-normal ml-1 text-xs">(.edu preferred)</span>}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
-                        placeholder="jane@hospital.org"
+                        placeholder={isMedStudent ? "jane@med.ucsf.edu" : "jane@hospital.org"}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-email"
                       />
@@ -1760,11 +1911,13 @@ function DemoFormSection() {
                 name="organization"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Hospital / Organization</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">
+                      {isMedStudent ? "Medical School" : "Hospital / Organization"}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Memorial Hospital"
+                        placeholder={orgPlaceholder}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-organization"
                       />
@@ -1778,11 +1931,13 @@ function DemoFormSection() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Specialty / Role</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">
+                      {memberType === "physician" ? "Specialty" : "Role / Year"}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Cardiologist, Internist, etc."
+                        placeholder={rolePlaceholder}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-role"
                       />
@@ -1800,7 +1955,7 @@ function DemoFormSection() {
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Tell us about your needs..."
+                        placeholder="Tell us about yourself and how you plan to use ARIbots..."
                         rows={4}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 resize-none"
                         data-testid="input-demo-message"
@@ -1813,13 +1968,18 @@ function DemoFormSection() {
               <Button
                 type="submit"
                 className="w-full bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold py-6 text-lg"
-                disabled={mutation.isPending || npiStatus !== "verified"}
+                disabled={mutation.isPending || !canSubmit}
                 data-testid="button-submit-demo"
               >
-                {mutation.isPending ? "Sending..." : "SEND"}
+                {mutation.isPending ? "Sending..." : "REQUEST ACCESS"}
               </Button>
-              {npiStatus !== "verified" && (
+              {isPhysician && npiStatus !== "verified" && (
                 <p className="text-center text-gray-400 text-xs">Verify your NPI number above to submit</p>
+              )}
+              {!isPhysician && (
+                <p className="text-center text-gray-400 text-xs">
+                  Your application will be reviewed within 1–2 business days.
+                </p>
               )}
             </form>
           </Form>
