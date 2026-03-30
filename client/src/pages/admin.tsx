@@ -13,7 +13,8 @@ import {
   XCircle, Eye, UserCheck, LogIn, CreditCard, Lock,
   UserPlus, Pencil, Newspaper, Video, Calendar, Globe,
   Settings, Crown, ChevronDown, ChevronUp, MoreHorizontal,
-  Check, Ban, RefreshCw, Mail, Stethoscope,
+  Check, Ban, RefreshCw, Mail, Stethoscope, LineChart,
+  ArrowUpRight, ArrowDownRight, Clock, Flame, UserMinus,
 } from "lucide-react";
 
 // ─── Mock data ──────────────────────────────────────────────────────────────
@@ -89,6 +90,55 @@ const MOCK_COMPLIANCE = [
     passed: 56,
     findings: ["Vendor access review pending", "Incident response drill scheduled"],
   },
+];
+
+// ─── Analytics mock data ─────────────────────────────────────────────────────
+
+const TOTAL_ONBOARDED = 131;
+
+const DAU_14D = [
+  { day: "Mar 17", dau: 71 }, { day: "Mar 18", dau: 63 }, { day: "Mar 19", dau: 58 },
+  { day: "Mar 20", dau: 79 }, { day: "Mar 21", dau: 84 }, { day: "Mar 22", dau: 76 },
+  { day: "Mar 23", dau: 68 }, { day: "Mar 24", dau: 82 }, { day: "Mar 25", dau: 88 },
+  { day: "Mar 26", dau: 91 }, { day: "Mar 27", dau: 86 }, { day: "Mar 28", dau: 93 },
+  { day: "Mar 29", dau: 87 }, { day: "Mar 30", dau: 89 },
+];
+
+const WAU_8W = [
+  { week: "Jan 27", wau: 62 }, { week: "Feb 3", wau: 74 }, { week: "Feb 10", wau: 81 },
+  { week: "Feb 17", wau: 88 }, { week: "Feb 24", wau: 99 }, { week: "Mar 3", wau: 107 },
+  { week: "Mar 10", wau: 113 }, { week: "Mar 24", wau: 118 },
+];
+
+const ONBOARDING_FUNNEL = [
+  { stage: "Invited", count: 200, pct: 100 },
+  { stage: "Email Verified", count: 178, pct: 89 },
+  { stage: "NPI Verified", count: 158, pct: 79 },
+  { stage: "Profile Complete", count: 142, pct: 71 },
+  { stage: "Onboarded (Active)", count: TOTAL_ONBOARDED, pct: 65.5 },
+  { stage: "Retained (30-day)", count: 108, pct: 82.4 },
+];
+
+const CHURN_REASONS = [
+  { reason: "Insufficient time / workflow fit", pct: 37, color: "bg-blue-400" },
+  { reason: "Found alternative platform", pct: 28, color: "bg-purple-400" },
+  { reason: "EHR integration gaps", pct: 22, color: "bg-amber-400" },
+  { reason: "Pricing concerns", pct: 13, color: "bg-rose-400" },
+];
+
+const COHORT_RETENTION = [
+  { cohort: "Jan 2026", size: 28, w1: 96, w2: 86, w4: 79, m3: 71 },
+  { cohort: "Feb 2026", size: 53, w1: 94, w2: 88, w4: 82, m3: 75 },
+  { cohort: "Mar 2026", size: 50, w1: 98, w2: 91, w4: 86, m3: null },
+];
+
+const FEATURE_ADOPTION = [
+  { feature: "ARI Assistant", adopted: 116, pct: 89, icon: Stethoscope },
+  { feature: "Clinical Triage", adopted: 97, pct: 74, icon: Activity },
+  { feature: "Medical News AI", adopted: 89, pct: 68, icon: Newspaper },
+  { feature: "Doctor Directory", adopted: 72, pct: 55, icon: Users2 },
+  { feature: "Groups & Forums", adopted: 61, pct: 47, icon: MessageSquare },
+  { feature: "Telemedicine", adopted: 54, pct: 41, icon: Video },
 ];
 
 // ─── Permission definitions ──────────────────────────────────────────────────
@@ -715,6 +765,337 @@ function TeamManagementTab() {
   );
 }
 
+// ─── Analytics Tab ───────────────────────────────────────────────────────────
+
+function RetentionCell({ value }: { value: number | null }) {
+  if (value === null) return <td className="px-3 py-2 text-center text-muted-foreground text-xs">—</td>;
+  const bg =
+    value >= 90 ? "bg-green-100 text-green-800" :
+    value >= 80 ? "bg-blue-100 text-blue-800" :
+    value >= 70 ? "bg-amber-100 text-amber-800" :
+    "bg-red-100 text-red-800";
+  return (
+    <td className="px-3 py-2 text-center">
+      <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${bg}`}>{value}%</span>
+    </td>
+  );
+}
+
+function AnalyticsTab() {
+  const dauMax = Math.max(...DAU_14D.map(d => d.dau));
+  const wauMax = Math.max(...WAU_8W.map(d => d.wau));
+  const todayDAU = DAU_14D[DAU_14D.length - 1].dau;
+  const todayWAU = WAU_8W[WAU_8W.length - 1].wau;
+  const prevDAU = DAU_14D[DAU_14D.length - 2].dau;
+  const dauChange = todayDAU - prevDAU;
+
+  return (
+    <div className="space-y-6" data-testid="admin-tab-analytics">
+
+      {/* KPI summary row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Onboarded Physicians",
+            value: TOTAL_ONBOARDED,
+            sub: "Total platform members",
+            icon: UserCheck,
+            color: "text-blue-600",
+            delta: null,
+          },
+          {
+            label: "DAU (Today)",
+            value: todayDAU,
+            sub: `${Math.round((todayDAU / TOTAL_ONBOARDED) * 100)}% DAU / MAU ratio`,
+            icon: Flame,
+            color: "text-orange-500",
+            delta: dauChange,
+          },
+          {
+            label: "WAU (Rolling 7-day)",
+            value: todayWAU,
+            sub: `${Math.round((todayWAU / TOTAL_ONBOARDED) * 100)}% WAU / MAU ratio`,
+            icon: Activity,
+            color: "text-green-600",
+            delta: null,
+          },
+          {
+            label: "Monthly Churn",
+            value: "3.1%",
+            sub: "4 churned · 12 at-risk",
+            icon: UserMinus,
+            color: "text-rose-600",
+            delta: null,
+          },
+        ].map(stat => (
+          <Card key={stat.label}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <stat.icon className={`h-7 w-7 ${stat.color} opacity-80`} />
+                {stat.delta !== null && (
+                  <span className={`flex items-center gap-0.5 text-xs font-semibold ${stat.delta >= 0 ? "text-green-600" : "text-red-500"}`}>
+                    {stat.delta >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {Math.abs(stat.delta)}
+                  </span>
+                )}
+              </div>
+              <p className="text-2xl font-bold mt-2">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-0.5">{stat.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* DAU 14-day bar chart + WAU 8-week bar chart */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Flame className="h-4 w-4 text-orange-500" />
+              Daily Active Users — Last 14 Days
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-1" style={{ height: 80 }}>
+              {DAU_14D.map(d => (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full relative" style={{ height: 60 }}>
+                    <div
+                      className="absolute bottom-0 left-0 right-0 bg-orange-400 rounded-t-sm"
+                      style={{ height: `${Math.round((d.dau / dauMax) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] text-muted-foreground">{DAU_14D[0].day}</span>
+              <span className="text-[10px] text-muted-foreground font-semibold text-orange-600">Today: {todayDAU}</span>
+              <span className="text-[10px] text-muted-foreground">{DAU_14D[DAU_14D.length - 1].day}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-green-600" />
+              Weekly Active Users — Last 8 Weeks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-1.5" style={{ height: 80 }}>
+              {WAU_8W.map(d => (
+                <div key={d.week} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full relative" style={{ height: 60 }}>
+                    <div
+                      className="absolute bottom-0 left-0 right-0 bg-green-500 rounded-t-sm"
+                      style={{ height: `${Math.round((d.wau / wauMax) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] text-muted-foreground">{WAU_8W[0].week}</span>
+              <span className="text-[10px] text-muted-foreground font-semibold text-green-700">This week: {todayWAU}</span>
+              <span className="text-[10px] text-muted-foreground">{WAU_8W[WAU_8W.length - 1].week}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Onboarding funnel */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-blue-600" />
+            Onboarding Funnel
+            <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">{TOTAL_ONBOARDED} onboarded</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {ONBOARDING_FUNNEL.map((row, i) => {
+              const barWidth = i === 0 ? 100 : Math.round((row.count / ONBOARDING_FUNNEL[0].count) * 100);
+              const isActive = row.stage.includes("Onboarded");
+              return (
+                <div key={row.stage} className="flex items-center gap-3">
+                  <div className="w-40 shrink-0">
+                    <p className={`text-xs font-medium ${isActive ? "text-blue-700" : "text-foreground"}`}>{row.stage}</p>
+                  </div>
+                  <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${isActive ? "bg-blue-500" : i === ONBOARDING_FUNNEL.length - 1 ? "bg-green-500" : "bg-primary/60"}`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                  <div className="w-24 text-right shrink-0">
+                    <span className={`text-sm font-bold ${isActive ? "text-blue-700" : ""}`}>{row.count}</span>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {i === 0 ? "(100%)" : i < 5 ? `(${row.pct}% of invited)` : `(${row.pct}% of onboarded)`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex gap-6 text-xs text-muted-foreground border-t pt-3">
+            <span>⚡ Avg. time to onboard: <strong>3.2 days</strong></span>
+            <span>📧 Email → NPI verification drop: <strong>11%</strong></span>
+            <span>✅ 30-day retention: <strong>82.4%</strong></span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Churn breakdown + Feature adoption */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <UserMinus className="h-4 w-4 text-rose-600" />
+              Churn Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {[
+                { label: "Monthly churn rate", value: "3.1%", bg: "bg-rose-50", text: "text-rose-700" },
+                { label: "Churned this month", value: "4", bg: "bg-orange-50", text: "text-orange-700" },
+                { label: "At-risk (≥7 days inactive)", value: "12", bg: "bg-amber-50", text: "text-amber-700" },
+              ].map(s => (
+                <div key={s.label} className={`${s.bg} rounded-lg p-3`}>
+                  <p className={`text-xl font-bold ${s.text}`}>{s.value}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Churn reasons (exit survey)</p>
+              <div className="space-y-2">
+                {CHURN_REASONS.map(r => (
+                  <div key={r.reason} className="flex items-center gap-2">
+                    <div className={`h-2 rounded-full shrink-0 ${r.color}`} style={{ width: `${r.pct * 1.5}px`, minWidth: 8 }} />
+                    <span className="text-xs text-foreground flex-1">{r.reason}</span>
+                    <span className="text-xs font-semibold tabular-nums">{r.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+              Feature Adoption
+              <span className="ml-auto text-xs text-muted-foreground font-normal">of {TOTAL_ONBOARDED} onboarded</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {FEATURE_ADOPTION.map(f => (
+              <div key={f.feature} className="flex items-center gap-3">
+                <f.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs font-medium w-36 shrink-0">{f.feature}</span>
+                <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{ width: `${f.pct}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold tabular-nums w-12 text-right">{f.adopted} <span className="text-muted-foreground font-normal">({f.pct}%)</span></span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cohort retention table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Clock className="h-4 w-4 text-blue-600" />
+            Retention Cohorts
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left px-3 py-2 text-xs text-muted-foreground font-medium">Cohort</th>
+                <th className="text-center px-3 py-2 text-xs text-muted-foreground font-medium">Size</th>
+                <th className="text-center px-3 py-2 text-xs text-muted-foreground font-medium">Week 1</th>
+                <th className="text-center px-3 py-2 text-xs text-muted-foreground font-medium">Week 2</th>
+                <th className="text-center px-3 py-2 text-xs text-muted-foreground font-medium">Week 4</th>
+                <th className="text-center px-3 py-2 text-xs text-muted-foreground font-medium">Month 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COHORT_RETENTION.map(row => (
+                <tr key={row.cohort} className="border-b last:border-0 hover:bg-muted/40">
+                  <td className="px-3 py-2 font-medium text-xs">{row.cohort}</td>
+                  <td className="px-3 py-2 text-center text-xs">{row.size}</td>
+                  <RetentionCell value={row.w1} />
+                  <RetentionCell value={row.w2} />
+                  <RetentionCell value={row.w4} />
+                  <RetentionCell value={row.m3} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            Color key: <span className="text-green-700 font-semibold">≥90%</span> · <span className="text-blue-700 font-semibold">≥80%</span> · <span className="text-amber-700 font-semibold">≥70%</span> · <span className="text-red-600 font-semibold">&lt;70%</span> · — data pending
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* At-risk user table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            At-Risk Members (Inactive ≥ 7 days)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {[
+              { name: "Dr. Daniel Park", specialty: "Rheumatology", lastSeen: "8 days ago", risk: "medium" },
+              { name: "Dr. Keiko Tanaka", specialty: "Nephrology", lastSeen: "11 days ago", risk: "high" },
+              { name: "Dr. Amara Diallo", specialty: "Geriatrics", lastSeen: "14 days ago", risk: "high" },
+              { name: "Dr. Marcus Webb", specialty: "Emergency Medicine", lastSeen: "9 days ago", risk: "medium" },
+            ].map(u => (
+              <div key={u.name} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback className="text-[10px] bg-muted">{u.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-xs font-medium">{u.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{u.specialty}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">Last seen {u.lastSeen}</span>
+                  <Badge className={u.risk === "high" ? "bg-red-100 text-red-700 border-red-200" : "bg-amber-100 text-amber-700 border-amber-200"}>
+                    {u.risk === "high" ? "High risk" : "Medium risk"}
+                  </Badge>
+                  <Button variant="outline" size="sm" className="h-6 text-xs" data-testid={`btn-nudge-${u.name.replace(/\s/g, "-")}`}>
+                    Send nudge
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+    </div>
+  );
+}
+
 // ─── Existing tabs ───────────────────────────────────────────────────────────
 
 function statusBadge(status: string) {
@@ -1000,7 +1381,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      return params.get("tab") || "users";
+      return params.get("tab") || "analytics";
     }
     return "users";
   });
@@ -1025,6 +1406,10 @@ export default function AdminPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6 flex-wrap h-auto gap-1" data-testid="admin-tabs">
+          <TabsTrigger value="analytics" data-testid="admin-tab-analytics-btn">
+            <LineChart className="h-4 w-4 mr-1.5" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="users" data-testid="admin-tab-users-btn">
             <Users2 className="h-4 w-4 mr-1.5" />
             User Interactions
@@ -1043,6 +1428,9 @@ export default function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="analytics">
+          <AnalyticsTab />
+        </TabsContent>
         <TabsContent value="users">
           <UserInteractionsTab />
         </TabsContent>
