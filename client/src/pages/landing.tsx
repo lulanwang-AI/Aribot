@@ -536,9 +536,9 @@ function HeroSection() {
 
             <div className="flex items-center gap-6 mt-10 pt-10 border-t border-white/8">
               {[
-                { value: "131", label: "Active Physicians" },
-                { value: "40+", label: "Specialties" },
-                { value: "HIPAA", label: "Compliant" },
+                { value: "100%", label: "Identity Verified" },
+                { value: "HIPAA", label: "& SOC 2 Compliant" },
+                { value: "Zero", label: "Pharma Influence" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className="text-xl font-bold text-[#4A90D9]">{stat.value}</div>
@@ -1349,10 +1349,10 @@ function CommunitySection() {
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedCounter target={131} suffix="" label="Active Physicians" />
-          <AnimatedCounter target={12} suffix="" label="Partner Hospitals" />
-          <AnimatedCounter target={500} suffix="+" label="Support Notes Created" />
-          <AnimatedCounter target={40} suffix="+" label="Specialties Supported" />
+          <AnimatedCounter target={100} suffix="%" label="Physicians NPI-Verified" />
+          <AnimatedCounter target={98} suffix="%" label="HIPAA Compliance Score" />
+          <AnimatedCounter target={500} suffix="+" label="Peer-Reviewed Notes Shared" />
+          <AnimatedCounter target={40} suffix="+" label="Clinical Specialties Covered" />
         </div>
       </div>
 
