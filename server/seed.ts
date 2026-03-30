@@ -711,8 +711,8 @@ export function seedAllData() {
   doctors[0] = {
     ...doctors[0],
     id: "u1",
-    username: "schen",
-    name: "Dr. Sarah Chen",
+    username: "cchea",
+    name: "Dr. Chet Chea",
     specialty: "Cardiology",
     subspecialty: "Interventional Cardiology",
     interests: ["Heart Failure","Clinical Trials","Structural Heart Disease","Cardiac Imaging"],
@@ -721,10 +721,11 @@ export function seedAllData() {
     state: "MA",
     role: "physician",
     verified: true,
-    yearsExperience: 12,
-    rankingScore: 87,
+    yearsExperience: 14,
+    rankingScore: 91,
     badges: ["Top Contributor","Research Leader","Grand Rounds Speaker"],
-    bio: "Board-certified interventional cardiologist with expertise in structural heart disease and heart failure. 12 years at MGH with active clinical research program.",
+    bio: "Board-certified interventional cardiologist with expertise in structural heart disease and heart failure. 14 years at MGH with an active clinical research program.",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ChetChea&mouth[]=smile&eyes[]=happy&eyebrows[]=defaultNatural&top[]=shortHairShortFlat&clothing[]=blazerAndShirt&skinColor[]=d08b5b&backgroundColor=b6e3f4",
   };
 
   const news = generateNews(80, doctors);
