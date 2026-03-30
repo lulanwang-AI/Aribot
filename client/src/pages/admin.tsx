@@ -95,18 +95,99 @@ const MOCK_COMPLIANCE = [
 
 const TOTAL_ONBOARDED = 131;
 
-const DAU_14D = [
-  { day: "Mar 17", dau: 71 }, { day: "Mar 18", dau: 63 }, { day: "Mar 19", dau: 58 },
-  { day: "Mar 20", dau: 79 }, { day: "Mar 21", dau: 84 }, { day: "Mar 22", dau: 76 },
-  { day: "Mar 23", dau: 68 }, { day: "Mar 24", dau: 82 }, { day: "Mar 25", dau: 88 },
-  { day: "Mar 26", dau: 91 }, { day: "Mar 27", dau: 86 }, { day: "Mar 28", dau: 93 },
-  { day: "Mar 29", dau: 87 }, { day: "Mar 30", dau: 89 },
-];
+type RangeKey = "7D" | "30D" | "90D" | "YTD" | "1Y";
 
-const WAU_8W = [
-  { week: "Jan 27", wau: 62 }, { week: "Feb 3", wau: 74 }, { week: "Feb 10", wau: 81 },
-  { week: "Feb 17", wau: 88 }, { week: "Feb 24", wau: 99 }, { week: "Mar 3", wau: 107 },
-  { week: "Mar 10", wau: 113 }, { week: "Mar 24", wau: 118 },
+interface RangeBucket { label: string; value: number }
+
+interface RangeDataset {
+  chartTitle: string;
+  chartSub: string;
+  buckets: RangeBucket[];
+  barColor: string;
+  kpi: {
+    primaryLabel: string;
+    primaryValue: number;
+    primaryPrev: number;
+    secondaryLabel: string;
+    secondaryValue: number;
+    churnPct: string;
+    churnCount: number;
+    atRisk: number;
+    newMembers: number;
+    totalPosts: string;
+    flagged: number;
+    activeUsers: number;
+    newSignups: number;
+  };
+}
+
+const ANALYTICS_RANGES: Record<RangeKey, RangeDataset> = {
+  "7D": {
+    chartTitle: "Daily Active Users — Last 7 Days",
+    chartSub: "Mar 24 – Mar 30",
+    barColor: "bg-orange-400",
+    buckets: [
+      { label: "Mar 24", value: 82 }, { label: "Mar 25", value: 88 },
+      { label: "Mar 26", value: 91 }, { label: "Mar 27", value: 86 },
+      { label: "Mar 28", value: 93 }, { label: "Mar 29", value: 87 }, { label: "Mar 30", value: 89 },
+    ],
+    kpi: { primaryLabel: "Avg. Daily Active", primaryValue: 88, primaryPrev: 83, secondaryLabel: "Peak DAU (7-day)", secondaryValue: 93, churnPct: "0.8%", churnCount: 1, atRisk: 12, newMembers: 6, totalPosts: "847", flagged: 8, activeUsers: 342, newSignups: 6 },
+  },
+  "30D": {
+    chartTitle: "Daily Active Users — Last 30 Days",
+    chartSub: "Mar 1 – Mar 30",
+    barColor: "bg-blue-400",
+    buckets: [
+      { label: "Mar 1", value: 61 }, { label: "Mar 2", value: 58 }, { label: "Mar 3", value: 64 }, { label: "Mar 4", value: 67 },
+      { label: "Mar 5", value: 72 }, { label: "Mar 6", value: 69 }, { label: "Mar 7", value: 66 }, { label: "Mar 8", value: 74 },
+      { label: "Mar 9", value: 77 }, { label: "Mar 10", value: 75 }, { label: "Mar 11", value: 71 }, { label: "Mar 12", value: 78 },
+      { label: "Mar 13", value: 80 }, { label: "Mar 14", value: 76 }, { label: "Mar 15", value: 73 }, { label: "Mar 16", value: 81 },
+      { label: "Mar 17", value: 71 }, { label: "Mar 18", value: 63 }, { label: "Mar 19", value: 58 }, { label: "Mar 20", value: 79 },
+      { label: "Mar 21", value: 84 }, { label: "Mar 22", value: 76 }, { label: "Mar 23", value: 68 }, { label: "Mar 24", value: 82 },
+      { label: "Mar 25", value: 88 }, { label: "Mar 26", value: 91 }, { label: "Mar 27", value: 86 }, { label: "Mar 28", value: 93 },
+      { label: "Mar 29", value: 87 }, { label: "Mar 30", value: 89 },
+    ],
+    kpi: { primaryLabel: "Avg. Daily Active (30D)", primaryValue: 76, primaryPrev: 71, secondaryLabel: "Peak DAU (30-day)", secondaryValue: 93, churnPct: "3.1%", churnCount: 4, atRisk: 12, newMembers: 23, totalPosts: "22.4k", flagged: 41, activeUsers: 389, newSignups: 23 },
+  },
+  "90D": {
+    chartTitle: "Weekly Active Users — Last 90 Days",
+    chartSub: "Jan 1 – Mar 30 (weekly)",
+    barColor: "bg-green-500",
+    buckets: [
+      { label: "Jan 6", value: 44 }, { label: "Jan 13", value: 51 }, { label: "Jan 20", value: 58 }, { label: "Jan 27", value: 62 },
+      { label: "Feb 3", value: 74 }, { label: "Feb 10", value: 81 }, { label: "Feb 17", value: 88 }, { label: "Feb 24", value: 99 },
+      { label: "Mar 3", value: 107 }, { label: "Mar 10", value: 113 }, { label: "Mar 17", value: 116 }, { label: "Mar 24", value: 118 }, { label: "Mar 30", value: 119 },
+    ],
+    kpi: { primaryLabel: "Avg. WAU (90 Days)", primaryValue: 87, primaryPrev: 61, secondaryLabel: "Peak WAU", secondaryValue: 119, churnPct: "8.4%", churnCount: 11, atRisk: 19, newMembers: 67, totalPosts: "68.2k", flagged: 124, activeUsers: 112, newSignups: 67 },
+  },
+  "YTD": {
+    chartTitle: "Monthly Active Users — Year to Date",
+    chartSub: "Jan 2026 – Mar 2026",
+    barColor: "bg-violet-500",
+    buckets: [
+      { label: "January", value: 65 }, { label: "February", value: 78 }, { label: "March", value: 87 },
+    ],
+    kpi: { primaryLabel: "Avg. MAU (YTD)", primaryValue: 77, primaryPrev: 0, secondaryLabel: "Members Onboarded", secondaryValue: TOTAL_ONBOARDED, churnPct: "8.2%", churnCount: 11, atRisk: 19, newMembers: 89, totalPosts: "73.1k", flagged: 134, activeUsers: 118, newSignups: 89 },
+  },
+  "1Y": {
+    chartTitle: "Monthly Active Users — Last 12 Months",
+    chartSub: "Apr 2025 – Mar 2026",
+    barColor: "bg-rose-400",
+    buckets: [
+      { label: "Apr '25", value: 8 }, { label: "May '25", value: 14 }, { label: "Jun '25", value: 21 }, { label: "Jul '25", value: 29 },
+      { label: "Aug '25", value: 37 }, { label: "Sep '25", value: 44 }, { label: "Oct '25", value: 53 }, { label: "Nov '25", value: 58 },
+      { label: "Dec '25", value: 62 }, { label: "Jan '26", value: 65 }, { label: "Feb '26", value: 78 }, { label: "Mar '26", value: 87 },
+    ],
+    kpi: { primaryLabel: "Peak MAU (12-month)", primaryValue: 87, primaryPrev: 8, secondaryLabel: "Total Onboarded", secondaryValue: TOTAL_ONBOARDED, churnPct: "12.1%", churnCount: 16, atRisk: 19, newMembers: 131, totalPosts: "112k", flagged: 192, activeUsers: 131, newSignups: 131 },
+  },
+};
+
+const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
+  { key: "7D", label: "7D" },
+  { key: "30D", label: "30D" },
+  { key: "90D", label: "90D" },
+  { key: "YTD", label: "YTD" },
+  { key: "1Y", label: "1Y" },
 ];
 
 const ONBOARDING_FUNNEL = [
@@ -781,128 +862,138 @@ function RetentionCell({ value }: { value: number | null }) {
 }
 
 function AnalyticsTab() {
-  const dauMax = Math.max(...DAU_14D.map(d => d.dau));
-  const wauMax = Math.max(...WAU_8W.map(d => d.wau));
-  const todayDAU = DAU_14D[DAU_14D.length - 1].dau;
-  const todayWAU = WAU_8W[WAU_8W.length - 1].wau;
-  const prevDAU = DAU_14D[DAU_14D.length - 2].dau;
-  const dauChange = todayDAU - prevDAU;
+  const [range, setRange] = useState<RangeKey>("30D");
+  const d = ANALYTICS_RANGES[range];
+  const barMax = Math.max(...d.buckets.map(b => b.value));
+  const primaryDelta = d.kpi.primaryValue - d.kpi.primaryPrev;
 
   return (
     <div className="space-y-6" data-testid="admin-tab-analytics">
 
+      {/* Time range selector */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <p className="text-sm text-muted-foreground font-medium">Showing data for <span className="text-foreground font-semibold">{d.chartSub}</span></p>
+        <div className="flex gap-1 p-1 bg-muted rounded-lg" data-testid="analytics-range-selector">
+          {RANGE_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setRange(opt.key)}
+              data-testid={`range-btn-${opt.key}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                range === opt.key
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* KPI summary row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <UserCheck className="h-7 w-7 text-blue-600 opacity-80" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{TOTAL_ONBOARDED}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Onboarded Physicians</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Total platform members</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <Flame className="h-7 w-7 text-orange-500 opacity-80" />
+              {range !== "YTD" && range !== "1Y" && (
+                <span className={`flex items-center gap-0.5 text-xs font-semibold ${primaryDelta >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  {primaryDelta >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {Math.abs(primaryDelta)}
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-bold mt-2">{d.kpi.primaryValue}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{d.kpi.primaryLabel}</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">{d.kpi.secondaryLabel}: {d.kpi.secondaryValue}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <UserPlus className="h-7 w-7 text-purple-500 opacity-80" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{d.kpi.newMembers}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">New Members</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Joined in this period</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <UserMinus className="h-7 w-7 text-rose-600 opacity-80" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{d.kpi.churnPct}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Churn Rate</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">{d.kpi.churnCount} churned · {d.kpi.atRisk} at-risk</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Unified active users chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Activity className={`h-4 w-4 ${range === "7D" ? "text-orange-500" : range === "30D" ? "text-blue-500" : range === "90D" ? "text-green-600" : "text-violet-500"}`} />
+            {d.chartTitle}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-0.5" style={{ height: 96 }}>
+            {d.buckets.map((b, i) => (
+              <div key={i} className="flex-1 relative group" style={{ height: 80 }}>
+                <div
+                  className={`absolute bottom-0 left-0 right-0 ${d.barColor} rounded-t-sm transition-all`}
+                  style={{ height: `${Math.round((b.value / barMax) * 100)}%` }}
+                />
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:block bg-popover border rounded px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap z-10 shadow-sm">
+                  {b.label}: {b.value}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 border-t pt-1">
+            <span className="text-[10px] text-muted-foreground">{d.buckets[0].label}</span>
+            <span className="text-[10px] text-muted-foreground font-semibold">
+              Latest: <span className="text-foreground">{d.buckets[d.buckets.length - 1].value}</span>
+            </span>
+            <span className="text-[10px] text-muted-foreground">{d.buckets[d.buckets.length - 1].label}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* User interaction summary for selected range */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          {
-            label: "Onboarded Physicians",
-            value: TOTAL_ONBOARDED,
-            sub: "Total platform members",
-            icon: UserCheck,
-            color: "text-blue-600",
-            delta: null,
-          },
-          {
-            label: "DAU (Today)",
-            value: todayDAU,
-            sub: `${Math.round((todayDAU / TOTAL_ONBOARDED) * 100)}% DAU / MAU ratio`,
-            icon: Flame,
-            color: "text-orange-500",
-            delta: dauChange,
-          },
-          {
-            label: "WAU (Rolling 7-day)",
-            value: todayWAU,
-            sub: `${Math.round((todayWAU / TOTAL_ONBOARDED) * 100)}% WAU / MAU ratio`,
-            icon: Activity,
-            color: "text-green-600",
-            delta: null,
-          },
-          {
-            label: "Monthly Churn",
-            value: "3.1%",
-            sub: "4 churned · 12 at-risk",
-            icon: UserMinus,
-            color: "text-rose-600",
-            delta: null,
-          },
+          { label: "Total Posts", value: d.kpi.totalPosts, icon: MessageSquare, color: "text-blue-600" },
+          { label: "Flagged Content", value: d.kpi.flagged, icon: Flag, color: "text-orange-600" },
+          { label: "Active Users", value: d.kpi.activeUsers, icon: Users2, color: "text-green-600" },
+          { label: "New Signups", value: d.kpi.newSignups, icon: UserCheck, color: "text-purple-600" },
         ].map(stat => (
           <Card key={stat.label}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <stat.icon className={`h-7 w-7 ${stat.color} opacity-80`} />
-                {stat.delta !== null && (
-                  <span className={`flex items-center gap-0.5 text-xs font-semibold ${stat.delta >= 0 ? "text-green-600" : "text-red-500"}`}>
-                    {stat.delta >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {Math.abs(stat.delta)}
-                  </span>
-                )}
+            <CardContent className="p-4 flex items-center gap-3">
+              <stat.icon className={`h-8 w-8 ${stat.color} opacity-80`} />
+              <div>
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
               </div>
-              <p className="text-2xl font-bold mt-2">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-              <p className="text-[11px] text-muted-foreground/70 mt-0.5">{stat.sub}</p>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* DAU 14-day bar chart + WAU 8-week bar chart */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
-              Daily Active Users — Last 14 Days
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end gap-1" style={{ height: 80 }}>
-              {DAU_14D.map(d => (
-                <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full relative" style={{ height: 60 }}>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-orange-400 rounded-t-sm"
-                      style={{ height: `${Math.round((d.dau / dauMax) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-muted-foreground">{DAU_14D[0].day}</span>
-              <span className="text-[10px] text-muted-foreground font-semibold text-orange-600">Today: {todayDAU}</span>
-              <span className="text-[10px] text-muted-foreground">{DAU_14D[DAU_14D.length - 1].day}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-green-600" />
-              Weekly Active Users — Last 8 Weeks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end gap-1.5" style={{ height: 80 }}>
-              {WAU_8W.map(d => (
-                <div key={d.week} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full relative" style={{ height: 60 }}>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-green-500 rounded-t-sm"
-                      style={{ height: `${Math.round((d.wau / wauMax) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-muted-foreground">{WAU_8W[0].week}</span>
-              <span className="text-[10px] text-muted-foreground font-semibold text-green-700">This week: {todayWAU}</span>
-              <span className="text-[10px] text-muted-foreground">{WAU_8W[WAU_8W.length - 1].week}</span>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Onboarding funnel */}
@@ -955,14 +1046,15 @@ function AnalyticsTab() {
             <CardTitle className="text-sm flex items-center gap-2">
               <UserMinus className="h-4 w-4 text-rose-600" />
               Churn Analysis
+              <span className="ml-auto text-xs text-muted-foreground font-normal">{range} view</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-3 text-center">
               {[
-                { label: "Monthly churn rate", value: "3.1%", bg: "bg-rose-50", text: "text-rose-700" },
-                { label: "Churned this month", value: "4", bg: "bg-orange-50", text: "text-orange-700" },
-                { label: "At-risk (≥7 days inactive)", value: "12", bg: "bg-amber-50", text: "text-amber-700" },
+                { label: "Churn rate", value: d.kpi.churnPct, bg: "bg-rose-50", text: "text-rose-700" },
+                { label: "Churned", value: String(d.kpi.churnCount), bg: "bg-orange-50", text: "text-orange-700" },
+                { label: "At-risk", value: String(d.kpi.atRisk), bg: "bg-amber-50", text: "text-amber-700" },
               ].map(s => (
                 <div key={s.label} className={`${s.bg} rounded-lg p-3`}>
                   <p className={`text-xl font-bold ${s.text}`}>{s.value}</p>
@@ -999,10 +1091,7 @@ function AnalyticsTab() {
                 <f.icon className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-xs font-medium w-36 shrink-0">{f.feature}</span>
                 <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
-                  <div
-                    className="h-full bg-purple-500 rounded-full"
-                    style={{ width: `${f.pct}%` }}
-                  />
+                  <div className="h-full bg-purple-500 rounded-full" style={{ width: `${f.pct}%` }} />
                 </div>
                 <span className="text-xs font-bold tabular-nums w-12 text-right">{f.adopted} <span className="text-muted-foreground font-normal">({f.pct}%)</span></span>
               </div>
