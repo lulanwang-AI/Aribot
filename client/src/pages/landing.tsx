@@ -49,6 +49,8 @@ import {
   Heart,
   Phone,
   Mail,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Link } from "wouter";
 import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
@@ -198,7 +200,7 @@ function AnimatedCounter({ target, label, suffix = "" }: { target: number; label
       <div className="text-4xl md:text-5xl font-bold text-[#4A90D9]">
         {count}{suffix}
       </div>
-      <div className="text-white/70 mt-2 text-sm">{label}</div>
+      <div className="text-gray-600 mt-2 text-sm">{label}</div>
     </div>
   );
 }
@@ -230,20 +232,7 @@ function LandingNavbar() {
           className="flex items-center gap-3"
           data-testid="link-navbar-logo"
         >
-          <div className="relative w-10 h-10">
-            <svg viewBox="0 0 40 40" className="w-10 h-10">
-              <polygon
-                points="20,2 36,11 36,29 20,38 4,29 4,11"
-                fill="none"
-                stroke="#4A90D9"
-                strokeWidth="2"
-              />
-            </svg>
-            <span className="absolute inset-0 flex flex-col items-center justify-center text-[#4A90D9] text-[8px] font-bold leading-tight">
-              <span>ARI</span>
-              <span>bots</span>
-            </span>
-          </div>
+          <img src={aribotLogoPath} alt="ARIbots" className="h-9 w-9 rounded object-contain" />
         </button>
 
         <div className="hidden md:flex items-center gap-8">
@@ -593,9 +582,9 @@ function MeetAriSection() {
   ];
 
   return (
-    <section id="meet-ari" className="py-24 bg-[#1a1a1a]">
+    <section id="meet-ari" className="py-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-meet-ari-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-meet-ari-title">
           meet <span className="text-[#4A90D9]">ARI</span>
         </h2>
         <div
@@ -605,15 +594,15 @@ function MeetAriSection() {
           {features.map((f, i) => (
             <div
               key={f.title}
-              className="group bg-[#222] border border-white/10 rounded-2xl p-8 hover:border-[#4A90D9]/50 transition-all duration-500 hover:-translate-y-1"
+              className="group bg-white border border-gray-200 rounded-2xl p-8 hover:border-[#4A90D9]/50 hover:shadow-md transition-all duration-500 hover:-translate-y-1"
               style={{ transitionDelay: `${i * 150}ms` }}
               data-testid={`card-feature-${f.title.toLowerCase()}`}
             >
               <div className="w-14 h-14 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center mb-6 group-hover:bg-[#4A90D9]/20 transition-colors">
                 <f.icon className="w-7 h-7 text-[#4A90D9]" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
-              <p className="text-white/60 leading-relaxed text-sm">{f.description}</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{f.title}</h3>
+              <p className="text-gray-600 leading-relaxed text-sm">{f.description}</p>
             </div>
           ))}
         </div>
@@ -622,7 +611,7 @@ function MeetAriSection() {
           ref={srcRef}
           className={`mt-20 transition-all duration-1000 delay-200 ${srcVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          <p className="text-center text-white/40 text-xs uppercase tracking-widest mb-6 font-medium">
+          <p className="text-center text-gray-400 text-xs uppercase tracking-widest mb-6 font-medium">
             Powered by 8 trusted evidence sources
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -634,18 +623,18 @@ function MeetAriSection() {
                   onClick={() => setActiveSource(isActive ? null : src.id)}
                   className={`group relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-300 ${
                     isActive
-                      ? "bg-[#4A90D9]/15 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.15)]"
-                      : "bg-[#2a2a2a] border-white/8 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
+                      ? "bg-[#4A90D9]/10 border-[#4A90D9]/60 shadow-[0_0_20px_rgba(74,144,217,0.10)]"
+                      : "bg-gray-50 border-gray-200 hover:border-[#4A90D9]/40 hover:bg-[#4A90D9]/5"
                   }`}
                   style={{ transitionDelay: `${i * 40}ms` }}
                   data-testid={`source-${src.id}`}
                 >
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-300 ${
-                    isActive ? "bg-[#4A90D9]/30" : "bg-white/5 group-hover:bg-[#4A90D9]/15"
+                    isActive ? "bg-[#4A90D9]/20" : "bg-white group-hover:bg-[#4A90D9]/10"
                   }`}>
-                    <src.icon className={`w-3.5 h-3.5 transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/40 group-hover:text-[#4A90D9]"}`} />
+                    <src.icon className={`w-3.5 h-3.5 transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-gray-400 group-hover:text-[#4A90D9]"}`} />
                   </div>
-                  <span className={`text-xs font-medium leading-snug transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-white/55 group-hover:text-white/80"}`}>
+                  <span className={`text-xs font-medium leading-snug transition-colors duration-300 ${isActive ? "text-[#4A90D9]" : "text-gray-600 group-hover:text-gray-800"}`}>
                     {src.label}
                   </span>
                   {isActive && (
@@ -782,12 +771,12 @@ function HowAriWorksSection() {
   const active = scenarios[activeTab];
 
   return (
-    <section id="how-it-works" className="py-24 bg-[#111]">
+    <section id="how-it-works" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-how-works-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-how-works-title">
           How <span className="text-[#4A90D9]">ARI</span> Works
         </h2>
-        <p className="text-center text-white/50 mb-12 max-w-2xl mx-auto">
+        <p className="text-center text-gray-500 mb-12 max-w-2xl mx-auto">
           See ARI's AI-powered clinical workflow in action across real scenarios
         </p>
 
@@ -801,7 +790,7 @@ function HowAriWorksSection() {
                 className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden ${
                   activeTab === i
                     ? "bg-[#4A90D9] text-white shadow-[0_0_20px_rgba(74,144,217,0.3)]"
-                    : "bg-[#1a1a1a] text-white/60 border border-white/10 hover:border-[#4A90D9]/40 hover:text-white"
+                    : "bg-gray-100 text-gray-600 border border-gray-200 hover:border-[#4A90D9]/40 hover:text-gray-900"
                 }`}
                 data-testid={`tab-step-${i + 1}`}
               >
@@ -819,7 +808,7 @@ function HowAriWorksSection() {
             {paused && (
               <button
                 onClick={() => setPaused(false)}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-white/40 border border-white/10 hover:text-white/70 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs text-gray-400 border border-gray-200 hover:text-gray-600 transition-colors"
                 data-testid="button-resume-cycle"
               >
                 <Activity className="w-3.5 h-3.5" /> Auto
@@ -830,7 +819,7 @@ function HowAriWorksSection() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div
               key={`desc-${activeTab}`}
-              className="lg:col-span-2 bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 animate-[fadeSlideUp_0.4s_ease-out]"
+              className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6 animate-[fadeSlideUp_0.4s_ease-out] shadow-sm"
               data-testid={`step-${activeTab + 1}`}
             >
               <div className="flex items-center gap-3 mb-6">
@@ -839,10 +828,10 @@ function HowAriWorksSection() {
                 </div>
                 <div>
                   <span className="text-[#4A90D9] text-[10px] font-bold uppercase tracking-widest block">{active.step} of 5</span>
-                  <h3 className="text-base font-semibold text-white leading-tight">{active.tabLabel}</h3>
+                  <h3 className="text-base font-semibold text-gray-900 leading-tight">{active.tabLabel}</h3>
                 </div>
               </div>
-              <p className="text-white/55 text-sm leading-relaxed">{active.description}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{active.description}</p>
 
               <div className="flex gap-1.5 mt-8">
                 {scenarios.map((_, i) => (
@@ -850,7 +839,7 @@ function HowAriWorksSection() {
                     key={i}
                     onClick={() => { setActiveTab(i); setPaused(true); }}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      activeTab === i ? "bg-[#4A90D9] w-6" : "bg-white/15 w-3 hover:bg-white/30"
+                      activeTab === i ? "bg-[#4A90D9] w-6" : "bg-gray-300 w-3 hover:bg-gray-400"
                     }`}
                     data-testid={`dot-step-${i + 1}`}
                   />
@@ -955,9 +944,9 @@ function OurVisionSection() {
   ];
 
   return (
-    <section id="vision" className="py-24 bg-[#111]">
+    <section id="vision" className="py-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-testid="text-vision-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16" data-testid="text-vision-title">
           OUR <span className="text-[#4A90D9]">VISION</span>
         </h2>
 
@@ -968,15 +957,15 @@ function OurVisionSection() {
           {cards.map((card, i) => (
             <div
               key={card.title}
-              className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 text-center hover:border-[#4A90D9]/30 transition-all duration-500"
+              className="bg-white border border-gray-200 rounded-2xl p-8 text-center hover:border-[#4A90D9]/40 hover:shadow-md transition-all duration-500"
               style={{ transitionDelay: `${i * 150}ms` }}
               data-testid={`card-vision-${card.title.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <div className="w-16 h-16 rounded-full bg-[#4A90D9]/10 flex items-center justify-center mx-auto mb-6">
                 <card.icon className="w-8 h-8 text-[#4A90D9]" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-4">{card.title}</h3>
-              <p className="text-white/60 text-sm leading-relaxed">{card.description}</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">{card.title}</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">{card.description}</p>
             </div>
           ))}
         </div>
@@ -1039,12 +1028,12 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section id="testimonials" className="py-24 bg-[#1a1a1a]">
+    <section id="testimonials" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-testimonials-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-testimonials-title">
           What <span className="text-[#4A90D9]">Physicians</span> Say
         </h2>
-        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+        <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
           Trusted by leading clinicians at top hospitals worldwide
         </p>
 
@@ -1055,13 +1044,13 @@ function TestimonialsSection() {
           {testimonials.map((t, i) => (
             <div
               key={t.name}
-              className={`bg-[#222] border border-white/10 rounded-2xl p-6 hover:border-[#4A90D9]/30 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+              className={`bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#4A90D9]/40 hover:shadow-md transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
               style={{ transitionDelay: `${i * 100}ms` }}
               data-testid={`card-testimonial-${i}`}
             >
               <div className="flex items-center gap-3 mb-4">
                 <div
-                  className={`w-12 h-12 rounded-full shrink-0 bg-gradient-to-br ${t.gradient} flex items-center justify-center ring-2 ring-white/10 shadow-lg`}
+                  className={`w-12 h-12 rounded-full shrink-0 bg-gradient-to-br ${t.gradient} flex items-center justify-center ring-2 ring-gray-100 shadow-md`}
                   data-testid={`avatar-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
                 >
                   <span className="text-white font-bold text-sm tracking-wide">
@@ -1069,19 +1058,19 @@ function TestimonialsSection() {
                   </span>
                 </div>
                 <div>
-                  <div className="text-white font-semibold text-sm">{t.name}</div>
-                  <div className="text-white/50 text-xs">{t.specialty} · {t.hospital}</div>
+                  <div className="text-gray-900 font-semibold text-sm">{t.name}</div>
+                  <div className="text-gray-500 text-xs">{t.specialty} · {t.hospital}</div>
                 </div>
               </div>
               <div className="flex gap-0.5 mb-3">
                 {Array.from({ length: 5 }, (_, j) => (
                   <Star
                     key={j}
-                    className={`w-4 h-4 ${j < t.rating ? "text-[#4A90D9] fill-[#4A90D9]" : "text-white/20"}`}
+                    className={`w-4 h-4 ${j < t.rating ? "text-[#4A90D9] fill-[#4A90D9]" : "text-gray-200"}`}
                   />
                 ))}
               </div>
-              <p className="text-white/70 text-sm leading-relaxed italic">"{t.quote}"</p>
+              <p className="text-gray-600 text-sm leading-relaxed italic">"{t.quote}"</p>
             </div>
           ))}
         </div>
@@ -1123,12 +1112,12 @@ function CapabilitiesSection() {
 
 
   return (
-    <section id="capabilities" className="py-24 bg-[#111]">
+    <section id="capabilities" className="py-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-capabilities-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-capabilities-title">
           ARI <span className="text-[#4A90D9]">Capabilities</span> & AI in Healthcare
         </h2>
-        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+        <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
           Advanced AI built for clinical safety, seamlessly integrated into your workflow
         </p>
 
@@ -1140,7 +1129,7 @@ function CapabilitiesSection() {
             {features.map((f, i) => (
               <div
                 key={f.title}
-                className="group relative bg-[#1a1a1a] border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#4A90D9]/50 hover:shadow-[0_0_30px_rgba(74,144,217,0.12)] cursor-pointer"
+                className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#4A90D9]/50 hover:shadow-lg cursor-pointer"
                 style={{ transitionDelay: `${i * 80}ms` }}
                 onMouseEnter={() => setHoveredFeature(i)}
                 onMouseLeave={() => setHoveredFeature(null)}
@@ -1152,7 +1141,7 @@ function CapabilitiesSection() {
                     alt={f.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
                   <div className={`absolute inset-0 bg-[#4A90D9]/10 transition-opacity duration-500 ${hoveredFeature === i ? "opacity-100" : "opacity-0"}`} />
                 </div>
                 <div className="p-6 relative">
@@ -1160,9 +1149,9 @@ function CapabilitiesSection() {
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${hoveredFeature === i ? "bg-[#4A90D9] shadow-[0_0_15px_rgba(74,144,217,0.4)]" : "bg-[#4A90D9]/10"}`}>
                       <f.icon className={`w-5 h-5 transition-colors duration-500 ${hoveredFeature === i ? "text-white" : "text-[#4A90D9]"}`} />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">{f.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{f.title}</h3>
                   </div>
-                  <p className="text-white/60 text-sm leading-relaxed">{f.description}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{f.description}</p>
                 </div>
               </div>
             ))}
@@ -1188,9 +1177,9 @@ function CommunitySection() {
   const duplicated = [...hospitals, ...hospitals];
 
   return (
-    <section id="community" className="py-24 bg-[#1a1a1a] overflow-hidden">
+    <section id="community" className="py-24 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-testid="text-community-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16" data-testid="text-community-title">
           Our <span className="text-[#4A90D9]">Community</span>
         </h2>
 
@@ -1207,7 +1196,7 @@ function CommunitySection() {
           {duplicated.map((h, i) => (
             <span
               key={`${h}-${i}`}
-              className="mx-6 text-white/30 text-sm font-medium inline-block"
+              className="mx-6 text-gray-400 text-sm font-medium inline-block"
             >
               {h}
             </span>
@@ -1304,12 +1293,12 @@ function TeamSection() {
   ];
 
   return (
-    <section id="team" className="py-24 bg-[#111]">
+    <section id="team" className="py-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-team-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-team-title">
           Meet the <span className="text-[#4A90D9]">Team</span>
         </h2>
-        <p className="text-center text-white/50 mb-16 max-w-2xl mx-auto">
+        <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
           Built by physicians and engineers passionate about transforming healthcare
         </p>
 
@@ -1320,16 +1309,16 @@ function TeamSection() {
           {team.map((member, i) => (
             <div
               key={member.name}
-              className="group bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 text-center hover:border-[#4A90D9]/30 transition-all duration-500 hover:-translate-y-1"
+              className="group bg-white border border-gray-200 rounded-2xl p-6 text-center hover:border-[#4A90D9]/40 hover:shadow-md transition-all duration-500 hover:-translate-y-1"
               style={{ transitionDelay: `${i * 80}ms` }}
               data-testid={`card-team-${member.initials.toLowerCase()}`}
             >
-              <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-white/10 group-hover:border-[#4A90D9]/50 transition-colors duration-500">
+              <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-gray-200 group-hover:border-[#4A90D9]/50 transition-colors duration-500">
                 <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
               </div>
-              <h3 className="text-white font-semibold text-lg">{member.name}</h3>
+              <h3 className="text-gray-900 font-semibold text-lg">{member.name}</h3>
               <p className="text-[#4A90D9] text-sm font-medium mt-1">{member.title}</p>
-              <p className="text-white/50 text-sm mt-3 leading-relaxed">{member.bio}</p>
+              <p className="text-gray-500 text-sm mt-3 leading-relaxed">{member.bio}</p>
             </div>
           ))}
         </div>
@@ -1370,12 +1359,12 @@ function FaqSection() {
   ];
 
   return (
-    <section id="faq" className="py-24 bg-[#1a1a1a]">
+    <section id="faq" className="py-24 bg-white">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-faq-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-faq-title">
           Frequently Asked <span className="text-[#4A90D9]">Questions</span>
         </h2>
-        <p className="text-center text-white/50 mb-12">
+        <p className="text-center text-gray-500 mb-12">
           Everything you need to know about ARI
         </p>
 
@@ -1388,7 +1377,7 @@ function FaqSection() {
             return (
               <div
                 key={i}
-                className="bg-[#222] border border-white/10 rounded-xl overflow-hidden hover:border-[#4A90D9]/20 transition-colors"
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-[#4A90D9]/30 hover:shadow-sm transition-colors"
                 data-testid={`faq-item-${i}`}
               >
                 <button
@@ -1396,7 +1385,7 @@ function FaqSection() {
                   className="w-full flex items-center justify-between p-5 text-left"
                   data-testid={`button-faq-${i}`}
                 >
-                  <span className="text-white font-medium text-sm pr-4">{faq.q}</span>
+                  <span className="text-gray-900 font-medium text-sm pr-4">{faq.q}</span>
                   <ChevronRight
                     className={`w-5 h-5 text-[#4A90D9] shrink-0 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`}
                   />
@@ -1404,7 +1393,7 @@ function FaqSection() {
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-96" : "max-h-0"}`}
                 >
-                  <p className="px-5 pb-5 text-white/60 text-sm leading-relaxed">{faq.a}</p>
+                  <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                 </div>
               </div>
             );
@@ -1418,6 +1407,47 @@ function FaqSection() {
 function DemoFormSection() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [npiNumber, setNpiNumber] = useState("");
+  const [npiStatus, setNpiStatus] = useState<"idle" | "verifying" | "verified" | "failed">("idle");
+  const [npiData, setNpiData] = useState<{ name: string; credential: string; taxonomy: string } | null>(null);
+
+  async function verifyNpi() {
+    if (npiNumber.length !== 10 || !/^\d+$/.test(npiNumber)) {
+      toast({ title: "Invalid NPI", description: "NPI must be exactly 10 digits.", variant: "destructive" });
+      return;
+    }
+    setNpiStatus("verifying");
+    try {
+      const res = await fetch(`https://npiregistry.cms.hhs.gov/api/?number=${npiNumber}&version=2.1`);
+      const data = await res.json();
+      if (data.result_count > 0) {
+        const result = data.results[0];
+        const cred = (result.basic?.credential || "").trim();
+        const isPhysician = /^(MD|DO|MBBS|MBBCh|MBBChB)/i.test(cred);
+        const enumType = result.enumeration_type;
+        const status = result.basic?.status;
+        if (enumType === "NPI-1" && status === "A" && isPhysician) {
+          const primaryTax = result.taxonomies?.find((t: { primary: boolean }) => t.primary) || result.taxonomies?.[0];
+          setNpiData({
+            name: `${result.basic.first_name} ${result.basic.last_name}, ${cred}`,
+            credential: cred,
+            taxonomy: primaryTax?.desc || "Physician",
+          });
+          setNpiStatus("verified");
+          toast({ title: "NPI Verified ✓", description: `Verified: ${result.basic.first_name} ${result.basic.last_name}, ${cred}` });
+        } else {
+          setNpiStatus("failed");
+          toast({ title: "Verification Failed", description: "This NPI does not belong to an active MD/DO physician.", variant: "destructive" });
+        }
+      } else {
+        setNpiStatus("failed");
+        toast({ title: "NPI Not Found", description: "No provider found with this NPI number.", variant: "destructive" });
+      }
+    } catch {
+      setNpiStatus("failed");
+      toast({ title: "Error", description: "Could not reach NPI registry. Please try again.", variant: "destructive" });
+    }
+  }
 
   const form = useForm<InsertDemoRequest>({
     resolver: zodResolver(insertDemoRequestSchema),
@@ -1450,22 +1480,22 @@ function DemoFormSection() {
   }
 
   return (
-    <section id="demo" className="py-24 bg-[#1a1a1a]">
+    <section id="demo" className="py-24 bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-4" data-testid="text-demo-title">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-demo-title">
           JOIN THE <span className="text-[#4A90D9]">COMMUNITY</span>
         </h2>
-        <p className="text-center text-white/50 mb-12">
-          Please fill your contact details below
+        <p className="text-center text-gray-500 mb-3">
+          Board-certified physicians only. Enter your NPI number to verify your credentials.
         </p>
 
         {submitted ? (
-          <div className="text-center py-16 bg-[#222] rounded-2xl border border-[#4A90D9]/30" data-testid="text-demo-success">
-            <div className="w-16 h-16 rounded-full bg-[#4A90D9]/20 flex items-center justify-center mx-auto mb-6">
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#4A90D9]/30 shadow-sm" data-testid="text-demo-success">
+            <div className="w-16 h-16 rounded-full bg-[#4A90D9]/10 flex items-center justify-center mx-auto mb-6">
               <Shield className="w-8 h-8 text-[#4A90D9]" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Message Received!</h3>
-            <p className="text-white/60">We'll get back to you shortly.</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Received!</h3>
+            <p className="text-gray-600">We'll get back to you shortly.</p>
             <Button
               onClick={() => setSubmitted(false)}
               className="mt-6 bg-[#4A90D9] text-white hover:bg-[#5BA0E9]"
@@ -1477,17 +1507,64 @@ function DemoFormSection() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
+              {/* NPI Verification */}
+              <div className={`rounded-xl border p-4 transition-colors ${npiStatus === "verified" ? "bg-green-50 border-green-300" : npiStatus === "failed" ? "bg-red-50 border-red-300" : "bg-blue-50 border-blue-200"}`}>
+                <label className="text-gray-700 font-medium text-sm block mb-1">
+                  NPI Number <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-2 text-xs">Board-certified MD/DO only</span>
+                </label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={npiNumber}
+                    onChange={(e) => {
+                      setNpiNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
+                      setNpiStatus("idle");
+                      setNpiData(null);
+                    }}
+                    placeholder="10-digit NPI number"
+                    className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 font-mono tracking-wider"
+                    maxLength={10}
+                    data-testid="input-npi-number"
+                  />
+                  <Button
+                    type="button"
+                    onClick={verifyNpi}
+                    disabled={npiNumber.length !== 10 || npiStatus === "verifying"}
+                    className="shrink-0 bg-[#4A90D9] text-white hover:bg-[#357abd] disabled:opacity-50"
+                    data-testid="button-verify-npi"
+                  >
+                    {npiStatus === "verifying" ? "Verifying…" : "Verify"}
+                  </Button>
+                </div>
+                {npiStatus === "verified" && npiData && (
+                  <div className="mt-2 flex items-center gap-2 text-green-700 text-xs" data-testid="text-npi-verified">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>Verified: <strong>{npiData.name}</strong> · {npiData.taxonomy}</span>
+                  </div>
+                )}
+                {npiStatus === "failed" && (
+                  <div className="mt-2 flex items-center gap-2 text-red-600 text-xs" data-testid="text-npi-failed">
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    <span>Verification failed. Only active MD/DO providers are eligible.</span>
+                  </div>
+                )}
+                {npiStatus === "idle" && (
+                  <p className="mt-2 text-gray-400 text-xs">Don't know your NPI? Look it up at <a href="https://npiregistry.cms.hhs.gov" target="_blank" rel="noopener noreferrer" className="text-[#4A90D9] hover:underline">npiregistry.cms.hhs.gov</a></p>
+                )}
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70">Name</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Full Name</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="Dr. Jane Smith"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-name"
                       />
                     </FormControl>
@@ -1500,13 +1577,13 @@ function DemoFormSection() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70">Email</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Work Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
                         placeholder="jane@hospital.org"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-email"
                       />
                     </FormControl>
@@ -1519,12 +1596,12 @@ function DemoFormSection() {
                 name="organization"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70">Organization</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Hospital / Organization</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="Memorial Hospital"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-organization"
                       />
                     </FormControl>
@@ -1537,12 +1614,12 @@ function DemoFormSection() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70">Role</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Specialty / Role</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Chief Medical Officer"
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50"
+                        placeholder="Cardiologist, Internist, etc."
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40"
                         data-testid="input-demo-role"
                       />
                     </FormControl>
@@ -1555,13 +1632,13 @@ function DemoFormSection() {
                 name="message"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/70">Message (optional)</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Message (optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         placeholder="Tell us about your needs..."
                         rows={4}
-                        className="bg-[#222] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#4A90D9]/50 resize-none"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 resize-none"
                         data-testid="input-demo-message"
                       />
                     </FormControl>
@@ -1572,11 +1649,14 @@ function DemoFormSection() {
               <Button
                 type="submit"
                 className="w-full bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold py-6 text-lg"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || npiStatus !== "verified"}
                 data-testid="button-submit-demo"
               >
                 {mutation.isPending ? "Sending..." : "SEND"}
               </Button>
+              {npiStatus !== "verified" && (
+                <p className="text-center text-gray-400 text-xs">Verify your NPI number above to submit</p>
+              )}
             </form>
           </Form>
         )}
@@ -1682,7 +1762,7 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <div className="bg-[#111] min-h-screen">
+    <div className="bg-gray-50 min-h-screen">
       <LandingNavbar />
       <HeroSection />
       <MeetAriSection />
