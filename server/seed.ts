@@ -124,7 +124,7 @@ function generateDoctors(count: number): User[] {
       rankingScore: Math.min(100, randInt(30, 70) + Math.floor(yrsExp * 1.5)),
       badges: pickN(badgeOptions, randInt(0, 3)),
       bio: generateBio(fn, ln, spec.name, hosp.name, yrsExp),
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fn.toLowerCase()}${ln.toLowerCase()}${i}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`,
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fn.toLowerCase()}${ln.toLowerCase()}${i}&mouth[]=smile&mouth[]=twinkle&mouth[]=eating&eyes[]=happy&eyes[]=squint&eyes[]=wink&eyebrows[]=defaultNatural&eyebrows[]=raisedExcitedNatural&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`,
       credential: pickCredential(),
     });
   }
