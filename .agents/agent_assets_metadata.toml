@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "3kCwpqPCoV34kNvDW8XhR"
+uri = "file://attached_assets/generated_images/doctor-telemedicine.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "QTQz0lSO8eW2XxsE0xJfc"
+uri = "file://attached_assets/generated_images/doctor-news.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "rkODWH7emopkoUfO7iVR_"
+uri = "file://attached_assets/generated_images/doctor-income.png"
+type = "image"
+title = "generated_image"

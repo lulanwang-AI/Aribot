@@ -51,9 +51,19 @@ import {
   Mail,
   CheckCircle2,
   XCircle,
+  Video,
+  Newspaper,
+  DollarSign,
+  ArrowRight,
+  Play,
+  TrendingDown,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "wouter";
 import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
+import doctorTelemedicineImg from "@assets/generated_images/doctor-telemedicine.png";
+import doctorNewsImg from "@assets/generated_images/doctor-news.png";
+import doctorIncomeImg from "@assets/generated_images/doctor-income.png";
 import heroDoctorsImg from "@assets/hero-doctors-connect.png";
 import teamChetChea from "@assets/team-chet-chea.jpg";
 import teamDanaNguyen from "@assets/team-dana-nguyen.jpg";
@@ -651,6 +661,159 @@ function MeetAriSection() {
           <AnimatedCounter target={40} suffix="%" label="Reduce mortality rates" />
           <AnimatedCounter target={30} suffix="%" label="Shorten hospital stays" />
           <AnimatedCounter target={25} suffix="%" label="Lower healthcare costs" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PhysicianFeaturesSection() {
+  const features = [
+    {
+      id: "telemedicine",
+      tag: "Telemedicine",
+      tagColor: "bg-[#4A90D9]/10 text-[#4A90D9] border-[#4A90D9]/20",
+      accentColor: "#4A90D9",
+      icon: Video,
+      headline: "See patients from anywhere",
+      description:
+        "Conduct secure, HIPAA-compliant video visits directly through ARIbots. Connect with patients in real-time, review notes, and complete encounters — all without switching platforms.",
+      bullets: [
+        "One-click HD video consultations",
+        "Integrated EHR & note-taking",
+        "Prescription & referral support",
+      ],
+      cta: "Launch a Visit",
+      image: doctorTelemedicineImg,
+      imageAlt: "Doctor conducting telemedicine visit",
+      imageRight: false,
+    },
+    {
+      id: "news",
+      tag: "Medical News AI",
+      tagColor: "bg-violet-100 text-violet-600 border-violet-200",
+      accentColor: "#6366f1",
+      icon: Newspaper,
+      headline: "Stay ahead of clinical research",
+      description:
+        "AI-curated medical news from top journals, FDA updates, and clinical guidelines — delivered in a personalized feed tailored to your specialty and interests.",
+      bullets: [
+        "Specialty-matched article feed",
+        "FDA, CDC & WHO alerts in real-time",
+        "Save & share with peers instantly",
+      ],
+      cta: "Explore the Feed",
+      image: doctorNewsImg,
+      imageAlt: "Doctor reading medical news on tablet",
+      imageRight: true,
+    },
+    {
+      id: "income",
+      tag: "Earn Extra Income",
+      tagColor: "bg-emerald-100 text-emerald-600 border-emerald-200",
+      accentColor: "#10b981",
+      icon: DollarSign,
+      headline: "Turn your expertise into income",
+      description:
+        "Participate in paid physician surveys, clinical research studies, expert panel discussions, and telemedicine sessions — on your own schedule, from anywhere.",
+      bullets: [
+        "Paid surveys & research panels",
+        "Consulting & expert opinion work",
+        "Flexible hours, instant payouts",
+      ],
+      cta: "See Opportunities",
+      image: doctorIncomeImg,
+      imageAlt: "Doctor smiling at financial growth on smartphone",
+      imageRight: false,
+    },
+  ];
+
+  return (
+    <section id="physician-features" className="py-24 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-5">
+            <Sparkles className="h-3.5 w-3.5 text-[#4A90D9]" />
+            <span className="text-[#4A90D9] text-sm font-medium">Built for the Modern Physician</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            Everything you need,{" "}
+            <span className="text-[#4A90D9]">in one place</span>
+          </h2>
+          <p className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto">
+            ARIbots gives physicians the tools to practice smarter, stay informed, and earn more — all within a trusted physician-only community.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-24">
+          {features.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.id}
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center`}
+                data-testid={`feature-${f.id}`}
+              >
+                {/* Image */}
+                <div className={`relative ${f.imageRight ? "lg:order-2" : "lg:order-1"}`}>
+                  <div
+                    className="absolute -inset-4 rounded-3xl opacity-30 blur-2xl"
+                    style={{ background: `radial-gradient(ellipse at center, ${f.accentColor}33 0%, transparent 70%)` }}
+                  />
+                  <div className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-gray-200">
+                    <img
+                      src={f.image}
+                      alt={f.imageAlt}
+                      className="w-full h-72 lg:h-96 object-cover"
+                      data-testid={`img-feature-${f.id}`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                  </div>
+                </div>
+
+                {/* Text */}
+                <div className={f.imageRight ? "lg:order-1" : "lg:order-2"}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${f.tagColor} mb-5`}
+                    data-testid={`tag-feature-${f.id}`}
+                  >
+                    <Icon className="h-3 w-3" />
+                    {f.tag}
+                  </span>
+
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 leading-snug mb-4">
+                    {f.headline}
+                  </h3>
+
+                  <p className="text-gray-500 text-base leading-relaxed mb-7">
+                    {f.description}
+                  </p>
+
+                  <ul className="space-y-2.5 mb-8">
+                    {f.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-2.5 text-sm text-gray-700">
+                        <CheckCircle2
+                          className="h-4 w-4 shrink-0 mt-0.5"
+                          style={{ color: f.accentColor }}
+                        />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                    className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all duration-200 hover:opacity-90 active:scale-95"
+                    style={{ background: f.accentColor }}
+                    data-testid={`cta-feature-${f.id}`}
+                  >
+                    {f.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1767,6 +1930,7 @@ export default function Landing() {
       <LandingNavbar />
       <HeroSection />
       <MeetAriSection />
+      <PhysicianFeaturesSection />
       <HowAriWorksSection />
       <CapabilitiesSection />
       <TestimonialsSection />
