@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1372,24 +1371,186 @@ function ComplianceTab() {
   );
 }
 
+// ─── App Settings Panel ──────────────────────────────────────────────────────
+
+function AppSettingsPanel() {
+  const [features, setFeatures] = useState({
+    ari_assistant: true, clinical_triage: true, medical_news: true,
+    telemedicine: true, groups: true, events: true, doctor_directory: true,
+    peer_messaging: true,
+  });
+  const [platform, setPlatform] = useState({
+    new_member_approval: true, maintenance_mode: false,
+    phi_safe_mode: true, allow_medstudents: true,
+  });
+  const [notifications, setNotifications] = useState({
+    compliance_alerts: true, new_signups: true, flagged_content: true,
+    weekly_digest: false,
+  });
+
+  const toggle = <T extends object>(setter: React.Dispatch<React.SetStateAction<T>>, key: keyof T) =>
+    setter(prev => ({ ...prev, [key]: !prev[key] }));
+
+  return (
+    <div className="space-y-6">
+      {/* Feature toggles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Settings className="h-4 w-4 text-primary" />
+            Feature Toggles
+            <span className="ml-auto text-xs text-muted-foreground font-normal">Enable / disable platform features globally</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {(Object.entries(features) as [keyof typeof features, boolean][]).map(([key, val]) => {
+              const labels: Record<keyof typeof features, string> = {
+                ari_assistant: "ARI Assistant (Chatbot)",
+                clinical_triage: "Clinical Triage Cases",
+                medical_news: "Medical News AI",
+                telemedicine: "Telemedicine Module",
+                groups: "Groups & Forums",
+                events: "Medical Events",
+                doctor_directory: "Doctor Directory",
+                peer_messaging: "Peer Messaging",
+              };
+              return (
+                <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                  <span className="text-sm font-medium">{labels[key]}</span>
+                  <PermToggle enabled={val} onChange={() => toggle(setFeatures, key)} />
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Platform settings + Notifications side by side */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" />
+              Platform Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(Object.entries(platform) as [keyof typeof platform, boolean][]).map(([key, val]) => {
+              const labels: Record<keyof typeof platform, { label: string; desc: string; danger?: boolean }> = {
+                new_member_approval: { label: "Manual Member Approval", desc: "Review each signup before granting access" },
+                maintenance_mode: { label: "Maintenance Mode", desc: "Take platform offline for all non-admins", danger: true },
+                phi_safe_mode: { label: "PHI Safe Mode (global)", desc: "Enforce PHI redaction in all posts" },
+                allow_medstudents: { label: "Allow Medical Students", desc: "Med students can request access" },
+              };
+              const info = labels[key];
+              return (
+                <div key={key} className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className={`text-xs font-medium ${info.danger ? "text-red-600" : ""}`}>{info.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{info.desc}</p>
+                  </div>
+                  <PermToggle enabled={val} onChange={() => toggle(setPlatform, key)} />
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
+              Admin Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(Object.entries(notifications) as [keyof typeof notifications, boolean][]).map(([key, val]) => {
+              const labels: Record<keyof typeof notifications, { label: string; desc: string }> = {
+                compliance_alerts: { label: "Compliance Alerts", desc: "Immediate alert on compliance failures" },
+                new_signups: { label: "New Signup Alerts", desc: "Email when a new member joins" },
+                flagged_content: { label: "Flagged Content", desc: "Notify when content is flagged" },
+                weekly_digest: { label: "Weekly Digest", desc: "Summary report every Monday" },
+              };
+              const info = labels[key];
+              return (
+                <div key={key} className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium">{info.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{info.desc}</p>
+                  </div>
+                  <PermToggle enabled={val} onChange={() => toggle(setNotifications, key)} />
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Role access matrix */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Lock className="h-4 w-4 text-primary" />
+            Role Access Matrix
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3 text-muted-foreground font-medium">Feature</th>
+                {["Physician", "Nurse / NP", "Med Student", "Admin"].map(r => (
+                  <th key={r} className="text-center py-2 px-3 text-muted-foreground font-medium">{r}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { feature: "ARI Assistant", physician: true, nurse: true, student: true, admin: true },
+                { feature: "Clinical Triage", physician: true, nurse: true, student: false, admin: true },
+                { feature: "Telemedicine", physician: true, nurse: false, student: false, admin: true },
+                { feature: "Doctor Directory", physician: true, nurse: true, student: true, admin: true },
+                { feature: "Groups & Events", physician: true, nurse: true, student: true, admin: true },
+                { feature: "Admin Console", physician: false, nurse: false, student: false, admin: true },
+                { feature: "Revenue Data", physician: false, nurse: false, student: false, admin: true },
+              ].map(row => (
+                <tr key={row.feature} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="py-2 px-3 font-medium">{row.feature}</td>
+                  {[row.physician, row.nurse, row.student, row.admin].map((has, i) => (
+                    <td key={i} className="py-2 px-3 text-center">
+                      {has
+                        ? <CheckCircle className="h-3.5 w-3.5 text-green-500 mx-auto" />
+                        : <XCircle className="h-3.5 w-3.5 text-muted-foreground/40 mx-auto" />}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Admin Page ─────────────────────────────────────────────────────────
+
+const ADMIN_TABS = [
+  { id: "analytics", label: "Analytics", icon: LineChart },
+  { id: "settings", label: "Settings", icon: Settings },
+  { id: "compliance", label: "Compliance & Revenue", icon: ShieldCheck },
+] as const;
+
+type AdminTabId = typeof ADMIN_TABS[number]["id"];
 
 export default function AdminPage() {
   const [role] = useRole();
   const [, setLocation] = useLocation();
-
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("tab") || "analytics";
-    }
-    return "users";
-  });
+  const [activeTab, setActiveTab] = useState<AdminTabId>("analytics");
 
   useEffect(() => {
-    if (role !== "admin") {
-      setLocation("/home");
-    }
+    if (role !== "admin") setLocation("/home");
   }, [role, setLocation]);
 
   if (role !== "admin") return null;
@@ -1401,49 +1562,78 @@ export default function AdminPage() {
           <ShieldCheck className="h-5 w-5 text-primary" />
           Admin Console
         </h1>
-        <p className="text-sm text-muted-foreground">Platform oversight, team management, analytics, and compliance</p>
+        <p className="text-sm text-muted-foreground">Platform oversight, settings, analytics, and compliance</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6 flex-wrap h-auto gap-1" data-testid="admin-tabs">
-          <TabsTrigger value="analytics" data-testid="admin-tab-analytics-btn">
-            <LineChart className="h-4 w-4 mr-1.5" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="users" data-testid="admin-tab-users-btn">
-            <Users2 className="h-4 w-4 mr-1.5" />
-            User Interactions
-          </TabsTrigger>
-          <TabsTrigger value="team" data-testid="admin-tab-team-btn">
-            <Crown className="h-4 w-4 mr-1.5" />
-            Team & Moderators
-          </TabsTrigger>
-          <TabsTrigger value="revenue" data-testid="admin-tab-revenue-btn">
-            <BarChart2 className="h-4 w-4 mr-1.5" />
-            Revenue
-          </TabsTrigger>
-          <TabsTrigger value="compliance" data-testid="admin-tab-compliance-btn">
-            <ShieldCheck className="h-4 w-4 mr-1.5" />
-            Compliance
-          </TabsTrigger>
-        </TabsList>
+      {/* Custom tab nav — avoids shadcn multi-highlight bug */}
+      <div className="flex gap-1 border-b mb-6" data-testid="admin-tabs">
+        {ADMIN_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            data-testid={`admin-tab-${tab.id}-btn`}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab.id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="analytics">
+      {activeTab === "analytics" && (
+        <div className="space-y-8">
           <AnalyticsTab />
-        </TabsContent>
-        <TabsContent value="users">
-          <UserInteractionsTab />
-        </TabsContent>
-        <TabsContent value="team">
-          <TeamManagementTab />
-        </TabsContent>
-        <TabsContent value="revenue">
-          <RevenueTab />
-        </TabsContent>
-        <TabsContent value="compliance">
-          <ComplianceTab />
-        </TabsContent>
-      </Tabs>
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-4">
+              <Users2 className="h-4 w-4 text-primary" />
+              User Interactions
+            </h2>
+            <UserInteractionsTab />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-4">
+              <Crown className="h-4 w-4 text-primary" />
+              Team & Moderators
+            </h2>
+            <TeamManagementTab />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-4">
+              <Settings className="h-4 w-4 text-primary" />
+              App Configuration
+            </h2>
+            <AppSettingsPanel />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "compliance" && (
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-4">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Revenue
+            </h2>
+            <RevenueTab />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-4">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              Compliance
+            </h2>
+            <ComplianceTab />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
