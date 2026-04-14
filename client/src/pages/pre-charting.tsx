@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { usePatientStore } from "@/store/patientStore";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, User, Stethoscope, Activity, Pill, FileText, Sparkles, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { ClipboardList, User, Stethoscope, Activity, Pill, FileText, Sparkles, ArrowRight, Loader2, CheckCircle2, Download } from "lucide-react";
 
 const preChartSchema = z.object({
   name: z.string().min(1, "Patient name is required"),
@@ -131,6 +131,39 @@ export default function PreCharting() {
     });
   }
 
+  function importFromEHR() {
+    const sampleData = {
+      name: "Margaret Thompson",
+      dob: "1962-08-14",
+      mrn: "MRN-2026-4491",
+      sex: "Female",
+      preferredLanguage: "English",
+      chiefComplaint: "Persistent chest tightness and shortness of breath on exertion for the past 3 weeks, worsening with physical activity. Occasional palpitations at rest.",
+      visitType: "Follow-up",
+      specialty: "Cardiology",
+      bp: "148/92",
+      hr: "88",
+      temp: "98.4",
+      o2sat: "96",
+      rr: "18",
+      weight: "172",
+      height: "64",
+      painScore: 3,
+      lmp: "",
+      smokingStatus: "Former",
+      alcoholUse: "Social / occasional",
+      medications: "Lisinopril 20mg daily\nMetoprolol succinate 50mg daily\nAtorvastatin 40mg daily\nAspirin 81mg daily\nMetformin 1000mg twice daily",
+      allergies: "Sulfa drugs — rash and hives\nIodinated contrast — anaphylactoid reaction (premedicate with steroids)",
+      pmh: "Hypertension (diagnosed 2014)\nType 2 Diabetes Mellitus (diagnosed 2018, A1c 7.2% last check)\nHyperlipidemia\nOsteoarthritis — bilateral knees\nMild mitral regurgitation on prior echo (2024)",
+      psh: "Cholecystectomy (2019)\nRight knee arthroscopy (2021)",
+      familyHistory: "Father — MI at age 58, deceased at 72 from CHF\nMother — Type 2 DM, HTN, alive at 84\nSister — breast cancer at 52, in remission",
+      recentResults: "ECG (3 weeks ago): Normal sinus rhythm, LVH by voltage criteria\nEcho (6 months ago): EF 55%, mild MR, mild LVH, grade I diastolic dysfunction\nLabs (2 weeks ago): BMP normal, Cr 0.9, BNP 180 pg/mL (mildly elevated), A1c 7.2%, LDL 98\nStress test ordered — pending",
+    };
+
+    form.reset(sampleData);
+    toast({ title: "EHR data imported", description: "Sample patient data loaded from EHR system" });
+  }
+
   async function generatePrimer() {
     const data = form.getValues();
     const errors = await form.trigger();
@@ -169,11 +202,24 @@ export default function PreCharting() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Structured patient intake before encounter</p>
         </div>
-        {store.preChartComplete && (
-          <Badge variant="outline" className="text-green-600 border-green-300 gap-1">
-            <CheckCircle2 className="h-3 w-3" /> Saved
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={importFromEHR}
+            className="gap-2"
+            data-testid="button-import-ehr"
+          >
+            <Download className="h-4 w-4" />
+            Import from EHR
+          </Button>
+          {store.preChartComplete && (
+            <Badge variant="outline" className="text-green-600 border-green-300 gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Saved
+            </Badge>
+          )}
+        </div>
       </div>
 
       <Form {...form}>
