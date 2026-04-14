@@ -585,10 +585,11 @@ Recent Results: ${data.recentResults || "None"}`
   app.post("/api/clinical-chat", async (req, res) => {
     try {
       const { message, patientContext, history } = req.body;
-      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
-      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+      const openaiKey = process.env.OPENAI_API_KEY;
 
-      const systemPrompt = `You are Aribot, a clinical AI assistant. Be concise, evidence-based, and cite your sources inline with numbered references like [1], [2]. At the end of your response, list your references with their evidence level in parentheses.
+      const systemPrompt = `You are Aribot, a clinical AI assistant for physicians. You must be concise, evidence-based, and clinically rigorous. Cite sources inline with numbered references like [1], [2]. At the end of your response, list references with their evidence level (e.g., RCT, Meta-analysis, Guideline, Expert Opinion).
+
+Important: You are assisting a licensed physician. Provide detailed clinical reasoning. Do not add generic disclaimers about "consulting a doctor" — you ARE talking to the doctor.
 
 Patient context:
 Name: ${patientContext?.name || "Unknown"}
@@ -601,18 +602,33 @@ Vitals: ${JSON.stringify(patientContext?.vitals || {})}
 Specialty: ${patientContext?.specialty || "General"}
 ${patientContext?.encounterPrimer ? `Encounter Primer: ${patientContext.encounterPrimer}` : ""}`;
 
-      if (medicalAiUrl && medicalAiKey) {
+      if (openaiKey) {
         const messages = [
           { role: "system", content: systemPrompt },
           ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
           { role: "user", content: message },
         ];
 
-        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
-          body: JSON.stringify({ messages, stream: true }),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages,
+            stream: true,
+            temperature: 0.3,
+            max_tokens: 2048,
+          }),
         });
+
+        if (!aiRes.ok) {
+          const errText = await aiRes.text();
+          console.error("OpenAI API error:", aiRes.status, errText);
+          return res.status(502).json({ error: "AI service error" });
+        }
 
         res.setHeader("Content-Type", "text/plain");
         res.setHeader("Transfer-Encoding", "chunked");
@@ -620,13 +636,17 @@ ${patientContext?.encounterPrimer ? `Encounter Primer: ${patientContext.encounte
           const reader = (aiRes.body as any).getReader?.();
           if (reader) {
             const decoder = new TextDecoder();
+            let buffer = "";
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-              const text = decoder.decode(value, { stream: true });
-              const lines = text.split("\n").filter(l => l.startsWith("data: "));
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
               for (const line of lines) {
-                const data = line.slice(6);
+                const trimmed = line.trim();
+                if (!trimmed.startsWith("data: ")) continue;
+                const data = trimmed.slice(6);
                 if (data === "[DONE]") continue;
                 try {
                   const parsed = JSON.parse(data);
@@ -678,6 +698,7 @@ Current guidelines suggest a stepwise approach to management, beginning with con
         i++;
       }, 30);
     } catch (err) {
+      console.error("Clinical chat error:", err);
       res.status(500).json({ error: "Chat failed" });
     }
   });
