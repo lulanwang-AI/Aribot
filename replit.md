@@ -59,6 +59,10 @@ shared/
 - `/` - Aribot AI (Dify iframe)
 - `/aribot/history` - Chat history
 - `/aribot/folders` - Folder management
+- `/pre-charting` - Clinical pre-charting intake form
+- `/clinical-chat` - AI clinical consult chat
+- `/soap` - SOAP note generator with inline editing
+- `/visit-summary` - Patient-facing visit summary with PDF export
 - `/home` - Dashboard with calendar
 - `/triage` - Clinical cases (sort: newest/trending/discussed)
 - `/triage/:id` - Case detail with nested comments
@@ -102,8 +106,13 @@ shared/
 - `PATCH /api/telemed/consultations/:id/notes` - Update notes
 - `GET /api/telemed/earnings` - Earnings summary
 - `GET /api/telemed/stats` - Dashboard stats
+- `POST /api/prechart` - Generate encounter primer from pre-charting data
+- `POST /api/clinical-chat` - Clinical AI chat with streaming responses
+- `POST /api/soap` - Generate/regenerate SOAP note sections
+- `POST /api/summary` - Generate patient-facing visit summary
 
 ## Key Features
+- **Clinical Workflow**: Four-module clinical encounter system (Pre-charting → AI Consult → SOAP Note → Visit Summary) sharing patient state via Zustand + sessionStorage
 - **Aribot**: Dify iframe chatbot, floating widget on non-home pages
 - **Triage**: Nested comments (reply at any depth), anonymous posting, PHI detection, likes
 - **News**: Like/comment on articles, filter by source/specialty, journal name shown after title

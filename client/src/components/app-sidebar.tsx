@@ -35,6 +35,10 @@ import {
   GraduationCap,
   UserCog,
   Lock,
+  ClipboardList,
+  FileText,
+  FilePlus,
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -89,6 +93,7 @@ export function AppSidebar() {
   const { data: user } = useQuery<User>({ queryKey: ["/api/me"] });
   const { data: notifs } = useQuery<Notifications>({ queryKey: ["/api/notifications"] });
   const [aribotOpen, setAribotOpen] = useState(true);
+  const [clinicalOpen, setClinicalOpen] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [role, setRole] = useRole();
 
@@ -182,6 +187,56 @@ export function AppSidebar() {
                     <Link href="/aribot/folders">
                       <FolderOpen className="h-3.5 w-3.5" />
                       <span className="text-xs">Folders</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={clinicalOpen} onOpenChange={setClinicalOpen}>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton
+                data-active={["/pre-charting", "/clinical-chat", "/soap", "/visit-summary"].includes(location)}
+                className="w-full"
+                data-testid="nav-clinical"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span className="flex-1">Clinical Workflow</span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${clinicalOpen ? "" : "-rotate-90"}`} />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenu className="ml-6 mt-1 space-y-0.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-active={location === "/pre-charting"} data-testid="nav-pre-charting">
+                    <Link href="/pre-charting">
+                      <FilePlus className="h-3.5 w-3.5" />
+                      <span className="text-xs">Pre-Charting</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-active={location === "/clinical-chat"} data-testid="nav-clinical-chat">
+                    <Link href="/clinical-chat">
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      <span className="text-xs">AI Consult</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-active={location === "/soap"} data-testid="nav-soap">
+                    <Link href="/soap">
+                      <FileText className="h-3.5 w-3.5" />
+                      <span className="text-xs">SOAP Note</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-active={location === "/visit-summary"} data-testid="nav-visit-summary">
+                    <Link href="/visit-summary">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span className="text-xs">Visit Summary</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

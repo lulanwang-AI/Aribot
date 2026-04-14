@@ -1,0 +1,394 @@
+# Aribot — Replit Agent Build Prompt
+
+Paste this entire prompt into Replit Agent to add the four clinical AI modules to the existing Aribot app.
+
+---
+
+## CONTEXT
+
+I have an existing Next.js 15 (App Router) application called **Aribot** deployed on Replit. It already has authentication, a base layout, and connects to an external specialized medical AI model via API. I need you to add four new clinical workflow modules to the existing app. Do not rebuild what already exists. Integrate cleanly into the current structure.
+
+The four modules are:
+1. **Pre-charting** — structured patient intake before an encounter
+2. **AI Chat Consult** — clinical decision support chat (OpenEvidence-style)
+3. **SOAP Note Generator** — AI-drafted clinical note with full inline editing
+4. **Outpatient Visit Summary** — patient-facing plain-language summary
+
+These modules share a single patient session. Data entered in Pre-charting flows automatically into Chat context, SOAP generation, and Visit Summary. No re-entry of data between modules.
+
+---
+
+## TECHNICAL REQUIREMENTS
+
+### Stack
+- Next.js 15, App Router
+- TypeScript
+- Tailwind CSS + shadcn/ui for components
+- Zustand for cross-module patient state
+- React Hook Form + Zod for form validation
+- `react-markdown` + `remark-gfm` for AI output rendering
+- Vercel AI SDK (`ai` package) for streaming and structured output
+- `@react-pdf/renderer` for printable visit summary export
+
+### Install these packages if not already present:
+```bash
+npm install zustand react-hook-form zod @hookform/resolvers react-markdown remark-gfm ai @react-pdf/renderer
+npx shadcn@latest init
+npx shadcn@latest add button input textarea select card badge separator tabs scroll-area
+```
+
+---
+
+## FILE STRUCTURE TO CREATE
+
+Add the following to the existing project. Do not modify files that already exist unless instructed.
+
+```
+src/
+  store/
+    patientStore.ts           ← Zustand global patient session store
+  app/
+    (clinical)/               ← Route group — shared layout, no URL change
+      layout.tsx              ← Clinical dashboard layout (sidebar + topbar)
+      pre-charting/
+        page.tsx
+      chat/
+        page.tsx
+      soap/
+        page.tsx
+      summary/
+        page.tsx
+  api/
+    chat/
+      route.ts                ← Streaming chat endpoint
+    soap/
+      route.ts                ← Structured SOAP generation endpoint
+    summary/
+      route.ts                ← Plain-language summary endpoint
+  components/
+    clinical/
+      PatientContextBar.tsx   ← Sticky strip showing active patient across modules
+      SourceChip.tsx          ← Evidence citation badge for chat responses
+      SoapSection.tsx         ← Individual editable SOAP card
+      ConfidenceTag.tsx       ← Low/medium/high confidence indicator
+```
+
+---
+
+## MODULE 1 — PRE-CHARTING (`/pre-charting`)
+
+### Purpose
+Nurses or MAs fill this out before the encounter. Physicians and PAs review it before entering the room. Data is saved to Zustand and persists across all modules in the session.
+
+### Form fields (use React Hook Form + Zod for validation)
+
+**Patient demographics**
+- Full name (required)
+- Date of birth (required, date picker)
+- MRN (optional, alphanumeric)
+- Biological sex (select: Male / Female / Other)
+- Preferred language (select with common options)
+
+**Visit information**
+- Chief complaint (required, free text)
+- Visit type (select: New Patient / Follow-up / Urgent / Telehealth)
+- Specialty (select: Primary Care / Cardiology / Orthopedics / Neurology / Psychiatry / Pediatrics / OB-GYN / Other)
+
+**Clinical data (nurse-populated)**
+- Vitals — BP, HR, Temp, O2 sat, RR, Weight, Height, BMI (calculated automatically from weight/height)
+- Pain score (0–10 slider)
+- Last menstrual period (if applicable)
+- Smoking / tobacco use (select)
+- Alcohol use (select)
+
+**History**
+- Current medications (textarea — one per line format)
+- Allergies with reactions (textarea)
+- Past medical history (textarea)
+- Past surgical history (textarea)
+- Family history (textarea, optional)
+- Recent labs / imaging (textarea — paste summary if available)
+
+**AI encounter primer**
+Below the form, add a button: **"Generate Encounter Primer"**. When clicked, call the external medical AI API (via `/api/prechart`) with all form data and return a 3–5 sentence clinical summary of the patient context. Display it in a read-only card. This primer gets injected into the chat module's system prompt automatically.
+
+### Role-based visibility
+- Nurses see all fields
+- Physicians and PAs see a condensed read-only summary at the top, with an "Edit" button to expand the full form
+
+### Navigation
+After saving, show a "Continue to AI Consult →" button that navigates to `/chat`.
+
+---
+
+## MODULE 2 — AI CHAT CONSULT (`/chat`)
+
+### Purpose
+Clinical decision support. Physicians and PAs query the AI about differential diagnoses, treatment options, drug interactions, dosing, and evidence-based guidelines. Modeled on OpenEvidence's interaction patterns.
+
+### Layout
+Two-panel layout:
+- Left panel (70%): chat conversation
+- Right panel (30%): collapsible reference/sources panel
+
+### Patient context injection
+At the top of the chat, display a `PatientContextBar` component showing: patient name, chief complaint, active allergies, and current medications (truncated). This data comes from Zustand (populated by pre-charting).
+
+When the user sends a message, automatically prepend the patient context to the AI system prompt before calling the API. The user does not see this injection — it happens silently server-side.
+
+### Chat UI
+- Message bubbles: user right-aligned, AI left-aligned
+- AI messages render markdown (use `react-markdown` with `remark-gfm`)
+- Streaming responses — use Vercel AI SDK `useChat` hook
+- Typing indicator (three animated dots) while AI is streaming
+- Auto-scroll to bottom on new messages
+
+### Evidence display
+After each AI response, parse the response for evidence citations. Display them as `SourceChip` badges below the message. Citation format in responses will be inline numbers like `[1]`, `[2]`. Map these to sources in the right panel.
+
+Right panel shows:
+- Source title (journal or guideline name)
+- Evidence level (RCT / Meta-analysis / Guidelines / Expert Opinion — parsed from AI response)
+- A `ConfidenceTag` (High / Moderate / Low) based on evidence level
+
+### Save to SOAP
+Add a "Save to SOAP" button on each AI response that appends the relevant text to the Zustand SOAP draft (specifically to the Assessment section). Clinicians can save multiple responses.
+
+### Input
+- Multiline textarea, Enter to send, Shift+Enter for new line
+- Suggested prompt chips above the input for new sessions:
+  - "What are the likely differentials?"
+  - "Check for drug interactions"
+  - "What do guidelines recommend?"
+  - "What workup is indicated?"
+
+### API route (`/api/chat/route.ts`)
+- Use Vercel AI SDK `streamText`
+- Build a system prompt that includes: the patient context from the request body + the role instruction ("You are Aribot, a clinical AI assistant. Be concise, evidence-based, and cite your sources inline with numbered references...")
+- Forward to the external medical AI model endpoint (read base URL and API key from environment variables: `MEDICAL_AI_BASE_URL` and `MEDICAL_AI_API_KEY`)
+- Stream the response back to the client
+
+---
+
+## MODULE 3 — SOAP NOTE (`/soap`)
+
+### Purpose
+AI generates a complete SOAP note draft from pre-charting data + chat transcript. Clinician reviews, edits inline, and signs. This is a first draft, not a final note — the clinician must actively review and modify.
+
+### Layout
+Two-column grid of four `SoapSection` cards: Subjective, Objective, Assessment, Plan. Each card is independently editable.
+
+### SoapSection component
+Each card has:
+- A header with the section letter (S/O/A/P) in a styled pill, section title, and section description
+- Body: a `Textarea` (shadcn/ui) initialized with AI-generated content
+- A `ConfidenceTag` badge in the top-right corner
+- A "Regenerate section" button that re-calls the AI for just that section
+- Word count display (live)
+
+### Generate flow
+1. On page load, check Zustand for existing SOAP draft
+2. If no draft, show a "Generate SOAP Note" button
+3. On click, call `/api/soap` with: patient demographics, all pre-charting fields, chat transcript (from Zustand), and selected specialty
+4. Display a loading skeleton while generating (shimmer on each of the four cards)
+5. Populate each section into its respective `SoapSection` card
+6. Mark each section with a confidence level (parse from AI response metadata or use heuristics)
+
+### Specialty adaptation
+The SOAP prompt should adapt based on the specialty selected in pre-charting:
+- Cardiology: include NYHA class field, GDMT checklist in Plan section
+- Psychiatry: include Mental Status Exam field, safety assessment in Plan
+- Orthopedics: include ROM measurements field, functional goals in Plan
+- All others: standard SOAP structure
+
+### Edit tracking
+Highlight AI-generated text in a very subtle blue tint. When a clinician edits a section, the background becomes white (no tint). This creates visual audit of what was accepted vs modified. Store both the original AI draft and the edited version in Zustand.
+
+### Sign & finalize
+"Sign Note" button at the bottom. Requires that at least the Assessment and Plan sections have been edited (touched) before enabling — enforce this with a Zustand flag. On sign, mark the encounter as finalized in state and navigate to `/summary`.
+
+### API route (`/api/soap/route.ts`)
+- Use Vercel AI SDK `generateObject` with a Zod schema:
+```typescript
+const soapSchema = z.object({
+  S: z.string().describe("Subjective section"),
+  O: z.string().describe("Objective section"),
+  A: z.string().describe("Assessment section"),
+  P: z.string().describe("Plan section"),
+  confidence: z.object({
+    S: z.enum(["high","moderate","low"]),
+    O: z.enum(["high","moderate","low"]),
+    A: z.enum(["high","moderate","low"]),
+    P: z.enum(["high","moderate","low"]),
+  })
+})
+```
+- Forward to external medical AI model with structured output instruction
+- Return parsed JSON
+
+---
+
+## MODULE 4 — OUTPATIENT VISIT SUMMARY (`/summary`)
+
+### Purpose
+Patient-facing plain-language summary. Generated from the signed SOAP note. Target reading level: 5th–6th grade. Not a clinical note — this is what the patient takes home.
+
+### Generated content structure
+Call `/api/summary` with the finalized SOAP note. Return and display:
+
+1. **Why you came in today** — plain-language chief complaint
+2. **What we found** — objective findings in lay terms (no medical jargon)
+3. **Your diagnosis** — diagnosis name in plain language with a one-sentence explanation
+4. **Your medications** — three-column table: Medication name | What changed (START / CONTINUE / STOP / DOSE CHANGE) | Why you're taking it
+5. **Your care plan** — step-by-step instructions in plain language
+6. **Warning signs** — "Come back or call us if you experience..." (bullet list)
+7. **Your follow-up** — specific next steps with timeframes
+8. **Your care team** — provider name, specialty, contact info (from session data)
+
+### Design
+- Clean, large-font layout (minimum 15px body text)
+- Bold section headers
+- High contrast, no clinical abbreviations
+- A "Print / Save as PDF" button using `@react-pdf/renderer`
+
+### Clinician review gate
+Show a side-by-side preview: left is the generated summary, right has editing controls. The clinician must click "Approve & Finalize" before the summary is considered complete.
+
+### PDF export
+The PDF version should include the clinic name, date, patient name, and provider name as a header. Use `@react-pdf/renderer` with a clean layout. Include a QR code placeholder for patient portal link.
+
+### New Encounter button
+At the bottom: "Start New Encounter" — clears all Zustand state and navigates to `/pre-charting`.
+
+### API route (`/api/summary/route.ts`)
+- Plain text generation (not structured object)
+- System prompt: "You are a clinical documentation assistant. Convert the following SOAP note into a patient-friendly visit summary. Use simple language at a 5th-grade reading level. Avoid all medical abbreviations. Structure your response as JSON with keys: visitReason, findings, diagnoses (array), medications (array of {name, change, reason}), carePlan, warningSigns (array), followUp."
+- Parse JSON response, render sections
+
+---
+
+## ZUSTAND STORE (`patientStore.ts`)
+
+```typescript
+interface PatientSession {
+  // Demographics
+  name: string
+  dob: string
+  mrn: string
+  sex: string
+  preferredLanguage: string
+  specialty: string
+  visitType: string
+
+  // Clinical data
+  chiefComplaint: string
+  vitals: Record<string, string>
+  painScore: number
+  medications: string
+  allergies: string
+  pmh: string
+  psh: string
+  familyHistory: string
+  recentResults: string
+
+  // AI-generated primer
+  encounterPrimer: string
+
+  // Chat
+  chatMessages: Array<{ role: 'user' | 'assistant', content: string, sources?: string[] }>
+
+  // SOAP
+  soapDraft: { S: string, O: string, A: string, P: string }
+  soapOriginal: { S: string, O: string, A: string, P: string }
+  soapEdited: { S: boolean, O: boolean, A: boolean, P: boolean }
+  soapSigned: boolean
+
+  // Summary
+  visitSummary: Record<string, any> | null
+  summaryApproved: boolean
+
+  // Actions
+  setPatient: (data: Partial<PatientSession>) => void
+  addChatMessage: (msg: { role: 'user' | 'assistant', content: string }) => void
+  setSoap: (soap: { S: string, O: string, A: string, P: string }) => void
+  markSectionEdited: (section: 'S' | 'O' | 'A' | 'P') => void
+  signSoap: () => void
+  setSummary: (summary: Record<string, any>) => void
+  approveSummary: () => void
+  resetSession: () => void
+}
+```
+
+Use `sessionStorage` for persistence (not `localStorage`) to avoid PHI leakage between browser sessions. Use Zustand's `persist` middleware with `sessionStorage` as the storage adapter.
+
+---
+
+## CLINICAL DASHBOARD LAYOUT (`(clinical)/layout.tsx`)
+
+### Sidebar navigation
+Vertical sidebar with:
+- Aribot logo at top
+- Four nav items with icons: Pre-charting, AI Consult, SOAP Note, Visit Summary
+- Active state on current module
+- Progress indicator: show which steps are complete (pre-charting filled ✓, chat used ✓, SOAP signed ✓)
+- Active patient badge at the bottom showing patient name and chief complaint (from Zustand). If no patient loaded, show "No patient loaded — start with Pre-charting"
+
+### Topbar
+- Module title (changes per route)
+- Patient name if loaded
+- Role badge (Physician / Nurse / PA — from auth session)
+- "Active Session" indicator
+
+### Role-based module access
+- **Nurse role**: can access Pre-charting and Visit Summary. Chat and SOAP are view-only.
+- **Physician / PA role**: full access to all four modules.
+
+Enforce this with middleware. Read the user role from the existing auth session. Redirect nurses who navigate to `/chat` or `/soap` back to `/pre-charting`.
+
+---
+
+## ENVIRONMENT VARIABLES
+
+Add these to the Replit Secrets panel (do not hardcode):
+```
+MEDICAL_AI_BASE_URL=          # Base URL of the deployed medical AI model
+MEDICAL_AI_API_KEY=           # API key for the medical AI model
+```
+
+All API routes must read from `process.env`. Never expose these to the client.
+
+---
+
+## TRUST & SAFETY REQUIREMENTS (non-negotiable)
+
+1. **No AI output goes to the chart without clinician review.** Every generated output (primer, SOAP, summary) must be displayed in an editable state before it can be saved or finalized.
+2. **Confidence indicators** on SOAP sections. Any section marked "low confidence" should display a yellow warning banner: "Review carefully — AI confidence is low for this section."
+3. **Edit tracking**: visually distinguish AI-generated content from clinician-modified content in the SOAP editor.
+4. **Mandatory SOAP edit gate**: the "Sign Note" button must be disabled until the clinician has made at least one edit to the Assessment or Plan section.
+5. **Source attribution** in chat: every AI response must display evidence source chips. If no sources are available, show a "No citations available" indicator — never show unsourced responses without flagging them.
+6. **Session isolation**: use `sessionStorage`, not `localStorage`. Each new browser session starts fresh. No patient data persists between sessions.
+
+---
+
+## WHAT NOT TO BUILD
+
+- Do not build a full EHR or patient management system
+- Do not add billing code automation in this phase
+- Do not add voice/ambient recording in this phase
+- Do not add EHR integration (Epic/Cerner) in this phase
+- Do not modify the existing authentication system
+- Do not add a patient-facing portal in this phase
+
+---
+
+## DEFINITION OF DONE
+
+The build is complete when:
+- [ ] A nurse can fill out pre-charting and generate an encounter primer
+- [ ] A physician can open a chat session, ask clinical questions, and receive cited AI responses
+- [ ] The SOAP note generates from pre-charting + chat data, displays in four editable sections, and cannot be signed without editing A/P
+- [ ] The visit summary generates from the signed SOAP note and exports as a PDF
+- [ ] Patient data flows automatically across all four modules without re-entry
+- [ ] Role-based access restricts nurses from SOAP and Chat modules
+- [ ] All AI API calls route through Next.js API routes — no keys exposed to the client
+- [ ] The Zustand store uses sessionStorage persistence

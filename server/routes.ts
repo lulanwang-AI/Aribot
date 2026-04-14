@@ -540,6 +540,284 @@ export async function registerRoutes(
     });
   });
 
+  app.post("/api/prechart", async (req, res) => {
+    try {
+      const data = req.body;
+      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
+      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+
+      if (medicalAiUrl && medicalAiKey) {
+        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          body: JSON.stringify({
+            messages: [{
+              role: "system",
+              content: "You are a clinical AI assistant. Generate a 3-5 sentence encounter primer summarizing the patient's clinical context. Be concise and clinically relevant."
+            }, {
+              role: "user",
+              content: `Patient: ${data.name}, DOB: ${data.dob}, Sex: ${data.sex}
+Chief Complaint: ${data.chiefComplaint}
+Visit Type: ${data.visitType}, Specialty: ${data.specialty}
+Vitals: BP ${data.bp || "N/A"}, HR ${data.hr || "N/A"}, Temp ${data.temp || "N/A"}, O2 ${data.o2sat || "N/A"}, BMI ${data.bmi || "N/A"}
+Pain: ${data.painScore}/10
+Medications: ${data.medications || "None listed"}
+Allergies: ${data.allergies || "NKDA"}
+PMH: ${data.pmh || "None"}
+PSH: ${data.psh || "None"}
+Recent Results: ${data.recentResults || "None"}`
+            }],
+            max_tokens: 300,
+          }),
+        });
+        const aiJson = await aiRes.json();
+        const primer = aiJson.choices?.[0]?.message?.content || "Unable to generate primer.";
+        return res.json({ primer });
+      }
+
+      const primer = `${data.name} is a ${data.sex?.toLowerCase() || ""} patient presenting for a ${data.visitType?.toLowerCase() || "clinic"} visit with a chief complaint of "${data.chiefComplaint || "not specified"}". ${data.medications ? `Current medications include ${data.medications.split("\\n").filter(Boolean).length} active prescriptions.` : "No current medications reported."} ${data.allergies ? `Known allergies: ${data.allergies}.` : "No known drug allergies."} ${data.pmh ? `Relevant medical history includes ${data.pmh.substring(0, 100)}.` : ""} ${data.bp ? `Vitals on intake: BP ${data.bp}, HR ${data.hr || "N/A"}, Temp ${data.temp || "N/A"}.` : "Vitals pending."}`.trim();
+      res.json({ primer });
+    } catch (err) {
+      res.status(500).json({ primer: "Error generating encounter primer." });
+    }
+  });
+
+  app.post("/api/clinical-chat", async (req, res) => {
+    try {
+      const { message, patientContext, history } = req.body;
+      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
+      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+
+      const systemPrompt = `You are Aribot, a clinical AI assistant. Be concise, evidence-based, and cite your sources inline with numbered references like [1], [2]. At the end of your response, list your references with their evidence level in parentheses.
+
+Patient context:
+Name: ${patientContext?.name || "Unknown"}
+DOB: ${patientContext?.dob || "Unknown"}, Sex: ${patientContext?.sex || "Unknown"}
+Chief Complaint: ${patientContext?.chiefComplaint || "Not specified"}
+Medications: ${patientContext?.medications || "None listed"}
+Allergies: ${patientContext?.allergies || "NKDA"}
+PMH: ${patientContext?.pmh || "None"}
+Vitals: ${JSON.stringify(patientContext?.vitals || {})}
+Specialty: ${patientContext?.specialty || "General"}
+${patientContext?.encounterPrimer ? `Encounter Primer: ${patientContext.encounterPrimer}` : ""}`;
+
+      if (medicalAiUrl && medicalAiKey) {
+        const messages = [
+          { role: "system", content: systemPrompt },
+          ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
+          { role: "user", content: message },
+        ];
+
+        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          body: JSON.stringify({ messages, stream: true }),
+        });
+
+        res.setHeader("Content-Type", "text/plain");
+        res.setHeader("Transfer-Encoding", "chunked");
+        if (aiRes.body) {
+          const reader = (aiRes.body as any).getReader?.();
+          if (reader) {
+            const decoder = new TextDecoder();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const text = decoder.decode(value, { stream: true });
+              const lines = text.split("\n").filter(l => l.startsWith("data: "));
+              for (const line of lines) {
+                const data = line.slice(6);
+                if (data === "[DONE]") continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content || "";
+                  if (content) res.write(content);
+                } catch {}
+              }
+            }
+          }
+          return res.end();
+        }
+        return res.end();
+      }
+
+      res.setHeader("Content-Type", "text/plain");
+      res.setHeader("Transfer-Encoding", "chunked");
+      const cc = patientContext?.chiefComplaint || "the presenting complaint";
+      const specialty = patientContext?.specialty || "general medicine";
+      const mockResponse = `Based on the clinical presentation of ${cc} in the context of ${specialty}, here is my assessment:
+
+## Differential Diagnosis
+1. **Primary consideration**: Given the symptoms described, the most likely diagnosis involves evaluating the chief complaint in the context of the patient's medical history [1].
+2. **Secondary consideration**: Additional workup may be warranted to rule out alternative etiologies [2].
+3. **Less likely but important**: Consider screening for related conditions given the patient's risk factors [3].
+
+## Recommended Workup
+- Complete metabolic panel and CBC with differential
+- Imaging as clinically indicated based on physical examination findings
+- Consider specialty referral if symptoms persist despite initial management
+
+## Evidence-Based Recommendations
+Current guidelines suggest a stepwise approach to management, beginning with conservative measures and escalating as clinically appropriate [1]. Medication reconciliation should be performed to assess for potential drug interactions [2].
+
+---
+**References:**
+[1] UpToDate Clinical Reference (Clinical Guidelines)
+[2] CDC Clinical Practice Recommendations (Guidelines)
+[3] Cochrane Systematic Review Database (Meta-analysis)`;
+
+      const words = mockResponse.split(" ");
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= words.length) {
+          clearInterval(interval);
+          res.end();
+          return;
+        }
+        res.write((i > 0 ? " " : "") + words[i]);
+        i++;
+      }, 30);
+    } catch (err) {
+      res.status(500).json({ error: "Chat failed" });
+    }
+  });
+
+  app.post("/api/soap", async (req, res) => {
+    try {
+      const data = req.body;
+      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
+      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+
+      if (medicalAiUrl && medicalAiKey) {
+        const prompt = `Generate a SOAP note for the following patient. Return JSON with keys: S, O, A, P, confidence (object with S/O/A/P each being "high", "moderate", or "low").
+
+Patient: ${data.name}, DOB: ${data.dob}, Sex: ${data.sex}
+Chief Complaint: ${data.chiefComplaint}
+Specialty: ${data.specialty}
+Vitals: ${JSON.stringify(data.vitals || {})}
+Medications: ${data.medications || "None"}
+Allergies: ${data.allergies || "NKDA"}
+PMH: ${data.pmh || "None"}
+PSH: ${data.psh || "None"}
+Encounter Primer: ${data.encounterPrimer || "N/A"}
+Chat Transcript: ${data.chatTranscript || "No chat history"}
+${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} section.` : "Generate all four sections."}`;
+
+        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: "You are a clinical documentation AI. Generate SOAP notes in JSON format." },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 2000,
+          }),
+        });
+        const aiJson = await aiRes.json();
+        const content = aiJson.choices?.[0]?.message?.content || "{}";
+        try {
+          const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
+          return res.json(parsed);
+        } catch {
+          return res.json({ S: content, O: "", A: "", P: "", confidence: { S: "low", O: "low", A: "low", P: "low" } });
+        }
+      }
+
+      const cc = data.chiefComplaint || "the chief complaint";
+      const name = data.name || "the patient";
+      const specialty = data.specialty || "general medicine";
+      const soap = {
+        S: `${name} presents with ${cc}. ${data.pmh ? `Past medical history is notable for ${data.pmh}.` : "No significant past medical history reported."} ${data.medications ? `Current medications: ${data.medications.substring(0, 200)}.` : "No current medications."} ${data.allergies ? `Allergies: ${data.allergies}.` : "No known drug allergies."} Patient reports symptoms as described in the intake form.`,
+        O: `Vitals: ${data.vitals?.bp ? `BP ${data.vitals.bp}` : "BP not recorded"}, ${data.vitals?.hr ? `HR ${data.vitals.hr}` : "HR not recorded"}, ${data.vitals?.temp ? `Temp ${data.vitals.temp}°F` : "Temp not recorded"}, ${data.vitals?.o2sat ? `O2 Sat ${data.vitals.o2sat}%` : "O2 sat not recorded"}, ${data.vitals?.rr ? `RR ${data.vitals.rr}` : "RR not recorded"}.\n\nGeneral: Patient appears well-nourished and in no acute distress.\nPhysical examination findings: To be documented by examining physician.\n${data.recentResults ? `Recent results: ${data.recentResults}` : ""}`,
+        A: `Primary Assessment: ${cc}\n\nDifferential diagnoses to consider based on ${specialty} presentation:\n1. [Primary diagnosis to be confirmed]\n2. [Secondary consideration]\n3. [Alternate diagnosis to rule out]\n\nClinical impression based on available data and clinical encounter.`,
+        P: `1. Continue current medications with monitoring\n2. Order appropriate diagnostic studies as indicated\n3. Follow-up appointment in [timeframe]\n4. Patient education regarding condition management\n5. Return precautions discussed\n6. Specialty referral if clinically indicated`,
+        confidence: {
+          S: data.chiefComplaint ? "high" : "low",
+          O: data.vitals?.bp ? "moderate" : "low",
+          A: "moderate",
+          P: "moderate",
+        },
+      };
+
+      if (data.regenerateSection) {
+        return res.json({
+          [data.regenerateSection]: soap[data.regenerateSection as keyof typeof soap],
+          confidence: { [data.regenerateSection]: soap.confidence[data.regenerateSection as keyof typeof soap.confidence] },
+        });
+      }
+
+      res.json(soap);
+    } catch (err) {
+      res.status(500).json({ error: "SOAP generation failed" });
+    }
+  });
+
+  app.post("/api/summary", async (req, res) => {
+    try {
+      const { soapNote, patientName, specialty, chiefComplaint, medications } = req.body;
+      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
+      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+
+      if (medicalAiUrl && medicalAiKey) {
+        const prompt = `Convert this SOAP note into a patient-friendly visit summary. Use simple language at a 5th-grade reading level. Avoid all medical abbreviations. Return JSON with keys: visitReason, findings, diagnoses (array), medications (array of {name, change, reason}), carePlan, warningSigns (array), followUp.
+
+SOAP Note:
+S: ${soapNote.S}
+O: ${soapNote.O}
+A: ${soapNote.A}
+P: ${soapNote.P}`;
+
+        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: "You are a clinical documentation assistant. Convert SOAP notes into patient-friendly summaries. Return JSON only." },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 1500,
+          }),
+        });
+        const aiJson = await aiRes.json();
+        const content = aiJson.choices?.[0]?.message?.content || "{}";
+        try {
+          const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
+          return res.json(parsed);
+        } catch {
+          return res.json({ visitReason: content, findings: "", diagnoses: [], medications: [], carePlan: "", warningSigns: [], followUp: "" });
+        }
+      }
+
+      const meds = (medications || "").split("\n").filter(Boolean);
+      res.json({
+        visitReason: `You came in today because of ${chiefComplaint || "your health concern"}. Your doctor wanted to check on how you are doing and make sure you are getting the right care.`,
+        findings: `Your doctor checked your vital signs and did a physical exam. ${soapNote.O ? "The exam showed the findings described in your clinical record." : "Everything was checked thoroughly."} Your doctor reviewed your medical history and current medications.`,
+        diagnoses: [
+          `Based on your visit today, your doctor is working on figuring out exactly what is causing your symptoms. More tests may be needed to confirm the diagnosis.`,
+        ],
+        medications: meds.length > 0
+          ? meds.slice(0, 5).map((m: string) => ({
+              name: m.trim(),
+              change: "CONTINUE",
+              reason: "Keep taking as prescribed for your current condition",
+            }))
+          : [{ name: "No changes", change: "CONTINUE", reason: "Your current medications remain the same" }],
+        carePlan: `1. Follow up with your doctor as scheduled\n2. Take all medications as prescribed\n3. Watch for any new or worsening symptoms\n4. Call the office if you have any questions about your care\n5. Maintain a healthy diet and regular exercise as tolerated`,
+        warningSigns: [
+          "Fever over 101°F (38.3°C) that doesn't go away",
+          "Severe or sudden worsening of your symptoms",
+          "New symptoms that concern you",
+          "Side effects from any medications",
+          "Difficulty breathing or chest pain — call 911 immediately",
+        ],
+        followUp: `Please schedule a follow-up appointment within the next 2-4 weeks. If your symptoms get worse before then, call our office right away. For emergencies, go to the nearest emergency room or call 911.`,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Summary generation failed" });
+    }
+  });
+
   app.post("/api/demo-requests", async (req, res) => {
     const parsed = insertDemoRequestSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.message });

@@ -27,6 +27,10 @@ import Training from "@/pages/training";
 import Doctors from "@/pages/doctors";
 import Telemed from "@/pages/telemed";
 import Admin from "@/pages/admin";
+import PreCharting from "@/pages/pre-charting";
+import ClinicalChat from "@/pages/clinical-chat";
+import SoapNote from "@/pages/soap";
+import VisitSummary from "@/pages/visit-summary";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
 import Whitepaper from "@/pages/whitepaper";
@@ -71,6 +75,10 @@ function Router() {
       <Route path="/team" component={Team} />
       <Route path="/telemed" component={Telemed} />
       <Route path="/admin" component={Admin} />
+      <Route path="/pre-charting" component={PreCharting} />
+      <Route path="/clinical-chat" component={ClinicalChat} />
+      <Route path="/soap" component={SoapNote} />
+      <Route path="/visit-summary" component={VisitSummary} />
       <Route component={NotFound} />
     </Switch>
   );
