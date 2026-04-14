@@ -31,6 +31,7 @@ import PreCharting from "@/pages/pre-charting";
 import ClinicalChat from "@/pages/clinical-chat";
 import SoapNote from "@/pages/soap";
 import VisitSummary from "@/pages/visit-summary";
+import WorkflowHistory from "@/pages/workflow-history";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
 import Whitepaper from "@/pages/whitepaper";
@@ -79,6 +80,7 @@ function Router() {
       <Route path="/clinical-chat" component={ClinicalChat} />
       <Route path="/soap" component={SoapNote} />
       <Route path="/visit-summary" component={VisitSummary} />
+      <Route path="/workflow-history" component={WorkflowHistory} />
       <Route component={NotFound} />
     </Switch>
   );

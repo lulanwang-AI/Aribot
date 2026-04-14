@@ -39,6 +39,7 @@ import {
   FileText,
   FilePlus,
   CheckCircle2,
+  History,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -197,7 +198,7 @@ export function AppSidebar() {
           <Collapsible open={clinicalOpen} onOpenChange={setClinicalOpen}>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
-                data-active={["/pre-charting", "/clinical-chat", "/soap", "/visit-summary"].includes(location)}
+                data-active={["/pre-charting", "/clinical-chat", "/soap", "/visit-summary", "/workflow-history"].includes(location)}
                 className="w-full"
                 data-testid="nav-clinical"
               >
@@ -237,6 +238,14 @@ export function AppSidebar() {
                     <Link href="/visit-summary">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       <span className="text-xs">Visit Summary</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-active={location === "/workflow-history"} data-testid="nav-workflow-history">
+                    <Link href="/workflow-history">
+                      <History className="h-3.5 w-3.5" />
+                      <span className="text-xs">Workflow History</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientStore } from "@/store/patientStore";
+import { useWorkflowHistory } from "@/store/workflowHistory";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, Loader2, CheckCircle2, ArrowRight,
@@ -49,6 +50,7 @@ export default function VisitSummary() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exported, setExported] = useState(false);
+  const workflowHistory = useWorkflowHistory();
 
   async function generateSummary() {
     if (!store.soapSigned) {
@@ -81,6 +83,22 @@ export default function VisitSummary() {
 
   function handleApprove() {
     store.approveSummary();
+    workflowHistory.addRecord({
+      patientName: store.name,
+      dob: store.dob,
+      mrn: store.mrn,
+      sex: store.sex,
+      specialty: store.specialty,
+      visitType: store.visitType,
+      chiefComplaint: store.chiefComplaint,
+      medications: store.medications,
+      allergies: store.allergies,
+      pmh: store.pmh,
+      soapDraft: store.soapDraft,
+      visitSummary: store.visitSummary,
+      summaryApproved: true,
+      exportedToEHR: false,
+    });
     toast({ title: "Visit summary approved and finalized" });
   }
 
@@ -116,6 +134,10 @@ export default function VisitSummary() {
     setExportProgress(100);
     setExporting(false);
     setExported(true);
+    const latestRecord = workflowHistory.records[0];
+    if (latestRecord) {
+      workflowHistory.markExported(latestRecord.id);
+    }
     toast({
       title: "Exported to EHR successfully",
       description: `Visit record for ${store.name || "patient"} written to chart — MRN ${store.mrn || "N/A"}`,
