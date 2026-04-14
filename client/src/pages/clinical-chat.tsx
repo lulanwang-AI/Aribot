@@ -234,7 +234,7 @@ export default function ClinicalChat() {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="px-4 py-3 border-b flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold" data-testid="text-clinical-chat-title">AI Clinical Consult</h1>
+            <h1 className="text-lg font-semibold" data-testid="text-clinical-chat-title">ARIbot Consult</h1>
             {!store.preChartComplete && (
               <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] ml-2 gap-1">
                 <AlertTriangle className="h-2.5 w-2.5" /> No pre-charting data
@@ -249,7 +249,7 @@ export default function ClinicalChat() {
                   <Bot className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-lg">ARI Clinical Consult</h2>
+                  <h2 className="font-semibold text-lg">ARIbot Consult</h2>
                   <p className="text-sm text-muted-foreground mt-1 max-w-md">
                     Ask clinical questions about your patient. ARI provides evidence-based answers with source citations.
                   </p>

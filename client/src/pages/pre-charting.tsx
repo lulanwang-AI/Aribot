@@ -754,7 +754,7 @@ export default function PreCharting() {
 
               <div className="flex justify-end gap-3 pb-4">
                 <Button type="submit" size="sm" className="gap-2" data-testid="button-save-continue">
-                  Save & Continue to AI Consult
+                  Save & Continue to ARIbot Consult
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>

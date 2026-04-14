@@ -221,7 +221,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild data-active={location === "/clinical-chat"} data-testid="nav-clinical-chat">
                     <Link href="/clinical-chat">
                       <MessageCircle className="h-3.5 w-3.5" />
-                      <span className="text-xs">AI Consult</span>
+                      <span className="text-xs">ARIbot Consult</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
