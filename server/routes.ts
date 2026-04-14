@@ -725,7 +725,7 @@ Current guidelines suggest a stepwise approach to management, beginning with con
       const openaiKey = process.env.OPENAI_API_KEY;
 
       if (openaiKey) {
-        const prompt = `Generate a SOAP note for the following patient. Return ONLY valid JSON with keys: S, O, A, P, confidence (object with S/O/A/P each being "high", "moderate", or "low"). No markdown fences.
+        const prompt = `Generate a SOAP note for the following patient. Return ONLY valid JSON with keys: S, O, A, P, confidence (object with S/O/A/P each being "high", "moderate", or "low"). IMPORTANT: Each of S, O, A, P must be a plain text STRING, never an object or array. No markdown fences.
 
 Patient: ${data.name}, DOB: ${data.dob}, Sex: ${data.sex}
 Chief Complaint: ${data.chiefComplaint}
@@ -767,7 +767,18 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
         const content = aiJson.choices?.[0]?.message?.content || "{}";
         try {
           const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
-          return res.json(parsed);
+          const normalize = (val: any): string => {
+            if (typeof val === "string") return val;
+            if (typeof val === "object" && val !== null) return JSON.stringify(val, null, 2);
+            return String(val || "");
+          };
+          return res.json({
+            S: normalize(parsed.S),
+            O: normalize(parsed.O),
+            A: normalize(parsed.A),
+            P: normalize(parsed.P),
+            confidence: parsed.confidence || { S: "moderate", O: "moderate", A: "moderate", P: "moderate" },
+          });
         } catch {
           return res.json({ S: content, O: "", A: "", P: "", confidence: { S: "low", O: "low", A: "low", P: "low" } });
         }

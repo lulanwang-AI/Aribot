@@ -59,7 +59,8 @@ function SoapSectionCard({
   isRegenerating: boolean;
 }) {
   const meta = SECTION_META[sectionKey];
-  const wordCount = value ? value.trim().split(/\s+/).filter(Boolean).length : 0;
+  const safeValue = typeof value === "string" ? value : (value ? JSON.stringify(value, null, 2) : "");
+  const wordCount = safeValue ? safeValue.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (
     <Card className={`relative ${requiresEdit && !isEdited && value ? "ring-2 ring-red-400 border-red-300" : !isEdited && value ? "ring-1 ring-blue-200 bg-blue-50/30" : ""}`} data-testid={`soap-card-${sectionKey}`}>
@@ -103,10 +104,10 @@ function SoapSectionCard({
       </CardHeader>
       <CardContent className="space-y-2">
         <Textarea
-          value={value}
+          value={safeValue}
           onChange={(e) => onEdit(e.target.value)}
           rows={14}
-          className={`text-sm leading-relaxed min-h-[200px] ${requiresEdit && !isEdited && value ? "border-red-300 focus-visible:ring-red-400" : !isEdited && value ? "bg-blue-50/40" : "bg-background"}`}
+          className={`text-sm leading-relaxed min-h-[200px] ${requiresEdit && !isEdited && safeValue ? "border-red-300 focus-visible:ring-red-400" : !isEdited && safeValue ? "bg-blue-50/40" : "bg-background"}`}
           placeholder={`AI-generated ${meta.label.toLowerCase()} will appear here...`}
           disabled={signed}
           data-testid={`textarea-soap-${sectionKey}`}
