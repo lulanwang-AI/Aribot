@@ -1515,7 +1515,7 @@ function TeamSection() {
     {
       name: "Lulan Wang, Ph.D.",
       title: "AI Engineer",
-      bio: "Ph.D. from UCLA with expertise in artificial intelligence. Currently at NVIDIA, bringing deep AI research and engineering experience to clinical applications.",
+      bio: "Ph.D. from UCLA with expertise in artificial intelligence and deep AI research, bringing engineering experience to clinical applications.",
       image: teamLulan,
       initials: "LW",
     },
