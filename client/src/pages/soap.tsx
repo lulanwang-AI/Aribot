@@ -42,6 +42,7 @@ function SoapSectionCard({
   isEdited,
   confidence,
   signed,
+  requiresEdit,
   onEdit,
   onRegenerate,
   isRegenerating,
@@ -52,6 +53,7 @@ function SoapSectionCard({
   isEdited: boolean;
   confidence: string;
   signed: boolean;
+  requiresEdit: boolean;
   onEdit: (text: string) => void;
   onRegenerate: () => void;
   isRegenerating: boolean;
@@ -60,20 +62,25 @@ function SoapSectionCard({
   const wordCount = value ? value.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (
-    <Card className={`relative ${!isEdited && value ? "ring-1 ring-blue-200 bg-blue-50/30" : ""}`} data-testid={`soap-card-${sectionKey}`}>
+    <Card className={`relative ${requiresEdit && !isEdited && value ? "ring-2 ring-red-400 border-red-300" : !isEdited && value ? "ring-1 ring-blue-200 bg-blue-50/30" : ""}`} data-testid={`soap-card-${sectionKey}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`w-7 h-7 rounded-lg ${meta.color} text-white flex items-center justify-center text-xs font-bold`}>
+            <span className={`w-8 h-8 rounded-lg ${meta.color} text-white flex items-center justify-center text-sm font-bold`}>
               {sectionKey}
             </span>
             <div>
-              <CardTitle className="text-sm">{meta.label}</CardTitle>
-              <p className="text-[10px] text-muted-foreground">{meta.description}</p>
+              <CardTitle className="text-base">{meta.label}</CardTitle>
+              <p className="text-xs text-muted-foreground">{meta.description}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {confidence && <ConfidenceTag level={confidence} />}
+            {requiresEdit && !isEdited && value && !signed && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-red-600 border-red-300 bg-red-50 gap-0.5">
+                <AlertTriangle className="h-2.5 w-2.5" /> Edit Required
+              </Badge>
+            )}
             {isEdited && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-200 gap-0.5">
                 <PenLine className="h-2.5 w-2.5" /> Edited
@@ -81,6 +88,12 @@ function SoapSectionCard({
             )}
           </div>
         </div>
+        {requiresEdit && !isEdited && value && !signed && (
+          <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Physician review and edit required before signing.
+          </div>
+        )}
         {confidence === "low" && value && (
           <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-xs flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
@@ -92,19 +105,19 @@ function SoapSectionCard({
         <Textarea
           value={value}
           onChange={(e) => onEdit(e.target.value)}
-          rows={8}
-          className={`text-sm resize-none ${!isEdited && value ? "bg-blue-50/40" : "bg-background"}`}
+          rows={14}
+          className={`text-sm leading-relaxed min-h-[200px] ${requiresEdit && !isEdited && value ? "border-red-300 focus-visible:ring-red-400" : !isEdited && value ? "bg-blue-50/40" : "bg-background"}`}
           placeholder={`AI-generated ${meta.label.toLowerCase()} will appear here...`}
           disabled={signed}
           data-testid={`textarea-soap-${sectionKey}`}
         />
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{wordCount} words</span>
           {!signed && value && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 text-[10px] px-2 gap-1"
+              className="h-7 text-xs px-2 gap-1"
               onClick={onRegenerate}
               disabled={isRegenerating}
               data-testid={`button-regen-${sectionKey}`}
@@ -256,17 +269,17 @@ export default function SoapNote() {
       )}
 
       {generating && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {(["S", "O", "A", "P"] as SoapKey[]).map(k => (
             <Card key={k}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <Skeleton className="w-7 h-7 rounded-lg" />
-                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="w-8 h-8 rounded-lg" />
+                  <Skeleton className="h-5 w-28" />
                 </div>
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-40 w-full rounded-md" />
+                <Skeleton className="h-[200px] w-full rounded-md" />
               </CardContent>
             </Card>
           ))}
@@ -275,7 +288,7 @@ export default function SoapNote() {
 
       {hasDraft && !generating && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {(["S", "O", "A", "P"] as SoapKey[]).map(k => (
               <SoapSectionCard
                 key={k}
@@ -285,6 +298,7 @@ export default function SoapNote() {
                 isEdited={store.soapEdited[k]}
                 confidence={confidence[k]}
                 signed={store.soapSigned}
+                requiresEdit={k === "A" || k === "P"}
                 onEdit={(text) => handleEdit(k, text)}
                 onRegenerate={() => regenerateSection(k)}
                 isRegenerating={regenerating === k}
@@ -295,23 +309,23 @@ export default function SoapNote() {
           <Separator />
 
           {!store.soapSigned && (
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {!canSign && (
-                  <span className="flex items-center gap-1 text-amber-600">
-                    <AlertTriangle className="h-3 w-3" />
-                    Edit the Assessment or Plan section before signing.
-                  </span>
-                )}
+            <div className="space-y-3">
+              {!canSign && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2" data-testid="text-sign-warning">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>You must review and edit the <strong>Assessment</strong> or <strong>Plan</strong> section before you can sign this note.</span>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSign}
+                  disabled={!canSign}
+                  className="gap-2"
+                  data-testid="button-sign-soap"
+                >
+                  <PenLine className="h-4 w-4" /> Sign Note
+                </Button>
               </div>
-              <Button
-                onClick={handleSign}
-                disabled={!canSign}
-                className="gap-2"
-                data-testid="button-sign-soap"
-              >
-                <PenLine className="h-4 w-4" /> Sign Note
-              </Button>
             </div>
           )}
 
