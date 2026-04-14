@@ -133,10 +133,10 @@ export default function PreCharting() {
 
   async function importFromEHR() {
     const sampleData = {
-      name: "Margaret Thompson",
+      name: "John Doe",
       dob: "1962-08-14",
       mrn: "MRN-2026-4491",
-      sex: "Female",
+      sex: "Male",
       preferredLanguage: "English",
       chiefComplaint: "Persistent chest tightness and shortness of breath on exertion for the past 3 weeks, worsening with physical activity. Occasional palpitations at rest.",
       visitType: "Follow-up",
