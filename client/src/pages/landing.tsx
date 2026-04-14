@@ -71,7 +71,7 @@ import teamChetChea from "@assets/team-chet-chea.jpg";
 import teamDanaNguyen from "@assets/team-dana-nguyen.jpg";
 import teamBrittaDenman from "@assets/team-britta-denman.png";
 import teamOsas from "@assets/team-osas.jpg";
-import teamAnupam from "@assets/team-anupam.jpg";
+import teamLulan from "@assets/Lulan_Heashot_1776200296631.png";
 import teamMichaelStewart from "@assets/team-michael-stewart.png";
 import teamDoherty from "@assets/team-doherty.jpg";
 import teamCranshaw from "@assets/team-cranshaw.jpg";
@@ -1513,11 +1513,11 @@ function TeamSection() {
       initials: "ON",
     },
     {
-      name: "Anupam Acharya",
-      title: "Engineer",
-      bio: "5+ years leading tech startups. Built $2M+ revenue verticals. Strong product and business management experience.",
-      image: teamAnupam,
-      initials: "AA",
+      name: "Lulan Wang, Ph.D.",
+      title: "AI Engineer",
+      bio: "Ph.D. from UCLA with expertise in artificial intelligence. Currently at NVIDIA, bringing deep AI research and engineering experience to clinical applications.",
+      image: teamLulan,
+      initials: "LW",
     },
     {
       name: "Michael Stewart, MD",
