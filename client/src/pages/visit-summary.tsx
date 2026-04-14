@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, Loader2, CheckCircle2, ArrowRight,
   Printer, AlertTriangle, Heart, Pill, Stethoscope,
-  Calendar, Phone, UserCheck, Download, RotateCcw, Upload
+  Calendar, Phone, UserCheck, Download, RotateCcw, Upload, User, Building2
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -204,6 +204,42 @@ export default function VisitSummary() {
             <p className="text-sm text-muted-foreground">{store.name} — {new Date().toLocaleDateString()}</p>
           </div>
 
+          <Card className="border-primary/20 bg-primary/5 print:shadow-none print:border-0" data-testid="card-patient-info">
+            <CardContent className="py-5">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 flex-1 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Patient Name</p>
+                    <p className="font-semibold">{store.name || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Date of Birth</p>
+                    <p className="font-medium">{store.dob ? new Date(store.dob + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">MRN</p>
+                    <p className="font-medium">{store.mrn || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Sex</p>
+                    <p className="font-medium">{store.sex || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Visit Date</p>
+                    <p className="font-medium">{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Visit Type</p>
+                    <p className="font-medium">{store.specialty || "—"}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="print:shadow-none print:border-0">
             <CardContent className="py-6 space-y-6 text-[15px] leading-relaxed">
               <SummarySection icon={Stethoscope} title="Why you came in today">
@@ -284,12 +320,28 @@ export default function VisitSummary() {
               <Separator />
 
               <SummarySection icon={UserCheck} title="Your care team">
-                <p className="text-muted-foreground">
-                  <strong>Provider:</strong> Dr. Sarah Chen, {store.specialty}
-                </p>
-                <p className="text-muted-foreground">
-                  <strong>Date:</strong> {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="https://api.dicebear.com/7.x/avataaars/svg?seed=ChetChea&mouth[]=smile&eyes[]=happy&eyebrows[]=defaultNatural&top[]=shortHairShortFlat&clothing[]=blazerAndShirt&skinColor[]=d08b5b&backgroundColor=b6e3f4"
+                      alt="Dr. Chet Chea"
+                      className="w-10 h-10 rounded-full border print:hidden"
+                    />
+                    <div className="text-sm space-y-0.5">
+                      <p className="font-semibold">Dr. Chet Chea, MD</p>
+                      <p className="text-muted-foreground">Infectious Disease — HIV/AIDS & Travel Medicine</p>
+                      <p className="text-muted-foreground flex items-center gap-1">
+                        <Building2 className="h-3 w-3" /> Marin Health Medical Center, Kentfield, CA
+                      </p>
+                      <p className="text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> (415) 555-0192
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    <strong>Visit Date:</strong> {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                  </p>
+                </div>
               </SummarySection>
             </CardContent>
           </Card>
