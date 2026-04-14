@@ -131,7 +131,7 @@ export default function PreCharting() {
     });
   }
 
-  function importFromEHR() {
+  async function importFromEHR() {
     const sampleData = {
       name: "Margaret Thompson",
       dob: "1962-08-14",
@@ -162,6 +162,26 @@ export default function PreCharting() {
 
     form.reset(sampleData);
     toast({ title: "EHR data imported", description: "Sample patient data loaded from EHR system" });
+
+    setGeneratingPrimer(true);
+    try {
+      const bmiVal = sampleData.weight && sampleData.height
+        ? ((Number(sampleData.weight) / (Number(sampleData.height) * Number(sampleData.height))) * 703).toFixed(1)
+        : undefined;
+      const res = await fetch("/api/prechart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...sampleData, bmi: bmiVal }),
+      });
+      const json = await res.json();
+      setPrimer(json.primer);
+      store.setPatient({ encounterPrimer: json.primer });
+      toast({ title: "Encounter primer generated" });
+    } catch {
+      toast({ title: "Failed to generate primer", variant: "destructive" });
+    } finally {
+      setGeneratingPrimer(false);
+    }
   }
 
   async function generatePrimer() {
@@ -221,6 +241,24 @@ export default function PreCharting() {
           )}
         </div>
       </div>
+
+      {(primer || generatingPrimer) && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> AI Encounter Primer
+              {generatingPrimer && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {generatingPrimer && !primer ? (
+              <p className="text-sm text-muted-foreground animate-pulse" data-testid="text-primer-loading">Generating encounter primer from imported data...</p>
+            ) : (
+              <div className="text-sm leading-relaxed whitespace-pre-line" data-testid="text-encounter-primer">{primer}</div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -465,16 +503,11 @@ export default function PreCharting() {
                 <Sparkles className="h-4 w-4 text-primary" /> AI Encounter Primer
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <Button type="button" variant="outline" onClick={generatePrimer} disabled={generatingPrimer} className="gap-2" data-testid="button-generate-primer">
                 {generatingPrimer ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {generatingPrimer ? "Generating..." : "Generate Encounter Primer"}
+                {generatingPrimer ? "Generating..." : primer ? "Regenerate Encounter Primer" : "Generate Encounter Primer"}
               </Button>
-              {primer && (
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 text-sm leading-relaxed" data-testid="text-encounter-primer">
-                  {primer}
-                </div>
-              )}
             </CardContent>
           </Card>
 
