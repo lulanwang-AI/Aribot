@@ -738,20 +738,6 @@ export default function PreCharting() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" /> AI Encounter Primer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-3">
-                  <Button type="button" variant="outline" size="sm" onClick={generatePrimer} disabled={generatingPrimer} className="gap-1.5 text-xs" data-testid="button-generate-primer">
-                    {generatingPrimer ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    {generatingPrimer ? "Generating..." : primer ? "Regenerate Primer" : "Generate Encounter Primer"}
-                  </Button>
-                </CardContent>
-              </Card>
-
               <div className="flex justify-end gap-3 pb-4">
                 <Button type="submit" size="sm" className="gap-2" data-testid="button-save-continue">
                   Save & Continue to ARIbot Consult
