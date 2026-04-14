@@ -19,6 +19,12 @@ import {
   Building,
   CheckCircle,
   Plus,
+  ClipboardList,
+  FileText,
+  Upload,
+  Sparkles,
+  Search,
+  Image,
 } from "lucide-react";
 import type { User, TriagePost, NewsItem, MedEvent } from "@shared/schema";
 import { seedAnalytics, recordEvent } from "@/lib/analytics";
@@ -181,14 +187,81 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="flex justify-center">
-        <Link href="/aribot">
-          <Button data-testid="button-open-aribot">
-            <Bot className="h-4 w-4 mr-2" />
-            Open Aribots AI Assistant
-          </Button>
-        </Link>
-      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Clinical Workflow
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">AI-powered clinical documentation from intake to visit summary</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <WorkflowCard
+              icon={ClipboardList}
+              title="Pre-Charting"
+              description="Patient intake with document upload, AI data extraction, and encounter primer"
+              features={["Upload PDF/text/images", "AI auto-populates fields", "Search uploaded documents"]}
+              href="/pre-charting"
+              step={1}
+              color="text-blue-500"
+              bgColor="bg-blue-500/10"
+            />
+            <WorkflowCard
+              icon={Bot}
+              title="ARIbot Consult"
+              description="Evidence-based AI clinical consult with intelligent SOAP integration"
+              features={["Streaming AI responses", "Source citations", "Integrate into SOAP"]}
+              href="/clinical-chat"
+              step={2}
+              color="text-violet-500"
+              bgColor="bg-violet-500/10"
+            />
+            <WorkflowCard
+              icon={FileText}
+              title="SOAP Note"
+              description="AI-generated SOAP documentation with physician edit gates"
+              features={["Auto-generated from consult", "Edit-required indicators", "Confidence ratings"]}
+              href="/soap"
+              step={3}
+              color="text-amber-500"
+              bgColor="bg-amber-500/10"
+            />
+            <WorkflowCard
+              icon={Heart}
+              title="Visit Summary"
+              description="Patient-friendly summary with care plan and EHR export"
+              features={["Medication changes", "Care team info", "Export to EHR"]}
+              href="/visit-summary"
+              step={4}
+              color="text-emerald-500"
+              bgColor="bg-emerald-500/10"
+            />
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t">
+            <div className="flex items-center gap-4">
+              <Link href="/pre-charting">
+                <Button size="sm" className="gap-2" data-testid="button-start-workflow">
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  Start New Encounter
+                </Button>
+              </Link>
+              <Link href="/workflow-history">
+                <Button size="sm" variant="outline" className="gap-2" data-testid="button-workflow-history">
+                  <Search className="h-3.5 w-3.5" />
+                  Workflow History
+                </Button>
+              </Link>
+            </div>
+            <Link href="/aribot">
+              <Button size="sm" variant="ghost" className="gap-2" data-testid="button-open-aribot">
+                <Bot className="h-3.5 w-3.5" />
+                Open ARIbot Assistant
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -232,6 +305,33 @@ function UpcomingEventCard({ event }: { event: MedEvent }) {
         )}
       </div>
     </div>
+  );
+}
+
+function WorkflowCard({ icon: Icon, title, description, features, href, step, color, bgColor }: {
+  icon: any; title: string; description: string; features: string[]; href: string; step: number; color: string; bgColor: string;
+}) {
+  return (
+    <Link href={href}>
+      <div className="p-3 rounded-lg border hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer h-full" data-testid={`card-workflow-step-${step}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-7 h-7 rounded-lg ${bgColor} flex items-center justify-center`}>
+            <Icon className={`h-3.5 w-3.5 ${color}`} />
+          </div>
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0">{step}</Badge>
+        </div>
+        <h3 className="text-sm font-semibold mb-1">{title}</h3>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-relaxed">{description}</p>
+        <ul className="space-y-0.5">
+          {features.map((f, i) => (
+            <li key={i} className="text-[10px] text-muted-foreground flex items-start gap-1">
+              <CheckCircle className="h-2.5 w-2.5 text-green-500 mt-0.5 flex-shrink-0" />
+              {f}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Link>
   );
 }
 
