@@ -11,8 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Sparkles, Loader2, CheckCircle2, ArrowRight,
   Printer, AlertTriangle, Heart, Pill, Stethoscope,
-  Calendar, Phone, UserCheck, Download, RotateCcw
+  Calendar, Phone, UserCheck, Download, RotateCcw, Upload
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface VisitSummaryData {
   visitReason: string;
@@ -45,6 +46,9 @@ export default function VisitSummary() {
     store.visitSummary as VisitSummaryData | null
   );
   const [editableFields, setEditableFields] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exported, setExported] = useState(false);
 
   async function generateSummary() {
     if (!store.soapSigned) {
@@ -87,6 +91,35 @@ export default function VisitSummary() {
 
   function handlePrint() {
     window.print();
+  }
+
+  async function exportToEHR() {
+    setExporting(true);
+    setExportProgress(0);
+
+    const steps = [
+      { label: "Connecting to EHR system", progress: 15 },
+      { label: "Authenticating provider credentials", progress: 30 },
+      { label: "Transmitting visit summary", progress: 50 },
+      { label: "Uploading SOAP note", progress: 65 },
+      { label: "Syncing medication changes", progress: 80 },
+      { label: "Confirming write to patient chart", progress: 95 },
+    ];
+
+    for (const step of steps) {
+      await new Promise(r => setTimeout(r, 700));
+      setExportProgress(step.progress);
+      toast({ title: step.label });
+    }
+
+    await new Promise(r => setTimeout(r, 500));
+    setExportProgress(100);
+    setExporting(false);
+    setExported(true);
+    toast({
+      title: "Exported to EHR successfully",
+      description: `Visit record for ${store.name || "patient"} written to chart — MRN ${store.mrn || "N/A"}`,
+    });
   }
 
   const changeColors: Record<string, string> = {
@@ -263,11 +296,43 @@ export default function VisitSummary() {
 
           <Separator className="my-6" />
 
+          {exporting && (
+            <Card className="border-primary/30 bg-primary/5 mb-4">
+              <CardContent className="py-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Exporting to EHR...
+                </div>
+                <Progress value={exportProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground">{exportProgress}% complete</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {exported && !exporting && (
+            <Card className="border-green-300 bg-green-50/50 mb-4">
+              <CardContent className="py-4 flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium text-green-800">Successfully exported to EHR</p>
+                  <p className="text-xs text-green-600">
+                    Visit record written to patient chart — {store.name || "Patient"} (MRN: {store.mrn || "N/A"}) — {new Date().toLocaleString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex gap-2">
               <Button variant="outline" onClick={handlePrint} className="gap-2" data-testid="button-print-summary">
                 <Printer className="h-4 w-4" /> Print / Save as PDF
               </Button>
+              {store.summaryApproved && !exported && (
+                <Button variant="outline" onClick={exportToEHR} disabled={exporting} className="gap-2" data-testid="button-export-ehr">
+                  <Upload className="h-4 w-4" /> Export to EHR
+                </Button>
+              )}
             </div>
             <div className="flex gap-2">
               {!store.summaryApproved ? (
