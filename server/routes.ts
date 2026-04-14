@@ -3,6 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertDemoRequestSchema } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const createPostSchema = z.object({
   title: z.string().min(1),
@@ -538,6 +543,99 @@ export async function registerRoutes(
       completed: all.filter(c => c.status === "completed").length,
       todayCount,
     });
+  });
+
+  app.post("/api/upload-document", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      let content = "";
+      let docType: "pdf" | "text" | "image" = "text";
+
+      if (ext === ".pdf") {
+        docType = "pdf";
+        const pdfParse = (await import("pdf-parse")).default;
+        const result = await pdfParse(req.file.buffer);
+        content = result.text;
+      } else if ([".txt", ".csv", ".md", ".rtf"].includes(ext)) {
+        docType = "text";
+        content = req.file.buffer.toString("utf-8");
+      } else if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"].includes(ext)) {
+        docType = "image";
+        content = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+      } else {
+        return res.status(400).json({ error: "Unsupported file type. Use PDF, TXT, CSV, MD, or image files." });
+      }
+
+      res.json({
+        id: `doc-${Date.now()}`,
+        name: req.file.originalname,
+        type: docType,
+        content,
+        size: req.file.size,
+        uploadedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Upload error:", err);
+      res.status(500).json({ error: "Failed to process file" });
+    }
+  });
+
+  app.post("/api/parse-document", async (req, res) => {
+    try {
+      const { content, documentName } = req.body;
+      const openaiKey = process.env.OPENAI_API_KEY;
+
+      if (!openaiKey) {
+        return res.json({ fields: {}, raw: content });
+      }
+
+      const prompt = `You are a medical document parser. Extract structured patient data from this clinical document. Return ONLY valid JSON with these optional keys (only include keys that have data):
+- name (patient full name)
+- dob (date of birth, format YYYY-MM-DD)
+- mrn (medical record number)
+- sex (Male/Female/Other)
+- chiefComplaint (reason for visit)
+- medications (one per line)
+- allergies (with reactions)
+- pmh (past medical history)
+- psh (past surgical history)
+- familyHistory
+- recentResults (labs, imaging)
+- bp, hr, temp, o2sat, rr, weight, height (vitals)
+
+Document name: ${documentName}
+Document content:
+${content.substring(0, 8000)}`;
+
+      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: "You are a medical document parser. Return only valid JSON." },
+            { role: "user", content: prompt },
+          ],
+        }),
+      });
+
+      if (!aiRes.ok) return res.json({ fields: {}, raw: content });
+
+      const aiJson = await aiRes.json();
+      const aiContent = aiJson.choices?.[0]?.message?.content || "{}";
+      try {
+        const parsed = JSON.parse(aiContent.replace(/```json\n?/g, "").replace(/```/g, "").trim());
+        return res.json({ fields: parsed, raw: content });
+      } catch {
+        return res.json({ fields: {}, raw: content });
+      }
+    } catch (err) {
+      console.error("Parse document error:", err);
+      res.status(500).json({ error: "Failed to parse document" });
+    }
   });
 
   app.post("/api/prechart", async (req, res) => {

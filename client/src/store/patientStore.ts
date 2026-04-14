@@ -7,6 +7,15 @@ interface ChatMessage {
   sources?: string[];
 }
 
+export interface UploadedDocument {
+  id: string;
+  name: string;
+  type: "pdf" | "text" | "image";
+  content: string;
+  uploadedAt: string;
+  size: number;
+}
+
 interface PatientSession {
   name: string;
   dob: string;
@@ -29,6 +38,7 @@ interface PatientSession {
   recentResults: string;
   encounterPrimer: string;
   preChartComplete: boolean;
+  uploadedDocuments: UploadedDocument[];
   chatMessages: ChatMessage[];
   soapDraft: { S: string; O: string; A: string; P: string };
   soapOriginal: { S: string; O: string; A: string; P: string };
@@ -37,6 +47,8 @@ interface PatientSession {
   visitSummary: Record<string, any> | null;
   summaryApproved: boolean;
   setPatient: (data: Partial<PatientSession>) => void;
+  addDocument: (doc: UploadedDocument) => void;
+  removeDocument: (id: string) => void;
   addChatMessage: (msg: ChatMessage) => void;
   appendToLastAssistant: (chunk: string) => void;
   setSoap: (soap: { S: string; O: string; A: string; P: string }) => void;
@@ -70,6 +82,7 @@ const initialState = {
   recentResults: "",
   encounterPrimer: "",
   preChartComplete: false,
+  uploadedDocuments: [] as UploadedDocument[],
   chatMessages: [] as ChatMessage[],
   soapDraft: { S: "", O: "", A: "", P: "" },
   soapOriginal: { S: "", O: "", A: "", P: "" },
@@ -84,6 +97,10 @@ export const usePatientStore = create<PatientSession>()(
     (set) => ({
       ...initialState,
       setPatient: (data) => set((state) => ({ ...state, ...data })),
+      addDocument: (doc) =>
+        set((state) => ({ uploadedDocuments: [...state.uploadedDocuments, doc] })),
+      removeDocument: (id) =>
+        set((state) => ({ uploadedDocuments: state.uploadedDocuments.filter(d => d.id !== id) })),
       addChatMessage: (msg) =>
         set((state) => ({ chatMessages: [...state.chatMessages, msg] })),
       appendToLastAssistant: (chunk) =>
@@ -118,7 +135,7 @@ export const usePatientStore = create<PatientSession>()(
       name: "aribot-patient-session",
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => {
-        const { setPatient, addChatMessage, appendToLastAssistant, setSoap, updateSoapSection, markSectionEdited, signSoap, setSummary, approveSummary, resetSession, ...rest } = state;
+        const { setPatient, addDocument, removeDocument, addChatMessage, appendToLastAssistant, setSoap, updateSoapSection, markSectionEdited, signSoap, setSummary, approveSummary, resetSession, ...rest } = state;
         return rest;
       },
     }
