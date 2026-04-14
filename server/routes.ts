@@ -543,17 +543,20 @@ export async function registerRoutes(
   app.post("/api/prechart", async (req, res) => {
     try {
       const data = req.body;
-      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
-      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+      const openaiKey = process.env.OPENAI_API_KEY;
 
-      if (medicalAiUrl && medicalAiKey) {
-        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+      if (openaiKey) {
+        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`,
+          },
           body: JSON.stringify({
+            model: "gpt-4o",
             messages: [{
               role: "system",
-              content: "You are a clinical AI assistant. Generate a 3-5 sentence encounter primer summarizing the patient's clinical context. Be concise and clinically relevant."
+              content: "You are ARIbot, a clinical AI assistant developed by Dr. Chet Chea. Generate a concise 3-5 sentence encounter primer summarizing the patient's clinical context. Focus on clinically relevant information that the physician needs before the encounter. Be specific and actionable."
             }, {
               role: "user",
               content: `Patient: ${data.name}, DOB: ${data.dob}, Sex: ${data.sex}
@@ -565,11 +568,20 @@ Medications: ${data.medications || "None listed"}
 Allergies: ${data.allergies || "NKDA"}
 PMH: ${data.pmh || "None"}
 PSH: ${data.psh || "None"}
+Family History: ${data.familyHistory || "None"}
 Recent Results: ${data.recentResults || "None"}`
             }],
-            max_tokens: 300,
+            temperature: 0.3,
+            max_tokens: 500,
           }),
         });
+
+        if (!aiRes.ok) {
+          const errText = await aiRes.text();
+          console.error("OpenAI Prechart error:", aiRes.status, errText);
+          return res.status(502).json({ primer: "AI service error generating primer." });
+        }
+
         const aiJson = await aiRes.json();
         const primer = aiJson.choices?.[0]?.message?.content || "Unable to generate primer.";
         return res.json({ primer });
@@ -710,11 +722,10 @@ Current guidelines suggest a stepwise approach to management, beginning with con
   app.post("/api/soap", async (req, res) => {
     try {
       const data = req.body;
-      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
-      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+      const openaiKey = process.env.OPENAI_API_KEY;
 
-      if (medicalAiUrl && medicalAiKey) {
-        const prompt = `Generate a SOAP note for the following patient. Return JSON with keys: S, O, A, P, confidence (object with S/O/A/P each being "high", "moderate", or "low").
+      if (openaiKey) {
+        const prompt = `Generate a SOAP note for the following patient. Return ONLY valid JSON with keys: S, O, A, P, confidence (object with S/O/A/P each being "high", "moderate", or "low"). No markdown fences.
 
 Patient: ${data.name}, DOB: ${data.dob}, Sex: ${data.sex}
 Chief Complaint: ${data.chiefComplaint}
@@ -726,19 +737,32 @@ PMH: ${data.pmh || "None"}
 PSH: ${data.psh || "None"}
 Encounter Primer: ${data.encounterPrimer || "N/A"}
 Chat Transcript: ${data.chatTranscript || "No chat history"}
-${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} section.` : "Generate all four sections."}`;
+${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} section. Return JSON with only that key and its confidence.` : "Generate all four sections."}`;
 
-        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`,
+          },
           body: JSON.stringify({
+            model: "gpt-4o",
             messages: [
-              { role: "system", content: "You are a clinical documentation AI. Generate SOAP notes in JSON format." },
+              { role: "system", content: "You are ARIbot, a clinical documentation AI developed by Dr. Chet Chea. Generate SOAP notes in JSON format. Return ONLY valid JSON, no markdown fences or extra text." },
               { role: "user", content: prompt },
             ],
-            max_tokens: 2000,
+            temperature: 0.3,
+            max_tokens: 3000,
+            response_format: { type: "json_object" },
           }),
         });
+
+        if (!aiRes.ok) {
+          const errText = await aiRes.text();
+          console.error("OpenAI SOAP error:", aiRes.status, errText);
+          return res.status(502).json({ error: "AI service error" });
+        }
+
         const aiJson = await aiRes.json();
         const content = aiJson.choices?.[0]?.message?.content || "{}";
         try {
@@ -781,11 +805,15 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
   app.post("/api/summary", async (req, res) => {
     try {
       const { soapNote, patientName, specialty, chiefComplaint, medications } = req.body;
-      const medicalAiUrl = process.env.MEDICAL_AI_BASE_URL;
-      const medicalAiKey = process.env.MEDICAL_AI_API_KEY;
+      const openaiKey = process.env.OPENAI_API_KEY;
 
-      if (medicalAiUrl && medicalAiKey) {
-        const prompt = `Convert this SOAP note into a patient-friendly visit summary. Use simple language at a 5th-grade reading level. Avoid all medical abbreviations. Return JSON with keys: visitReason, findings, diagnoses (array), medications (array of {name, change, reason}), carePlan, warningSigns (array), followUp.
+      if (openaiKey) {
+        const prompt = `Convert this SOAP note into a patient-friendly visit summary. Use simple language at a 5th-grade reading level. Avoid all medical abbreviations and jargon. Return ONLY valid JSON with keys: visitReason (string), findings (string), diagnoses (array of strings), medications (array of objects with keys: name, change, reason — change must be one of START, CONTINUE, STOP, DOSE CHANGE), carePlan (string), warningSigns (array of strings), followUp (string).
+
+Patient: ${patientName || "Patient"}
+Specialty: ${specialty || "General"}
+Chief Complaint: ${chiefComplaint || "Not specified"}
+Current Medications: ${medications || "None listed"}
 
 SOAP Note:
 S: ${soapNote.S}
@@ -793,17 +821,30 @@ O: ${soapNote.O}
 A: ${soapNote.A}
 P: ${soapNote.P}`;
 
-        const aiRes = await fetch(`${medicalAiUrl}/v1/chat/completions`, {
+        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${medicalAiKey}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`,
+          },
           body: JSON.stringify({
+            model: "gpt-4o",
             messages: [
-              { role: "system", content: "You are a clinical documentation assistant. Convert SOAP notes into patient-friendly summaries. Return JSON only." },
+              { role: "system", content: "You are ARIbot, a clinical documentation assistant developed by Dr. Chet Chea. Convert SOAP notes into patient-friendly summaries. Return ONLY valid JSON, no markdown fences or extra text." },
               { role: "user", content: prompt },
             ],
-            max_tokens: 1500,
+            temperature: 0.3,
+            max_tokens: 2000,
+            response_format: { type: "json_object" },
           }),
         });
+
+        if (!aiRes.ok) {
+          const errText = await aiRes.text();
+          console.error("OpenAI Summary error:", aiRes.status, errText);
+          return res.status(502).json({ error: "AI service error" });
+        }
+
         const aiJson = await aiRes.json();
         const content = aiJson.choices?.[0]?.message?.content || "{}";
         try {
