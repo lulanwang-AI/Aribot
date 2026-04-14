@@ -769,7 +769,30 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
           const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
           const normalize = (val: any): string => {
             if (typeof val === "string") return val;
-            if (typeof val === "object" && val !== null) return JSON.stringify(val, null, 2);
+            if (typeof val === "object" && val !== null) {
+              const lines: string[] = [];
+              function flatten(obj: any, prefix = "") {
+                if (Array.isArray(obj)) {
+                  obj.forEach((item) => {
+                    if (typeof item === "string") lines.push(`${prefix ? prefix + ": " : ""}- ${item}`);
+                    else flatten(item, prefix);
+                  });
+                } else if (typeof obj === "object" && obj !== null) {
+                  for (const [key, v] of Object.entries(obj)) {
+                    if (typeof v === "string" || typeof v === "number") {
+                      lines.push(`${key}: ${v}`);
+                    } else {
+                      lines.push(`\n${key}:`);
+                      flatten(v, key);
+                    }
+                  }
+                } else {
+                  lines.push(String(obj));
+                }
+              }
+              flatten(val);
+              return lines.join("\n").trim();
+            }
             return String(val || "");
           };
           return res.json({

@@ -15,6 +15,18 @@ import {
 
 type SoapKey = "S" | "O" | "A" | "P";
 
+function flattenToText(val: any): string {
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) return val.map((item) => typeof item === "string" ? `- ${item}` : flattenToText(item)).join("\n");
+  if (typeof val === "object" && val !== null) {
+    return Object.entries(val).map(([key, v]) => {
+      if (typeof v === "string" || typeof v === "number") return `${key}: ${v}`;
+      return `${key}:\n${flattenToText(v)}`;
+    }).join("\n");
+  }
+  return String(val || "");
+}
+
 const SECTION_META: Record<SoapKey, { label: string; description: string; color: string }> = {
   S: { label: "Subjective", description: "Patient-reported symptoms, history of present illness", color: "bg-blue-500" },
   O: { label: "Objective", description: "Physical exam findings, vitals, lab results", color: "bg-green-500" },
@@ -59,7 +71,7 @@ function SoapSectionCard({
   isRegenerating: boolean;
 }) {
   const meta = SECTION_META[sectionKey];
-  const safeValue = typeof value === "string" ? value : (value ? JSON.stringify(value, null, 2) : "");
+  const safeValue = typeof value === "string" ? value : (value ? flattenToText(value) : "");
   const wordCount = safeValue ? safeValue.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (
@@ -106,8 +118,8 @@ function SoapSectionCard({
         <Textarea
           value={safeValue}
           onChange={(e) => onEdit(e.target.value)}
-          rows={14}
-          className={`text-sm leading-relaxed min-h-[200px] ${requiresEdit && !isEdited && safeValue ? "border-red-300 focus-visible:ring-red-400" : !isEdited && safeValue ? "bg-blue-50/40" : "bg-background"}`}
+          rows={8}
+          className={`text-sm leading-relaxed min-h-[120px] ${requiresEdit && !isEdited && safeValue ? "border-red-300 focus-visible:ring-red-400" : !isEdited && safeValue ? "bg-blue-50/40" : "bg-background"}`}
           placeholder={`AI-generated ${meta.label.toLowerCase()} will appear here...`}
           disabled={signed}
           data-testid={`textarea-soap-${sectionKey}`}
