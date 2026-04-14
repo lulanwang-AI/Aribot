@@ -719,6 +719,98 @@ Current guidelines suggest a stepwise approach to management, beginning with con
     }
   });
 
+  app.post("/api/soap/integrate", async (req, res) => {
+    try {
+      const { snippet, currentSoap, patientContext } = req.body;
+      const openaiKey = process.env.OPENAI_API_KEY;
+
+      if (!openaiKey) {
+        const updated = { ...currentSoap };
+        updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
+        return res.json(updated);
+      }
+
+      const prompt = `You are a physician's clinical documentation assistant. You have an existing SOAP note draft and a new piece of clinical information from an AI consult conversation. Your job is to INTELLIGENTLY INTEGRATE the new information into the appropriate SOAP sections.
+
+Rules:
+- Merge the new info into the correct section(s) — subjective findings go in S, objective data in O, clinical reasoning in A, and management recommendations in P.
+- Do NOT just append text. Rewrite each affected section so it reads as a single coherent narrative.
+- Preserve all existing content that is still relevant — do not remove information.
+- If a section has no new information to add, return it unchanged.
+- Return ONLY valid JSON with keys: S, O, A, P. Each value must be a plain text STRING. No markdown fences.
+
+${patientContext ? `Patient context: ${patientContext}\n` : ""}
+Current SOAP draft:
+S: ${currentSoap.S || "(empty)"}
+O: ${currentSoap.O || "(empty)"}
+A: ${currentSoap.A || "(empty)"}
+P: ${currentSoap.P || "(empty)"}
+
+New clinical information to integrate:
+${snippet}`;
+
+      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          temperature: 0.3,
+          messages: [
+            { role: "system", content: "You are a clinical documentation assistant for physicians. Return only valid JSON." },
+            { role: "user", content: prompt },
+          ],
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const updated = { ...currentSoap };
+        updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
+        return res.json(updated);
+      }
+
+      const aiJson = await aiRes.json();
+      const content = aiJson.choices?.[0]?.message?.content || "{}";
+      try {
+        const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
+        const normalize = (val: any): string => {
+          if (typeof val === "string") return val;
+          if (typeof val === "object" && val !== null) {
+            const lines: string[] = [];
+            function flatten(obj: any, prefix = "") {
+              if (Array.isArray(obj)) {
+                obj.forEach((item: any) => {
+                  if (typeof item === "string") lines.push(`- ${item}`);
+                  else flatten(item, prefix);
+                });
+              } else if (typeof obj === "object" && obj !== null) {
+                for (const [key, v] of Object.entries(obj)) {
+                  if (typeof v === "string" || typeof v === "number") lines.push(`${key}: ${v}`);
+                  else { lines.push(`\n${key}:`); flatten(v, key); }
+                }
+              } else lines.push(String(obj));
+            }
+            flatten(val);
+            return lines.join("\n").trim();
+          }
+          return String(val || "");
+        };
+        return res.json({
+          S: normalize(parsed.S),
+          O: normalize(parsed.O),
+          A: normalize(parsed.A),
+          P: normalize(parsed.P),
+        });
+      } catch {
+        const updated = { ...currentSoap };
+        updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
+        return res.json(updated);
+      }
+    } catch (err) {
+      console.error("SOAP integrate error:", err);
+      res.status(500).json({ error: "Integration failed" });
+    }
+  });
+
   app.post("/api/soap", async (req, res) => {
     try {
       const data = req.body;

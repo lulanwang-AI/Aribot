@@ -184,10 +184,41 @@ export default function ClinicalChat() {
     }
   }
 
-  function saveToSoap(content: string) {
-    const current = store.soapDraft.A;
-    store.updateSoapSection("A", current ? current + "\n\n" + content : content);
-    toast({ title: "Saved to SOAP Assessment" });
+  const [integrating, setIntegrating] = useState<number | null>(null);
+
+  async function saveToSoap(content: string, msgIndex: number) {
+    setIntegrating(msgIndex);
+    try {
+      const patientContext = store.patient
+        ? `${store.patient.name}, ${store.patient.sex}, DOB ${store.patient.dob}, Chief Complaint: ${store.patient.chiefComplaint}`
+        : "";
+
+      const res = await fetch("/api/soap/integrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          snippet: content,
+          currentSoap: store.soapDraft,
+          patientContext,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Integration failed");
+
+      const updated = await res.json();
+      store.updateSoapSection("S", updated.S || store.soapDraft.S);
+      store.updateSoapSection("O", updated.O || store.soapDraft.O);
+      store.updateSoapSection("A", updated.A || store.soapDraft.A);
+      store.updateSoapSection("P", updated.P || store.soapDraft.P);
+
+      toast({ title: "Integrated into SOAP", description: "AI merged the information across all relevant SOAP sections." });
+    } catch {
+      const current = store.soapDraft.A;
+      store.updateSoapSection("A", current ? current + "\n\n" + content : content);
+      toast({ title: "Saved to SOAP Assessment", description: "AI integration unavailable — appended to Assessment." });
+    } finally {
+      setIntegrating(null);
+    }
   }
 
   const allSources = store.chatMessages
@@ -271,10 +302,15 @@ export default function ClinicalChat() {
                         variant="ghost"
                         size="sm"
                         className="text-xs h-6 px-2 gap-1"
-                        onClick={() => saveToSoap(msg.content)}
+                        onClick={() => saveToSoap(msg.content, i)}
+                        disabled={integrating !== null}
                         data-testid={`button-save-soap-${i}`}
                       >
-                        <BookmarkPlus className="h-3 w-3" /> Save to SOAP
+                        {integrating === i ? (
+                          <><Loader2 className="h-3 w-3 animate-spin" /> Integrating into SOAP...</>
+                        ) : (
+                          <><BookmarkPlus className="h-3 w-3" /> Integrate into SOAP</>
+                        )}
                       </Button>
                       {parseSourcesFromContent(msg.content).length === 0 && (
                         <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-600 border-amber-200 gap-0.5">
