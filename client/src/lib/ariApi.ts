@@ -135,7 +135,45 @@ export async function sendAriMessage(
 }
 
 /**
+ * Upload a file to /api/ari/upload and return the attachment metadata returned
+ * by the server (mime-sniffed, base64-encoded, PDF text-extracted).
+ *
+ * Uploads happen one at a time at the call site so the UI can show per-file
+ * progress without juggling parallel requests.
+ */
+export async function uploadAriFile(file: File): Promise<AriAttachment> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch("/api/ari/upload", {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body?.message || `Upload failed (${r.status}).`);
+  }
+  const json = await r.json();
+  const previewUrl =
+    json.type === "image" ? URL.createObjectURL(file) : undefined;
+  return {
+    type: json.type,
+    mediaType: json.mediaType,
+    data: json.data,
+    filename: json.filename,
+    sizeBytes: json.sizeBytes,
+    pageCount: json.pageCount,
+    textPreview: json.textPreview,
+    previewUrl,
+  };
+}
+
+/**
  * Read a File and return base64 data + media type for use as an Ari attachment.
+ *
+ * Used as a fallback when the upload endpoint is not reachable (e.g. dev
+ * scripts). Production callers should prefer uploadAriFile so the server can
+ * mime-sniff and PDF-parse.
  */
 export async function fileToAttachment(file: File): Promise<AriAttachment> {
   const buf = await file.arrayBuffer();

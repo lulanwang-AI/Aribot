@@ -29,6 +29,14 @@ export interface User {
   bio: string;
   avatarUrl: string;
   credential: string;
+  // Ari clinical-context fields. Optional so existing users aren't broken;
+  // /api/ari/* gates access on these being set.
+  email?: string;
+  licenseType?: "MD" | "DO" | "NP" | "PA" | "RN" | "PharmD" | "OTHER";
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseVerifiedAt?: number | null;
+  acceptedAriTermsAt?: number | null;
 }
 
 export const insertUserSchema = z.object({

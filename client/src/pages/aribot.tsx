@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
 import { CapabilitySidebar } from "@/components/ari/CapabilitySidebar";
@@ -13,17 +16,44 @@ import {
 } from "@/components/ui/select";
 import { useAriStore, type AriMessage } from "@/stores/ariStore";
 import { sendAriMessage } from "@/lib/ariApi";
+import { cn } from "@/lib/utils";
 import {
   ACTIVE_CAPABILITY_IDS,
   ARI_CAPABILITIES,
   type AriCapabilityId,
 } from "@shared/ari/capabilities";
 
+interface MeResponse {
+  user: {
+    id: string;
+    email?: string;
+    username?: string;
+    licenseType?: string;
+  };
+  onboarded: boolean;
+  sessionStartedAt: number;
+}
+
 export default function Aribot() {
+  const [, setLocation] = useLocation();
+
   useEffect(() => {
     recordEvent("page_view", { section: "aribot" });
     recordEvent("chat_opened", { specialty: undefined });
   }, []);
+
+  const meQuery = useQuery<MeResponse>({
+    queryKey: ["/api/ari/me"],
+    retry: false,
+  });
+
+  // If not onboarded, push to the onboarding page. We tolerate a brief flash
+  // of the loader during the redirect.
+  useEffect(() => {
+    if (meQuery.isSuccess && !meQuery.data?.onboarded) {
+      setLocation("/aribot/onboarding");
+    }
+  }, [meQuery.isSuccess, meQuery.data?.onboarded, setLocation]);
 
   const mode = useAriStore((s) => s.mode);
   const capability = useAriStore((s) => s.capability);
@@ -33,6 +63,7 @@ export default function Aribot() {
   const appendToLastMessage = useAriStore((s) => s.appendToLastMessage);
   const attachments = useAriStore((s) => s.attachments);
   const clearAttachments = useAriStore((s) => s.clearAttachments);
+  const sessionStartedAt = useAriStore((s) => s.sessionStartedAt);
 
   const [query, setQuery] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -48,12 +79,14 @@ export default function Aribot() {
       role: "user",
       content: trimmed,
       timestamp: now,
+      mode,
     };
     const assistantMessage: AriMessage = {
       id: `a-${now}`,
       role: "assistant",
       content: "",
       timestamp: now,
+      mode,
     };
     addMessage(userMessage);
     addMessage(assistantMessage);
@@ -116,7 +149,6 @@ export default function Aribot() {
       if (!(e.metaKey || e.ctrlKey)) return;
       const num = Number(e.key);
       if (!Number.isInteger(num) || num < 1 || num > ACTIVE_CAPABILITY_IDS.length) return;
-      // Don't hijack inside text inputs unless modifier is held — Cmd+N is OK.
       e.preventDefault();
       const next = ACTIVE_CAPABILITY_IDS[num - 1] as AriCapabilityId;
       setCapability(next);
@@ -125,12 +157,48 @@ export default function Aribot() {
     return () => window.removeEventListener("keydown", onKey);
   }, [setCapability]);
 
+  if (meQuery.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center" data-testid="loader-ari-me">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // The /me endpoint returned 401 (or the user has no record) — treat as
+  // unauthenticated and send to login.
+  if (meQuery.isError || !meQuery.data) {
+    return (
+      <div className="flex h-full items-center justify-center" data-testid="error-ari-me">
+        <div className="text-sm text-muted-foreground">
+          Sign in required to use Ari.
+        </div>
+      </div>
+    );
+  }
+
+  // Brief flash while redirect to onboarding fires.
+  if (!meQuery.data.onboarded) {
+    return (
+      <div className="flex h-full items-center justify-center" data-testid="redirect-ari-onboarding">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const user = meQuery.data.user;
+
   return (
     <div className="flex h-full flex-col" data-testid="page-aribot">
       <TopBar onClear={handleClearScratch} />
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside
-          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-muted/30 lg:block"
+          className={cn(
+            "hidden w-72 shrink-0 overflow-y-auto border-r border-border lg:block",
+            mode === "er"
+              ? "bg-red-50 dark:bg-red-950/30"
+              : "bg-muted/30"
+          )}
           data-testid="region-ari-sidebar"
         >
           <CapabilitySidebar
@@ -139,8 +207,6 @@ export default function Aribot() {
           />
         </aside>
 
-        {/* Mobile capability picker — Select dropdown to avoid duplicating
-            the desktop sidebar (and its data-testids) into the DOM twice. */}
         <div className="border-b border-border bg-muted/30 px-3 py-2 lg:hidden">
           <Select
             value={capability}
@@ -183,6 +249,30 @@ export default function Aribot() {
             onAbort={handleAbort}
             streaming={streaming}
           />
+          <footer
+            className="border-t border-border bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground sm:px-6"
+            data-testid="footer-ari"
+          >
+            <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2">
+              <span>
+                {user.licenseType || "Clinician"}
+                {(user.email || user.username) && (
+                  <>
+                    {" · "}
+                    <span data-testid="text-ari-user">
+                      {user.email || user.username}
+                    </span>
+                  </>
+                )}
+              </span>
+              <span>
+                Session started{" "}
+                <span data-testid="text-ari-session-started">
+                  {new Date(sessionStartedAt).toLocaleTimeString()}
+                </span>
+              </span>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

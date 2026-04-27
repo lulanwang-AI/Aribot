@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { AriCapabilityId } from "@shared/ari/capabilities";
+import { logErModeSession } from "@/lib/ariTelemetry";
 
 export type AriMode = "ari" | "er";
 
@@ -9,6 +10,9 @@ export interface AriAttachment {
   mediaType: string;
   data: string;
   filename: string;
+  sizeBytes?: number;
+  pageCount?: number;
+  textPreview?: string;
   previewUrl?: string;
 }
 
@@ -24,6 +28,20 @@ export interface AriMessage {
   content: string;
   parsedBlocks?: AriBlock[];
   timestamp: number;
+  mode?: AriMode;
+}
+
+export interface ModeSwitchEvent {
+  from: AriMode;
+  to: AriMode;
+  at: number;
+}
+
+interface ErSessionStart {
+  mode: AriMode;
+  at: number;
+  capabilityAtStart: AriCapabilityId;
+  messageCountAtStart: number;
 }
 
 interface AriState {
@@ -33,6 +51,10 @@ interface AriState {
   messages: AriMessage[];
   locationProvided: boolean;
   measurementConfirmed: boolean;
+  modeHistory: ModeSwitchEvent[];
+  sessionStartedAt: number;
+  // Telemetry helper — not persisted across reloads on purpose.
+  _erSessionStart?: ErSessionStart;
 
   setMode: (mode: AriMode) => void;
   setCapability: (capability: AriCapabilityId) => void;
@@ -53,14 +75,50 @@ const DEFAULT_STATE = {
   messages: [] as AriMessage[],
   locationProvided: false,
   measurementConfirmed: false,
+  modeHistory: [] as ModeSwitchEvent[],
+  sessionStartedAt: Date.now(),
 };
 
 export const useAriStore = create<AriState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...DEFAULT_STATE,
 
-      setMode: (mode) => set({ mode }),
+      setMode: (mode) => {
+        const state = get();
+        if (state.mode === mode) return;
+        const now = Date.now();
+        const event: ModeSwitchEvent = {
+          from: state.mode,
+          to: mode,
+          at: now,
+        };
+        // If we're leaving ER mode, fire a telemetry event with session shape.
+        if (state.mode === "er" && state._erSessionStart) {
+          const start = state._erSessionStart;
+          logErModeSession({
+            capability: start.capabilityAtStart,
+            durationMs: now - start.at,
+            messageCount: state.messages.length - start.messageCountAtStart,
+          });
+        }
+        const nextEr =
+          mode === "er"
+            ? {
+                mode,
+                at: now,
+                capabilityAtStart: state.capability,
+                messageCountAtStart: state.messages.length,
+              }
+            : undefined;
+        set({
+          mode,
+          modeHistory: [...state.modeHistory, event],
+          _erSessionStart: nextEr,
+          // Switching INTO ER also clears attachments per ER rules.
+          attachments: mode === "er" ? [] : state.attachments,
+        });
+      },
 
       setCapability: (capability) =>
         set({
@@ -81,7 +139,12 @@ export const useAriStore = create<AriState>()(
       clearAttachments: () => set({ attachments: [] }),
 
       addMessage: (message) =>
-        set((s) => ({ messages: [...s.messages, message] })),
+        set((s) => ({
+          messages: [
+            ...s.messages,
+            { ...message, mode: message.mode || s.mode },
+          ],
+        })),
 
       appendToLastMessage: (delta) =>
         set((s) => {
@@ -106,6 +169,8 @@ export const useAriStore = create<AriState>()(
           // want to clear the conversation, not reset their tool selection.
           mode: s.mode,
           capability: s.capability,
+          modeHistory: s.modeHistory,
+          sessionStartedAt: s.sessionStartedAt,
         })),
     }),
     {
@@ -119,6 +184,8 @@ export const useAriStore = create<AriState>()(
         messages: s.messages,
         locationProvided: s.locationProvided,
         measurementConfirmed: s.measurementConfirmed,
+        modeHistory: s.modeHistory,
+        sessionStartedAt: s.sessionStartedAt,
       }),
     }
   )
@@ -130,6 +197,7 @@ export const useAriStore = create<AriState>()(
 const LOCATION_HINTS = [
   /\b(hospital|clinic|icu|micu|sicu|ccu|emergency department|\bed\b|\ber\b|ward|floor|unit|facility|center|centre|county)\b/i,
   /\bin [A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*(?:,\s*[A-Z]{2})?\b/,
+  /\b\d{5}\b/,
 ];
 
 export function detectLocationInText(text: string): boolean {

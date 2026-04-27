@@ -10,22 +10,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { LogOut, Trash2, History } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
+import { useAuth } from "@/lib/auth";
 
 interface TopBarProps {
   onClear: () => void;
 }
 
 export function TopBar({ onClear }: TopBarProps) {
+  const auth = useAuth();
   const mode = useAriStore((s) => s.mode);
   const setMode = useAriStore((s) => s.setMode);
   const messages = useAriStore((s) => s.messages);
   const resetSession = useAriStore((s) => s.resetSession);
+  const modeHistory = useAriStore((s) => s.modeHistory);
 
   const [pendingMode, setPendingMode] = useState<AriMode | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showModeLog, setShowModeLog] = useState(false);
 
   function handleModeChange(next: AriMode) {
     if (next === mode) return;
@@ -49,6 +58,8 @@ export function TopBar({ onClear }: TopBarProps) {
     if (messages.length === 0) return;
     setConfirmClear(true);
   }
+
+  const isSwitchToEr = pendingMode === "er";
 
   return (
     <>
@@ -77,6 +88,50 @@ export function TopBar({ onClear }: TopBarProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          {import.meta.env.DEV && (
+            <Popover open={showModeLog} onOpenChange={setShowModeLog}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="button-mode-log"
+                  aria-label="Mode log"
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-80 max-h-72 overflow-y-auto p-3 text-xs"
+                data-testid="popover-mode-log"
+              >
+                <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Mode log (dev)
+                </div>
+                {modeHistory.length === 0 ? (
+                  <div className="text-muted-foreground">No mode switches yet.</div>
+                ) : (
+                  <ul className="space-y-1">
+                    {modeHistory
+                      .slice()
+                      .reverse()
+                      .map((e, i) => (
+                        <li key={i} className="flex justify-between gap-2">
+                          <span>
+                            <span className="uppercase">{e.from}</span>
+                            <span className="mx-1 text-muted-foreground">→</span>
+                            <span className="uppercase">{e.to}</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            {new Date(e.at).toLocaleTimeString()}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </PopoverContent>
+            </Popover>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -87,16 +142,27 @@ export function TopBar({ onClear }: TopBarProps) {
             <Trash2 className="mr-1.5 h-4 w-4" />
             Clear
           </Button>
+          {auth?.signOut && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={auth.signOut}
+              data-testid="button-ari-signout"
+            >
+              <LogOut className="mr-1.5 h-4 w-4" />
+              Sign out
+            </Button>
+          )}
         </div>
       </div>
 
       {mode === "er" && (
         <div
           role="alert"
-          className="border-b border-red-700 bg-red-600 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-white sm:px-6"
+          className="sticky top-0 z-20 border-b border-red-700 bg-red-600 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-white shadow-sm sm:px-6"
           data-testid="banner-er-mode"
         >
-          ER Mode — response not verified against live sources. Confirm before acting.
+          ER MODE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE ACTING.
         </div>
       )}
 
@@ -108,9 +174,13 @@ export function TopBar({ onClear }: TopBarProps) {
       >
         <AlertDialogContent data-testid="dialog-ari-mode-switch">
           <AlertDialogHeader>
-            <AlertDialogTitle>Switch modes?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isSwitchToEr ? "Switch to ER Mode?" : "Switch to Ari Mode?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Switching modes clears the current conversation. Continue?
+              {isSwitchToEr
+                ? "ER Mode disables source verification. Responses will be based on the model's training only and have not been confirmed against current guidelines. Switch to ER Mode?"
+                : "Switching modes clears the current conversation. Continue?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -119,9 +189,14 @@ export function TopBar({ onClear }: TopBarProps) {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmModeSwitch}
+              className={
+                isSwitchToEr
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : undefined
+              }
               data-testid="button-ari-mode-confirm"
             >
-              Switch and clear
+              {isSwitchToEr ? "Switch to ER Mode" : "Switch and clear"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,17 +1,17 @@
 import { useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { AriMessage } from "@/stores/ariStore";
+import { AriMessage } from "@/components/ari/AriMessage";
+import { useAriStore, type AriMessage as AriMessageType } from "@/stores/ariStore";
 
 interface MessageListProps {
-  messages: AriMessage[];
+  messages: AriMessageType[];
   streaming: boolean;
 }
 
 export function MessageList({ messages, streaming }: MessageListProps) {
   const endRef = useRef<HTMLDivElement | null>(null);
+  const mode = useAriStore((s) => s.mode);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -38,9 +38,17 @@ export function MessageList({ messages, streaming }: MessageListProps) {
       data-testid="list-ari-messages"
     >
       <AnimatePresence initial={false}>
-        {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
-        ))}
+        {messages.map((m, idx) => {
+          const isLast = idx === messages.length - 1;
+          return (
+            <MessageBubble
+              key={m.id}
+              message={m}
+              mode={mode}
+              streaming={streaming && isLast}
+            />
+          );
+        })}
       </AnimatePresence>
       {streaming && messages[messages.length - 1]?.role === "assistant" && (
         <StreamingIndicator />
@@ -50,7 +58,15 @@ export function MessageList({ messages, streaming }: MessageListProps) {
   );
 }
 
-function MessageBubble({ message }: { message: AriMessage }) {
+function MessageBubble({
+  message,
+  mode,
+  streaming,
+}: {
+  message: AriMessageType;
+  mode: "ari" | "er";
+  streaming: boolean;
+}) {
   const isUser = message.role === "user";
   return (
     <motion.div
@@ -79,70 +95,15 @@ function MessageBubble({ message }: { message: AriMessage }) {
             {message.content}
           </pre>
         ) : (
-          <AssistantContent text={message.content} />
+          <AriMessage
+            text={message.content}
+            mode={message.mode || mode}
+            streaming={streaming}
+          />
         )}
       </div>
     </motion.div>
   );
-}
-
-/**
- * Render assistant text. Splits on top-level ari_* fenced JSON code blocks and
- * renders the prose around them as markdown. The JSON blocks themselves are
- * shown raw in a monospace box for now — a richer renderer comes in the next
- * prompt.
- */
-function AssistantContent({ text }: { text: string }) {
-  const segments = splitOnAriJsonBlocks(text);
-  return (
-    <div className="space-y-3">
-      {segments.map((seg, i) =>
-        seg.kind === "prose" ? (
-          <div key={i} className="prose prose-sm max-w-none dark:prose-invert">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {seg.content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <pre
-            key={i}
-            className="overflow-x-auto rounded border border-border bg-muted px-3 py-2 text-[12px] leading-snug"
-            data-testid={`block-ari-json-${i}`}
-          >
-            <code>{seg.content}</code>
-          </pre>
-        )
-      )}
-    </div>
-  );
-}
-
-type Segment = { kind: "prose" | "json"; content: string };
-
-const ARI_JSON_FENCE = /```(?:json)?\s*(\{[\s\S]*?"kind"\s*:\s*"ari_[\s\S]*?\})\s*```/g;
-
-function splitOnAriJsonBlocks(text: string): Segment[] {
-  const segments: Segment[] = [];
-  let lastIndex = 0;
-  ARI_JSON_FENCE.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = ARI_JSON_FENCE.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      segments.push({
-        kind: "prose",
-        content: text.slice(lastIndex, match.index),
-      });
-    }
-    segments.push({ kind: "json", content: match[1] });
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    segments.push({ kind: "prose", content: text.slice(lastIndex) });
-  }
-  if (segments.length === 0) {
-    segments.push({ kind: "prose", content: text });
-  }
-  return segments;
 }
 
 function StreamingIndicator() {

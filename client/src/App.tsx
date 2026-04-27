@@ -12,6 +12,8 @@ import { NetworkBackground } from "@/components/network-background";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Aribot from "@/pages/aribot";
+import AribotOnboarding from "@/pages/aribot-onboarding";
+import AribotDevBlocks from "@/pages/aribot-dev-blocks";
 import Triage from "@/pages/triage";
 import TriageDetail from "@/pages/triage-detail";
 import News from "@/pages/news";
@@ -53,6 +55,8 @@ function SidebarEdgeTrigger() {
 function Router() {
   return (
     <Switch>
+      <Route path="/aribot/onboarding" component={AribotOnboarding} />
+      <Route path="/aribot/dev/blocks" component={AribotDevBlocks} />
       <Route path="/aribot" component={Aribot} />
       <Route path="/home" component={Home} />
       <Route path="/triage" component={Triage} />
