@@ -10,12 +10,9 @@
       (function () {
         try {
           var stored = window.localStorage.getItem("aribots_theme");
-          var prefersDark =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches;
           var theme = stored === "dark" || stored === "light"
             ? stored
-            : prefersDark ? "dark" : "light";
+            : "light";
           if (theme === "dark") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();

@@ -20,9 +20,6 @@ function readInitialTheme(): Theme {
   } catch {
     // ignore storage access failures (private mode, etc.)
   }
-  if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-    return "dark";
-  }
   return "light";
 }
 
