@@ -118,17 +118,19 @@ shared/
 - `POST /api/summary` - Generate patient-facing visit summary
 - `POST /api/ari/chat` - Ari clinical workflows (Claude + MCP, SSE streaming, requires auth)
 
-## Ari Clinical AI (separate from OpenAI flows)
-- Backed by Anthropic Claude (`claude-sonnet-4-6`) with MCP servers (PubMed, ChEMBL, CMS Coverage, etc.)
-- Config loaded at startup from `attached_assets/ari-agent.json` (system prompt + mcp_servers); fails closed if missing
+## Ari Clinical AI (replaces the old Aribots AI/Dify chatbot and the "Agentic Customization" panel)
+- Backed by Anthropic Claude (`claude-sonnet-4-6`) with MCP servers (PubMed, bioRxiv, Open Targets, ClinicalTrials, ChEMBL, CMS Coverage, NPI Registry)
+- Config loaded at startup from `attached_assets/ari-agent.json` (system prompt + mcp_servers); fails closed if missing or malformed
 - Requires `ANTHROPIC_API_KEY` secret; server throws at boot if absent
-- Streaming via Server-Sent Events: `data: <text>` per delta, `event: done` on completion, `event: error` on failure
-- Auth: strict Passport session check; returns 401 if not authenticated. NOTE: Passport is in deps but not yet wired up in this project — wire it before exposing Ari to clinicians.
-- Active capabilities: antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging
+- Streaming via Server-Sent Events: each Anthropic text delta forwarded as `data: <text>` lines (multi-line deltas split into multiple `data:` lines per the SSE spec), `event: done` on completion, `event: error` with sanitized JSON on failure (no stack traces or keys leaked)
+- Auth: real Passport session via `express-session` + `passport-local`. `requireAriAuth` accepts only requests where `req.isAuthenticated()` is true. Login at `POST /api/auth/login`, logout at `POST /api/auth/logout`.
+- Dev-only credentials: in development, the LocalStrategy accepts any non-empty email/password and resolves to seed user `u1`. In production, the strategy hard-fails closed and `SESSION_SECRET` is required at startup. Replace with bcrypt-checked credentials before flipping `NODE_ENV=production`.
+- Active capabilities (9): antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging
+- Frontend: `client/src/components/ari-chat.tsx` is shared between the full `/aribot` page and the floating quick-assist drawer. Old `aribot-history.tsx`, `aribot-folders.tsx`, and the `/api/aribot/history` and `/api/aribot/folders` endpoints have been removed.
 
 ## Key Features
 - **Clinical Workflow**: Four-module clinical encounter system (Pre-charting → AI Consult → SOAP Note → Visit Summary) sharing patient state via Zustand + sessionStorage
-- **Aribot**: Dify iframe chatbot, floating widget on non-home pages
+- **Ari Clinical AI**: Anthropic Claude + MCP-backed clinical assistant with 9 capabilities, full page at `/aribot` and floating quick-assist drawer on non-home pages
 - **Triage**: Nested comments (reply at any depth), anonymous posting, PHI detection, likes
 - **News**: Like/comment on articles, filter by source/specialty, journal name shown after title
 - **Groups**: Clickable cards to group detail, Hospital vs Interest type, member avatars

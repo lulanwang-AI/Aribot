@@ -153,47 +153,17 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <Collapsible open={aribotOpen} onOpenChange={setAribotOpen}>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton
-                data-active={location === "/" || location.startsWith("/aribot")}
-                className="w-full"
-                data-testid="nav-aribot"
-              >
-                <Bot className="h-4 w-4" />
-                <span className="flex-1">Aribots AI</span>
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${aribotOpen ? "" : "-rotate-90"}`} />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenu className="ml-6 mt-1 space-y-0.5">
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild data-active={location === "/aribot"} data-testid="nav-aribot-chat">
-                    <Link href="/aribot">
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span className="text-xs">Chat</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild data-active={location === "/aribot/history"} data-testid="nav-aribot-history">
-                    <Link href="/aribot/history">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span className="text-xs">History</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild data-active={location === "/aribot/folders"} data-testid="nav-aribot-folders">
-                    <Link href="/aribot/folders">
-                      <FolderOpen className="h-3.5 w-3.5" />
-                      <span className="text-xs">Folders</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </CollapsibleContent>
-          </Collapsible>
+          <SidebarMenuButton
+            asChild
+            data-active={location === "/aribot"}
+            className="w-full"
+            data-testid="nav-aribot"
+          >
+            <Link href="/aribot">
+              <Bot className="h-4 w-4" />
+              <span className="flex-1">Aribots AI</span>
+            </Link>
+          </SidebarMenuButton>
 
           <Collapsible open={clinicalOpen} onOpenChange={setClinicalOpen}>
             <CollapsibleTrigger asChild>

@@ -43,8 +43,10 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  app.get("/api/me", async (_req, res) => {
-    const user = await storage.getUser("u1");
+  app.get("/api/me", async (req, res) => {
+    const sessionUser = (req as any).user;
+    const userId = sessionUser?.id || "u1";
+    const user = await storage.getUser(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
     const { password: _, ...safe } = user;
     res.json(safe);
@@ -53,7 +55,9 @@ export async function registerRoutes(
   app.patch("/api/me", async (req, res) => {
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
-    const updated = await storage.updateUser("u1", parsed.data);
+    const sessionUser = (req as any).user;
+    const userId = sessionUser?.id || "u1";
+    const updated = await storage.updateUser(userId, parsed.data);
     if (!updated) return res.status(404).json({ message: "User not found" });
     const { password: _, ...safe } = updated;
     res.json(safe);
@@ -410,45 +414,9 @@ export async function registerRoutes(
     res.json(mod);
   });
 
-  app.get("/api/aribot/history", async (_req, res) => {
-    const history = await storage.getAribotHistory();
-    res.json(history);
-  });
-
-  app.post("/api/aribot/history", async (req, res) => {
-    const schema = z.object({ title: z.string(), tags: z.array(z.string()).default([]), folderId: z.string().nullable().default(null) });
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
-    const item = await storage.createAribotHistory({ ...parsed.data, createdAt: new Date().toISOString() });
-    res.status(201).json(item);
-  });
-
-  app.get("/api/aribot/folders", async (_req, res) => {
-    const folders = await storage.getAribotFolders();
-    res.json(folders);
-  });
-
-  app.post("/api/aribot/folders", async (req, res) => {
-    const schema = z.object({ name: z.string().min(1) });
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
-    const folder = await storage.createAribotFolder({ name: parsed.data.name, createdAt: new Date().toISOString() });
-    res.status(201).json(folder);
-  });
-
-  app.patch("/api/aribot/folders/:id", async (req, res) => {
-    const schema = z.object({ name: z.string().min(1) });
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
-    const folder = await storage.updateAribotFolder(req.params.id, parsed.data.name);
-    if (!folder) return res.status(404).json({ message: "Folder not found" });
-    res.json(folder);
-  });
-
-  app.delete("/api/aribot/folders/:id", async (req, res) => {
-    const deleted = await storage.deleteAribotFolder(req.params.id);
-    res.json({ success: deleted });
-  });
+  // /api/aribot/history and /api/aribot/folders endpoints were removed as part
+  // of the Ari clinical workflows replacement. Old storage methods remain but
+  // are no longer exposed over HTTP.
 
   app.get("/api/teams", async (_req, res) => {
     const teams = await storage.getTeams();

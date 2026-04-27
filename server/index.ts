@@ -5,6 +5,7 @@ import { createServer } from "http";
 import ariRouter from "./ari/routes";
 import "./ari/client";
 import { ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./ari/config";
+import { setupAuth, registerAuthRoutes } from "./auth-setup";
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,6 +64,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Wire express-session + Passport before any routes that depend on req.user.
+  setupAuth(app);
+  registerAuthRoutes(app);
+
   await registerRoutes(httpServer, app);
 
   // Mount Ari clinical workflows (separate from existing OpenAI-backed routes).

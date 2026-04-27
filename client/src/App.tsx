@@ -12,8 +12,6 @@ import { NetworkBackground } from "@/components/network-background";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Aribot from "@/pages/aribot";
-import AribotHistoryPage from "@/pages/aribot-history";
-import AribotFoldersPage from "@/pages/aribot-folders";
 import Triage from "@/pages/triage";
 import TriageDetail from "@/pages/triage-detail";
 import News from "@/pages/news";
@@ -56,8 +54,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/aribot" component={Aribot} />
-      <Route path="/aribot/history" component={AribotHistoryPage} />
-      <Route path="/aribot/folders" component={AribotFoldersPage} />
       <Route path="/home" component={Home} />
       <Route path="/triage" component={Triage} />
       <Route path="/triage/:id">
@@ -119,7 +115,12 @@ function AppContent() {
   });
   const [location, setLocation] = useLocation();
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Logout best-effort: even if the call fails, drop local state below.
+    }
     localStorage.removeItem("aribot_authenticated");
     queryClient.clear();
     setAuthenticated(false);

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 const BG_IMAGE_URL = "https://static.wixstatic.com/media/43c038_4ad81e81714f4860b60080b8f9a15a16~mv2_d_5773_3331_s_4_2.jpg/v1/fill/w_1920,h_1080,al_c,q_85,usm_0.66_1.00_0.01,blur_3,enc_auto/43c038_4ad81e81714f4860b60080b8f9a15a16~mv2_d_5773_3331_s_4_2.jpg";
 
@@ -11,14 +12,24 @@ export default function Login({ onLogin, onNavigateToLanding }: { onLogin: () =>
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMsg(null);
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await apiRequest("POST", "/api/auth/login", {
+        email: email || "doctor@aribots.local",
+        password: password || "demo",
+      });
       localStorage.setItem("aribot_authenticated", "true");
       onLogin();
-    }, 600);
+    } catch (err: any) {
+      setErrorMsg(err?.message?.replace(/^\d+:\s*/, "") || "Sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -73,6 +84,11 @@ export default function Login({ onLogin, onNavigateToLanding }: { onLogin: () =>
               <Button type="submit" className="w-full bg-white text-[#5f6360] hover:bg-white/90 font-semibold" disabled={loading} data-testid="button-login">
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
+              {errorMsg && (
+                <p className="text-[11px] text-red-200 text-center" data-testid="text-login-error">
+                  {errorMsg}
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>
