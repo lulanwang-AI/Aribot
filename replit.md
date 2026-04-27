@@ -125,8 +125,20 @@ shared/
 - Streaming via Server-Sent Events: each Anthropic text delta forwarded as `data: <text>` lines (multi-line deltas split into multiple `data:` lines per the SSE spec), `event: done` on completion, `event: error` with sanitized JSON on failure (no stack traces or keys leaked)
 - Auth: real Passport session via `express-session` + `passport-local`. `requireAriAuth` accepts only requests where `req.isAuthenticated()` is true. Login at `POST /api/auth/login`, logout at `POST /api/auth/logout`.
 - Dev-only credentials: in development, the LocalStrategy accepts any non-empty email/password and resolves to seed user `u1`. In production, the strategy hard-fails closed and `SESSION_SECRET` is required at startup. Replace with bcrypt-checked credentials before flipping `NODE_ENV=production`.
-- Active capabilities (9): antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging
-- Frontend: `client/src/components/ari-chat.tsx` is shared between the full `/aribot` page and the floating quick-assist drawer. Old `aribot-history.tsx`, `aribot-folders.tsx`, and the `/api/aribot/history` and `/api/aribot/folders` endpoints have been removed.
+- Active capabilities (9): antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging — defined once in `shared/ari/capabilities.ts` (the single source of truth) and consumed by both the server (validation + rejection prose) and the client (UI registry, gates, hints, examples)
+- Capability rejection: requests with an unknown capability return HTTP 400 with the exact prose `"That capability is not currently active. Available capabilities are: antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging."` (matches the system prompt; checked before Zod so the message isn't masked by enum errors)
+- Capability gates (UI-side soft gates; backend always re-validates via the system prompt):
+  - `antibiotic_stewardship` requires patient location/facility — the composer auto-detects location keywords in the query to satisfy this gate
+  - `wound_skin` requires an image attachment + a checkbox confirming a ruler/known-size reference is in the photo
+- Frontend layout (EHR-style, calm neutral grays, no AI flair):
+  - `client/src/pages/aribot.tsx` — top bar (Ari/ER mode toggle + Clear) → ER red banner when in ER → desktop sidebar / mobile Select for capability → message list + composer
+  - `client/src/components/ari/{TopBar,CapabilitySidebar,MessageList,Composer}.tsx` — focused sub-components
+  - `client/src/stores/ariStore.ts` — Zustand session store with sessionStorage persistence (mode, capability, messages, gate flags persisted; raw base64 attachments are NOT persisted)
+  - `client/src/lib/ariApi.ts` — fetch + ReadableStream SSE parser (events terminated by blank lines, multi-line `data:` joined with `\n`, deltas concatenated verbatim, supports AbortController)
+  - Animations via Framer Motion (fade + 4px slide), prose via react-markdown + remark-gfm (skipped inside ari_* JSON fences which are reserved for the next prompt)
+  - Floating quick-access button (`client/src/components/floating-aribot.tsx`) navigates to `/aribot` rather than opening a small drawer (the new layout doesn't fit usefully in 420×640)
+  - Keyboard shortcuts: Cmd/Ctrl+Enter sends; Cmd/Ctrl+1-9 switches capability
+- Old `aribot-history.tsx`, `aribot-folders.tsx`, the legacy `client/src/components/ari-chat.tsx`, and the `/api/aribot/history` + `/api/aribot/folders` endpoints have been removed.
 
 ## Key Features
 - **Clinical Workflow**: Four-module clinical encounter system (Pre-charting → AI Consult → SOAP Note → Visit Summary) sharing patient state via Zustand + sessionStorage

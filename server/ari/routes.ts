@@ -4,12 +4,23 @@ import { anthropic } from "./client";
 import { ARI_MODEL_ID, ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./config";
 import { AriRequestSchema, type AriAttachment } from "./schema";
 import { requireAriAuth } from "./auth";
+import {
+  CAPABILITY_REJECTION_MESSAGE,
+  isActiveCapability,
+} from "@shared/ari/capabilities";
 
 const MCP_BETA_HEADER = "mcp-client-2025-04-04";
 
 const router = Router();
 
 router.post("/chat", requireAriAuth, async (req, res) => {
+  // Pre-Zod check on capability so we can return the exact rejection prose
+  // mandated by the system prompt, instead of a generic Zod enum error.
+  const rawCapability = (req.body as any)?.capability;
+  if (typeof rawCapability === "string" && !isActiveCapability(rawCapability)) {
+    return res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE });
+  }
+
   const parsed = AriRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({

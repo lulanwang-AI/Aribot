@@ -1,0 +1,32 @@
+Create a typed capability registry for Ari that the frontend will use to drive the UI.
+
+Create shared/ari/capabilities.ts exporting:
+
+export type AriCapabilityId = "antibiotic_stewardship" | "wound_skin" | "pharmacy" | "ventilator" | "calculators" | "clinical_protocols" | "er_triage" | "cms_billing" | "rad_onc_imaging";
+
+export interface AriCapability {
+  id: AriCapabilityId;
+  displayName: string;
+  shortDescription: string; // one sentence
+  inputHint: string; // placeholder for the chat textarea
+  acceptsImages: boolean;
+  acceptsPdfs: boolean;
+  gateRequirement: { type: "location" | "measurement_image" | "none"; uiHint: string };
+  exampleQueries: string[]; // 2-3 short examples
+}
+
+Populate all nine capabilities. Source the requirements from attached_assets/ari-agent.json — specifically the capability workflows in the system prompt. Critical mappings:
+
+- antibiotic_stewardship: gateRequirement.type = "location", uiHint = "Include patient location or treating facility — local resistance patterns required". acceptsImages: false, acceptsPdfs: true.
+- wound_skin: gateRequirement.type = "measurement_image", uiHint = "Upload a photo with a ruler or known-size reference object visible". acceptsImages: true, acceptsPdfs: false.
+- rad_onc_imaging: acceptsImages: true, acceptsPdfs: true. gateRequirement.type = "none".
+- pharmacy: acceptsImages: false, acceptsPdfs: true.
+- ventilator, calculators, clinical_protocols, er_triage, cms_billing: acceptsImages: false, acceptsPdfs: true (labs and protocols), gateRequirement.type = "none".
+
+Also export:
+- ACTIVE_CAPABILITY_IDS: array of all nine ids
+- isActiveCapability(id: string): type guard
+
+In server/ari/routes.ts, import ACTIVE_CAPABILITY_IDS and reject any payload with an unknown capability with the exact prose from the system prompt: "That capability is not currently active. Available capabilities are: antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging."
+
+This file is in shared/ so both frontend and backend import from the same source of truth.

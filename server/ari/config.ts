@@ -1,21 +1,15 @@
 import fs from "fs";
 import path from "path";
+import {
+  ACTIVE_CAPABILITY_IDS,
+  type AriCapabilityId,
+} from "@shared/ari/capabilities";
 
 export const ARI_MODEL_ID = "claude-sonnet-4-6";
 
-export const ACTIVE_CAPABILITIES = [
-  "antibiotic_stewardship",
-  "wound_skin",
-  "pharmacy",
-  "ventilator",
-  "calculators",
-  "clinical_protocols",
-  "er_triage",
-  "cms_billing",
-  "rad_onc_imaging",
-] as const;
-
-export type AriCapability = (typeof ACTIVE_CAPABILITIES)[number];
+// Re-export the shared single source of truth so existing imports keep working.
+export const ACTIVE_CAPABILITIES = ACTIVE_CAPABILITY_IDS;
+export type AriCapability = AriCapabilityId;
 
 export interface AriMcpServer {
   name: string;

@@ -1,0 +1,30 @@
+Build the Ari chat surface using shadcn/ui, Tailwind, Zustand, and TanStack Query. The clinician never sees JSON — the UI composes { mode, capability, query } behind the scenes.
+
+1. Create client/src/stores/ariStore.ts using Zustand with sessionStorage persistence:
+   interface AriSession {
+     mode: "ari" | "er";
+     capability: AriCapabilityId;
+     attachments: AriAttachment[]; // {type, mediaType, data, filename, previewUrl?}
+     messages: AriMessage[]; // {role: "user" | "assistant", content: string, parsedBlocks?: AriBlock[], timestamp}
+     locationProvided: boolean; // tracked from user input to soften the location gate UI
+     measurementConfirmed: boolean; // checkbox state for wound_skin
+     setMode, setCapability, addAttachment, removeAttachment, addMessage, appendToLastMessage, resetSession, clearAttachments
+   }
+
+2. Create client/src/pages/AriChat.tsx as the route page. Layout:
+   - Top bar: ER/Ari toggle (Tabs from shadcn). When ER is active, show a red banner across the top: "ER MODE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE ACTING."
+   - Left sidebar (collapsible on mobile): capability picker. Render the nine capabilities from shared/ari/capabilities.ts as cards with displayName, shortDescription, and a small icon (use Lucide React: Pill for pharmacy, Activity for ventilator, Calculator for calculators, Stethoscope for clinical_protocols, AlertTriangle for er_triage, FileText for cms_billing, Scan for rad_onc_imaging, Bandage for wound_skin, Microscope for antibiotic_stewardship). Selected card has a ring-2 border in primary color.
+   - Main area: message list (top, scrollable) + composer (bottom).
+   - Composer: textarea with placeholder = current capability's inputHint. Below the textarea, an attachment row shows uploaded files with remove buttons. Send button sends the request.
+   - When mode is "er", disable the attachment button entirely and show a tooltip: "File uploads are disabled in ER Mode."
+   - When mode switches mid-session with messages present, show an AlertDialog (shadcn) confirming the switch: "Switching modes clears the current conversation. Continue?"
+
+3. Create client/src/lib/ariApi.ts with sendAriMessage(payload) that POSTs to /api/ari/chat and returns an SSE stream. Use TanStack Query's useMutation with a custom mutationFn that uses fetch with ReadableStream — read chunks, parse SSE "data:" lines, and call onProgress(deltaText) for each text delta. The composer should append to the last assistant message in the store via appendToLastMessage.
+
+4. Wire keyboard shortcuts: Cmd/Ctrl+Enter to send, Cmd/Ctrl+1-9 to switch capabilities.
+
+5. The user never sees the JSON payload. The composer just builds { mode, capability: store.capability, query: textareaValue, attachments: store.attachments } on send.
+
+Use Framer Motion for the message-appearing animation (fade + 4px slide up). Use react-markdown + remark-gfm for assistant message prose, but only for text NOT inside an ari_* JSON block (the next prompt handles those).
+
+Style note: this is a clinical tool. Keep it calm — neutral grays, single accent color, generous spacing, no emojis, no "AI flair." Treat it like an EHR module.
