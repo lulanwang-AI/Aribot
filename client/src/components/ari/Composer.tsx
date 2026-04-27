@@ -10,6 +10,7 @@ import {
   Send,
   Square,
 } from "lucide-react";
+import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { VoiceRecorder, transcribeAudio } from "@/lib/ariVoice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -415,47 +416,56 @@ export function Composer({
                 </PopoverTrigger>
                 <PopoverContent
                   align="start"
-                  className="w-72 p-1"
+                  sideOffset={8}
+                  className="w-80 p-1 duration-200 data-[state=open]:zoom-in-90 data-[side=top]:slide-in-from-bottom-3"
                   data-testid="popover-ari-capability-menu"
                 >
                   <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Choose capabilities
                   </div>
-                  <div className="px-2 pb-1 text-[11px] text-muted-foreground">
+                  <div className="px-2 pb-1.5 text-[11px] text-muted-foreground">
                     Pick one or more. The first stays primary; extras add
                     perspective to each answer.
                   </div>
                   <ul className="max-h-72 overflow-y-auto">
-                    {ARI_CAPABILITIES.map((cap) => {
+                    {ARI_CAPABILITIES.map((cap, idx) => {
                       const isPrimary = cap.id === capabilityId;
                       const isAdditional = additionalCapabilities.includes(
                         cap.id as AriCapabilityId
                       );
                       const selected = isPrimary || isAdditional;
+                      const Icon = getCapabilityIcon(cap.id as AriCapabilityId);
                       return (
-                        <li key={cap.id}>
+                        <li
+                          key={cap.id}
+                          className="animate-in fade-in-0 slide-in-from-top-1 fill-mode-both"
+                          style={{ animationDelay: `${idx * 25}ms`, animationDuration: "260ms" }}
+                        >
                           <button
                             type="button"
                             className={cn(
-                              "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs transition hover:bg-accent",
+                              "group flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left text-xs transition-all duration-150 hover:bg-accent hover:translate-x-0.5 focus-visible:bg-accent focus-visible:outline-none",
                               selected && "bg-accent/60"
                             )}
-                            onClick={() => {
-                              if (isPrimary || isAdditional) {
-                                toggleCapability(cap.id as AriCapabilityId);
-                              } else {
-                                // Adding a brand-new selection: if none was the
-                                // primary before, just promote it. Otherwise
-                                // append as additional.
-                                toggleCapability(cap.id as AriCapabilityId);
-                              }
-                            }}
+                            onClick={() =>
+                              toggleCapability(cap.id as AriCapabilityId)
+                            }
                             data-testid={`button-pick-capability-${cap.id}`}
                           >
-                            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                              {selected ? (
-                                <Check className="h-3.5 w-3.5 text-primary" />
-                              ) : null}
+                            <span
+                              className={cn(
+                                "mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                selected
+                                  ? "border-primary/40 bg-primary/10 text-primary"
+                                  : "border-border bg-muted/40 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary"
+                              )}
+                              data-testid={`icon-capability-${cap.id}`}
+                            >
+                              {Icon ? (
+                                <Icon className="h-3.5 w-3.5" />
+                              ) : (
+                                <Plus className="h-3.5 w-3.5" />
+                              )}
                             </span>
                             <span className="flex-1">
                               <span className="flex items-center gap-1.5">
@@ -471,6 +481,14 @@ export function Composer({
                               <span className="block text-[11px] text-muted-foreground">
                                 {cap.shortDescription}
                               </span>
+                            </span>
+                            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                              {selected && (
+                                <Check
+                                  className="h-3.5 w-3.5 text-primary animate-in zoom-in-50 fade-in-0 duration-150"
+                                  aria-label="Selected"
+                                />
+                              )}
                             </span>
                           </button>
                         </li>

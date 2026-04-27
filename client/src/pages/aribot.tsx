@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, X, Star } from "lucide-react";
+import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
 import { TabStrip } from "@/components/ari/TabStrip";
@@ -265,19 +266,28 @@ function CapabilityChips({
       data-testid="region-ari-capability-chips"
     >
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">
-        {all.map((cap) => {
+        {all.map((cap, idx) => {
           const meta = getCapability(cap.id);
+          const Icon = getCapabilityIcon(cap.id);
           return (
             <span
               key={cap.id}
               data-testid={`chip-capability-${cap.id}`}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs animate-in fade-in-0 slide-in-from-left-1 fill-mode-both",
                 cap.isPrimary
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-background text-foreground"
               )}
+              style={{ animationDelay: `${idx * 30}ms`, animationDuration: "240ms" }}
             >
+              <Icon
+                className={cn(
+                  "h-3 w-3",
+                  cap.isPrimary ? "text-primary" : "text-muted-foreground"
+                )}
+                aria-hidden
+              />
               {cap.isPrimary && (
                 <Star className="h-3 w-3 fill-primary text-primary" aria-label="Primary" />
               )}
