@@ -1,0 +1,41 @@
+I'm adding a new clinical AI feature called "Ari" to my existing Express + React app. This is for licensed physicians, nurses, and pharmacists. I have an existing OpenAI-based chat for SOAP/encounter primer features — leave those alone. Ari is separate.
+
+Tasks:
+
+1. Install dependencies: @anthropic-ai/sdk, and add zod (already installed, just confirm).
+
+2. Create server/ari/config.ts. Read the file at attached_assets/ari-agent.json and export:
+   - ARI_SYSTEM_PROMPT (the "system" field from the JSON, as a string)
+   - ARI_MODEL_ID = "claude-sonnet-4-6" (override the model.id from the JSON to the current API string)
+   - ACTIVE_CAPABILITIES = ["antibiotic_stewardship", "wound_skin", "pharmacy", "ventilator", "calculators", "clinical_protocols", "er_triage", "cms_billing", "rad_onc_imaging"]
+   - MCP_SERVERS (the "mcp_servers" array from the JSON)
+   Load the JSON at startup with fs.readFileSync. If the file is missing or malformed, throw at startup — do not fall back to defaults.
+
+3. Create server/ari/client.ts that exports a singleton Anthropic client. Read ANTHROPIC_API_KEY from process.env. If the key is missing, throw at startup with a clear error: "ANTHROPIC_API_KEY is required for Ari clinical workflows. Ari will not start without it." No mock fallback. No silent degradation. The clinical tool fails closed.
+
+4. Create server/ari/schema.ts with a Zod schema:
+   AriRequestSchema = z.object({
+     mode: z.enum(["ari", "er"]),
+     capability: z.enum([...ACTIVE_CAPABILITIES]),
+     query: z.string().min(1).max(8000),
+     attachments: z.array(z.object({
+       type: z.enum(["image", "pdf", "document"]),
+       mediaType: z.string(),
+       data: z.string(), // base64
+       filename: z.string()
+     })).optional()
+   })
+
+5. Create server/ari/routes.ts exporting an Express router with POST /api/ari/chat:
+   - Require an authenticated session (use existing Passport middleware — reject 401 if not logged in)
+   - Validate the body with AriRequestSchema; on failure, return 400 with the Zod error
+   - Build the user message content as: a JSON-stringified payload of { mode, capability, query } as the first text block, plus any attachments as image/document blocks per Anthropic's vision/document API
+   - Call anthropic.messages.create with model: ARI_MODEL_ID, system: ARI_SYSTEM_PROMPT, max_tokens: 4096, the user message, and mcp_servers: MCP_SERVERS (use the beta header "mcp-client-2025-04-04" if required by the SDK version installed)
+   - Stream the response back to the client using Server-Sent Events. Forward each text delta as an SSE "data:" line. On stream end, send "event: done\ndata: {}\n\n".
+   - On Anthropic API error, send "event: error\ndata: { \"message\": \"<sanitized error>\" }\n\n" and close. Do NOT leak stack traces or API keys to the client.
+
+6. Mount the router in server/index.ts at /api/ari, after the existing auth setup.
+
+7. Add a startup health check that logs "Ari clinical workflows: READY" if the JSON loaded and the API key is present, otherwise the process should have already exited.
+
+Do not modify any existing OpenAI code paths. Do not add mock data. Do not add fallback responses. If anything fails, the endpoint returns an error and the clinician sees it.
