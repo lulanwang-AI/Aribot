@@ -75,10 +75,10 @@ export function TopBar({ onClear }: TopBarProps) {
           >
             <TabsList data-testid="tabs-ari-mode">
               <TabsTrigger value="ari" data-testid="tab-ari-mode-ari">
-                Ari
+                Ari Mode
               </TabsTrigger>
               <TabsTrigger value="er" data-testid="tab-ari-mode-er">
-                ER
+                ER Mode
               </TabsTrigger>
             </TabsList>
           </Tabs>
