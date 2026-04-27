@@ -1427,6 +1427,148 @@ function CapabilitiesSection() {
   );
 }
 
+function WhatAriKnowsSection() {
+  const { ref, isVisible } = useInView();
+
+  const categories = [
+    {
+      icon: BookOpen,
+      title: "Evidence & Literature",
+      items: [
+        { name: "PubMed", desc: "NEJM, JAMA, Cochrane & peer-reviewed lit" },
+        { name: "bioRxiv", desc: "Preprint biology & life sciences" },
+        { name: "Open Targets", desc: "Drug-target & disease associations" },
+        { name: "Consensus", desc: "Synthesis across literature" },
+        { name: "Scholar Gateway", desc: "Broad academic search" },
+        { name: "Exa", desc: "Semantic search for full-text guidelines" },
+      ],
+    },
+    {
+      icon: Pill,
+      title: "Drug & Decision Tools",
+      items: [
+        { name: "ChEMBL", desc: "Bioactivity, PK/PD, pharmacology" },
+        { name: "ICD-10 Codes", desc: "Clinical-term → diagnosis code mapping" },
+        { name: "CMS Coverage", desc: "Medicare/Medicaid coverage lookups" },
+        { name: "NPI Registry", desc: "US licensed-provider lookup" },
+      ],
+    },
+    {
+      icon: Cpu,
+      title: "Hugging Face — Biomedical AI",
+      items: [
+        { name: "Triage Models", desc: "Acuity scoring, ESI prediction from free text" },
+        { name: "Clinical NLP", desc: "NER, med extraction, discharge parsing" },
+        { name: "Drug Interaction & PK/PD", desc: "ML-based interaction prediction" },
+        { name: "Protein & Molecular", desc: "ESMFold/AlphaFold-style structure tools" },
+        { name: "Medical Imaging AI", desc: "Radiology & pathology assist" },
+      ],
+    },
+    {
+      icon: FileText,
+      title: "Document Parsing",
+      items: [
+        { name: "PDF", desc: "Labs, discharge, radiology, RT plan reports" },
+        { name: "XLSX", desc: "PK worksheets, dosing tables, DVH data" },
+        { name: "DOCX", desc: "Care plans, protocols, RT summaries" },
+        { name: "PPTX", desc: "Grand rounds & protocol decks" },
+      ],
+    },
+    {
+      icon: Stethoscope,
+      title: "Clinical Capabilities",
+      items: [
+        { name: "Antibiotic Stewardship", desc: "IDSA empiric/targeted regimens, resistance" },
+        { name: "Wound & Skin", desc: "Photo analysis, NPUAP staging, plans" },
+        { name: "Pharmacy", desc: "Dosing, renal/hepatic, PK, TPN, chemo banding" },
+        { name: "Ventilator Mgmt", desc: "ARDSNet, weaning, RSBI/SBT" },
+        { name: "Medical Calculators", desc: "MDCalc-style scores & formulas" },
+        { name: "Clinical Protocols", desc: "DKA, HHS, CIWA, sepsis, hypertensive emerg." },
+        { name: "ER Triage", desc: "ESI 1–5, time-sensitive Dx, AI-assisted acuity" },
+        { name: "Oncology & Rare Disease", desc: "Open Targets + NCCN targeted therapy" },
+        { name: "Billing & Coverage", desc: "ICD-10 + CMS policy support" },
+      ],
+    },
+    {
+      icon: Activity,
+      title: "Radiation Oncology",
+      items: [
+        { name: "Imaging Review", desc: "X-ray/CT/MRI; GTV/CTV/PTV-relevant findings" },
+      ],
+    },
+  ];
+
+  return (
+    <section
+      id="what-ari-knows"
+      className="py-24 bg-white"
+      data-testid="section-what-ari-knows"
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#4A90D9]/30 bg-[#4A90D9]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#4A90D9]">
+            <Sparkles className="h-3.5 w-3.5" /> New in ARI v3.0
+          </span>
+        </div>
+        <h2
+          className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4"
+          data-testid="text-what-ari-knows-title"
+        >
+          What <span className="text-[#4A90D9]">ARI</span> Knows
+        </h2>
+        <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
+          Live integrations across literature, drug data, biomedical AI, and
+          clinical capabilities — every answer cited, every source explicit.
+        </p>
+
+        <div
+          ref={ref}
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-1000 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          {categories.map((cat, i) => {
+            const Icon = cat.icon;
+            return (
+              <div
+                key={cat.title}
+                className="group relative bg-white border border-gray-200 rounded-2xl p-6 transition-all duration-500 hover:border-[#4A90D9]/50 hover:shadow-lg"
+                style={{ transitionDelay: `${i * 80}ms` }}
+                data-testid={`card-knows-${cat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-[#4A90D9]/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#4A90D9] group-hover:shadow-[0_0_15px_rgba(74,144,217,0.4)]">
+                    <Icon className="w-5 h-5 text-[#4A90D9] transition-colors duration-500 group-hover:text-white" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
+                    {cat.title}
+                  </h3>
+                </div>
+                <ul className="space-y-3">
+                  {cat.items.map((item) => (
+                    <li
+                      key={item.name}
+                      className="flex flex-col gap-0.5"
+                      data-testid={`item-knows-${item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                    >
+                      <span className="text-sm font-semibold text-gray-900">
+                        {item.name}
+                      </span>
+                      <span className="text-xs text-gray-500 leading-relaxed">
+                        {item.desc}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CommunitySection() {
   const hospitals = [
     "Massachusetts General Hospital", "Johns Hopkins Hospital", "Mayo Clinic",
@@ -2192,6 +2334,7 @@ export default function Landing() {
       <PhysicianFeaturesSection />
       <HowAriWorksSection />
       <CapabilitiesSection />
+      <WhatAriKnowsSection />
       <TestimonialsSection />
       <CommunitySection />
       <TeamSection />
