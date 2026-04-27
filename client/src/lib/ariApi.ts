@@ -3,7 +3,8 @@ import type { AriAttachment } from "@/stores/ariStore";
 
 export interface AriChatRequest {
   mode: "ari" | "er";
-  capability: AriCapabilityId;
+  // Optional — when omitted/null, Ari auto-infers a capability from the query.
+  capability?: AriCapabilityId | null;
   query: string;
   attachments?: AriAttachment[];
 }

@@ -119,12 +119,16 @@ router.post("/chat", requireAriClinician, async (req, res) => {
       issues: (parsed.error as ZodError).flatten(),
     });
   }
-  const { mode, capability, query, attachments } = parsed.data;
+  const { mode, capability: rawCap, query, attachments } = parsed.data;
+  // Capability is optional — when absent, Ari auto-infers from the query per
+  // the system prompt. Use a stable label for audit/telemetry.
+  const capability = rawCap ?? null;
+  const auditCapability = capability ?? "auto";
 
   // PHI guard at request time. Reject obvious identifiers before reaching Anthropic.
   const phi = detectPhi(query);
   if (!phi.ok) {
-    auditFail({ userId, licenseType, mode, capability, query, attachmentCount: attachments?.length || 0, startedAt, errorCode: "phi_blocked" });
+    auditFail({ userId, licenseType, mode, capability: auditCapability, query, attachmentCount: attachments?.length || 0, startedAt, errorCode: "phi_blocked" });
     return res.status(422).json({
       message: PHI_REJECTION_MESSAGE,
       matchedPatterns: phi.matchedPatterns,
@@ -133,7 +137,9 @@ router.post("/chat", requireAriClinician, async (req, res) => {
 
   const payloadBlock = {
     type: "text" as const,
-    text: JSON.stringify({ mode, capability, query }),
+    text: JSON.stringify(
+      capability ? { mode, capability, query } : { mode, query }
+    ),
   };
 
   const attachmentBlocks = (attachments || []).map((a: AriAttachment) => {
@@ -242,16 +248,17 @@ router.post("/chat", requireAriClinician, async (req, res) => {
       userId,
       licenseType,
       mode,
-      capability,
+      capability: auditCapability,
       query,
       attachmentCount: attachments?.length || 0,
       latencyMs: Date.now() - startedAt,
       success: true,
     });
 
-    // Memory write hook — fire-and-forget. Skip in ER mode and when memory
-    // store reports not writable.
-    if (mode !== "er") {
+    // Memory write hook — fire-and-forget. Skip in ER mode, when no
+    // capability was specified (memory is keyed per-capability), and when
+    // the memory store reports not writable.
+    if (mode !== "er" && capability) {
       const store = getMemoryStore();
       if (store.isWritable()) {
         runMemoryExtraction({
@@ -277,7 +284,7 @@ router.post("/chat", requireAriClinician, async (req, res) => {
       userId,
       licenseType,
       mode,
-      capability,
+      capability: auditCapability,
       query,
       attachmentCount: attachments?.length || 0,
       startedAt,

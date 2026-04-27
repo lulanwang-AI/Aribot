@@ -16,7 +16,7 @@ The ARIbots platform employs a modern web architecture, featuring a React + Type
     -   Configuration is loaded from `attached_assets/ari-agent.json` at startup, containing the system prompt and MCP server details.
     -   Streaming responses are delivered via Server-Sent Events (SSE).
     -   Authentication for Ari AI features uses real Passport sessions (`express-session` + `passport-local`).
-    -   Capability gating and validation are implemented both on the client-side for UI nudges and robustly on the backend.
+    -   Capability gating and validation are implemented both on the client-side for UI nudges and robustly on the backend. Capabilities are fully optional — when none is selected, the chat shows an "Auto-detect" pill and the backend omits the `capability` field from the model payload, letting Ari infer the closest capability from the query per the system prompt.
     -   ER (Emergency Room) mode provides a visually distinct and functionally streamlined interface for urgent cases.
     -   **Ari Clinical Hardening:** Includes block parsing and rendering for structured AI responses (`ari_section`, `ari_claim`, `ari_step`, `ari_citation`), file upload capabilities (JPEG/PNG/WEBP/GIF/PDF/text with PDF parsing), gate UI nudges (e.g., location input, wound measurement checkbox), ER mode separation with distinct UI elements, and an opt-in memory store (`DrizzleMemoryStore`) for verified clinical claims with PHI redaction.
     -   **Security & Compliance:** User authentication includes license verification, acceptance of Ari terms, and comprehensive audit logging for all AI interactions and access attempts. PHI detection guards against sensitive data exposure.

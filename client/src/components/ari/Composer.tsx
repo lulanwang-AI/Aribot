@@ -66,7 +66,13 @@ export function Composer({
   const setMeasurementConfirmed = useAriStore((s) => s.setMeasurementConfirmed);
   const { toast } = useToast();
 
-  const capability = getCapability(capabilityId);
+  // Capability is optional. When null, Ari will auto-infer from the query
+  // and we fall back to permissive defaults (no gates, all attachment types
+  // allowed, generic placeholder).
+  const capability = capabilityId ? getCapability(capabilityId) : null;
+  const inputHint = capability
+    ? capability.inputHint
+    : "Ask Ari anything — pick a capability with + or let Ari choose.";
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
@@ -80,17 +86,17 @@ export function Composer({
   // location/facility. Sticky once detected.
   useEffect(() => {
     if (
-      capability.gateRequirement.type === "location" &&
+      capability?.gateRequirement.type === "location" &&
       !locationProvided &&
       detectLocationInText(query)
     ) {
       setLocationProvided(true);
     }
-  }, [query, capability.gateRequirement.type, locationProvided, setLocationProvided]);
+  }, [query, capability?.gateRequirement.type, locationProvided, setLocationProvided]);
 
   // Clear attachments when capability changes to one that doesn't accept them.
   useEffect(() => {
-    if (attachments.length === 0) return;
+    if (attachments.length === 0 || !capability) return;
     const incompatible = attachments.filter(
       (a) =>
         (a.type === "image" && !capability.acceptsImages) ||
@@ -108,17 +114,22 @@ export function Composer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capabilityId]);
 
-  const fileAccept = buildAcceptAttribute(capability);
-  const attachmentsDisabled =
-    !capability.acceptsImages && !capability.acceptsPdfs;
+  const fileAccept = capability
+    ? buildAcceptAttribute(capability)
+    : "image/*,application/pdf,text/plain";
+  const attachmentsDisabled = capability
+    ? !capability.acceptsImages && !capability.acceptsPdfs
+    : false;
 
-  const gate = evaluateGate({
-    capability,
-    locationProvided,
-    measurementConfirmed,
-    attachments,
-    mode,
-  });
+  const gate = capability
+    ? evaluateGate({
+        capability,
+        locationProvided,
+        measurementConfirmed,
+        attachments,
+        mode,
+      })
+    : { ok: true as const };
 
   const canSend =
     !streaming &&
@@ -145,11 +156,14 @@ export function Composer({
         }
         setUploadingName(file.name);
         const attachment = await uploadAriFile(file);
+        // When no capability is selected, accept everything — Ari will
+        // infer how to handle the attachment from the query.
         const allowed =
+          !capability ||
           (attachment.type === "image" && capability.acceptsImages) ||
           (attachment.type === "pdf" && capability.acceptsPdfs) ||
           (attachment.type === "document" && capability.acceptsPdfs);
-        if (!allowed) {
+        if (!allowed && capability) {
           setUploadError(
             `${capability.displayName} does not accept ${attachment.type} files.`
           );
@@ -207,7 +221,7 @@ export function Composer({
     e.preventDefault();
     dragDepthRef.current = 0;
     setIsDragging(false);
-    if (attachmentsDisabled) {
+    if (attachmentsDisabled && capability) {
       setUploadError(
         `${capability.displayName} does not accept attachments.`
       );
@@ -237,7 +251,7 @@ export function Composer({
           </div>
         )}
         {/* Gate strip */}
-        {capability.gateRequirement.type !== "none" && mode !== "er" && (
+        {capability && capability.gateRequirement.type !== "none" && mode !== "er" && (
           <GateStrip
             capability={capability}
             locationProvided={locationProvided}
@@ -263,7 +277,7 @@ export function Composer({
             value={query}
             onChange={(e) => setQuery(e.target.value.slice(0, MAX_QUERY))}
             onKeyDown={handleKeyDown}
-            placeholder={capability.inputHint}
+            placeholder={inputHint}
             disabled={disabled}
             rows={3}
             className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"

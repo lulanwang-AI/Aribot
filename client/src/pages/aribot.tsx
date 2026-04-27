@@ -232,7 +232,7 @@ export default function Aribot() {
 }
 
 interface CapabilityChipsProps {
-  primary: AriCapabilityId;
+  primary: AriCapabilityId | null;
   additional: AriCapabilityId[];
   onRemove: (id: AriCapabilityId) => void;
   onPromote: (id: AriCapabilityId) => void;
@@ -245,9 +245,10 @@ function CapabilityChips({
   onPromote,
 }: CapabilityChipsProps) {
   const all: { id: AriCapabilityId; isPrimary: boolean }[] = [
-    { id: primary, isPrimary: true },
+    ...(primary ? [{ id: primary, isPrimary: true }] : []),
     ...additional.map((id) => ({ id, isPrimary: false })),
   ];
+  const noneSelected = all.length === 0;
   return (
     <div
       className="border-b border-border bg-muted/30 px-4 py-2 sm:px-6"
@@ -257,6 +258,14 @@ function CapabilityChips({
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Capabilities
         </span>
+        {noneSelected && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-background px-2 py-0.5 text-xs text-muted-foreground"
+            data-testid="chip-capability-auto"
+          >
+            Auto-detect
+          </span>
+        )}
         {all.map((cap) => {
           const meta = getCapability(cap.id);
           return (
@@ -292,23 +301,18 @@ function CapabilityChips({
                 className="ml-0.5 rounded-full p-0.5 hover:bg-accent"
                 data-testid={`button-remove-capability-${cap.id}`}
                 aria-label={`Remove ${meta.displayName}`}
-                title={
-                  cap.isPrimary && additional.length === 0
-                    ? "At least one capability is required"
-                    : "Remove"
-                }
-                disabled={cap.isPrimary && additional.length === 0}
+                title="Remove"
               >
                 <X className="h-3 w-3" />
               </button>
             </span>
           );
         })}
-        {additional.length === 0 && (
-          <span className="text-[11px] text-muted-foreground">
-            Use the + button in the chat to add more.
-          </span>
-        )}
+        <span className="text-[11px] text-muted-foreground">
+          {noneSelected
+            ? "Ari will infer the right capability from your question — or use the + button to pick one."
+            : "Use the + button in the chat to add more."}
+        </span>
       </div>
     </div>
   );

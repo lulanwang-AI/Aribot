@@ -4,8 +4,12 @@
  * are firing at the right moments.
  */
 
+import type { AriCapabilityId } from "@shared/ari/capabilities";
+
 export interface ErModeSessionEvent {
-  capability: string;
+  // "auto" represents an ER session that was started without a chosen
+  // capability (capability is fully optional in v3+).
+  capability: AriCapabilityId | "auto";
   durationMs: number;
   messageCount: number;
 }

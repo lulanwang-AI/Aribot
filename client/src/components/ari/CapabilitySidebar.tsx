@@ -30,7 +30,7 @@ const CAPABILITY_ICONS: Record<AriCapabilityId, LucideIcon> = {
 };
 
 interface CapabilitySidebarProps {
-  selected: AriCapabilityId;
+  selected: AriCapabilityId | null;
   onSelect: (id: AriCapabilityId) => void;
 }
 
@@ -42,7 +42,7 @@ export function CapabilitySidebar({ selected, onSelect }: CapabilitySidebarProps
       data-testid="sidebar-ari-capabilities"
     >
       <div className="px-2 pt-1 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        Capability
+        Capability (optional)
       </div>
       {ARI_CAPABILITIES.map((cap, idx) => (
         <CapabilityCard

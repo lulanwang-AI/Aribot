@@ -40,7 +40,7 @@ export interface ModeSwitchEvent {
 interface ErSessionStart {
   mode: AriMode;
   at: number;
-  capabilityAtStart: AriCapabilityId;
+  capabilityAtStart: AriCapabilityId | null;
   messageCountAtStart: number;
 }
 
@@ -49,7 +49,8 @@ export interface AriTab {
   id: string;
   title: string;
   mode: AriMode;
-  capability: AriCapabilityId;
+  // No default capability — when null, Ari auto-infers from the query.
+  capability: AriCapabilityId | null;
   additionalCapabilities: AriCapabilityId[];
   attachments: AriAttachment[];
   messages: AriMessage[];
@@ -71,7 +72,7 @@ interface AriState {
 
   // Mirrored from the active tab so existing selectors keep working.
   mode: AriMode;
-  capability: AriCapabilityId;
+  capability: AriCapabilityId | null;
   additionalCapabilities: AriCapabilityId[];
   attachments: AriAttachment[];
   messages: AriMessage[];
@@ -90,7 +91,7 @@ interface AriState {
 
   // Existing actions — operate on the active tab.
   setMode: (mode: AriMode) => void;
-  setCapability: (capability: AriCapabilityId) => void;
+  setCapability: (capability: AriCapabilityId | null) => void;
   toggleCapability: (id: AriCapabilityId) => void;
   promoteCapability: (id: AriCapabilityId) => void;
   addAttachment: (attachment: AriAttachment) => void;
@@ -113,7 +114,7 @@ function createTab(overrides: Partial<AriTab> = {}): AriTab {
     id: makeTabId(),
     title: "New chat",
     mode: "ari",
-    capability: "antibiotic_stewardship",
+    capability: null,
     additionalCapabilities: [],
     attachments: [],
     messages: [],
@@ -245,7 +246,7 @@ export const useAriStore = create<AriState>()(
         if (active.mode === "er" && active._erSessionStart) {
           const start = active._erSessionStart;
           logErModeSession({
-            capability: start.capabilityAtStart,
+            capability: start.capabilityAtStart ?? "auto",
             durationMs: now - start.at,
             messageCount: active.messages.length - start.messageCountAtStart,
           });
@@ -287,8 +288,18 @@ export const useAriStore = create<AriState>()(
       toggleCapability: (id) =>
         set((s) =>
           applyToActive(s, (t) => {
+            // Clicking the current primary clears it — capabilities are all
+            // optional and there is no required default.
             if (t.capability === id) {
-              if (t.additionalCapabilities.length === 0) return t;
+              if (t.additionalCapabilities.length === 0) {
+                return {
+                  ...t,
+                  capability: null,
+                  additionalCapabilities: [],
+                  locationProvided: false,
+                  measurementConfirmed: false,
+                };
+              }
               const [nextPrimary, ...rest] = t.additionalCapabilities;
               return {
                 ...t,
@@ -304,6 +315,16 @@ export const useAriStore = create<AriState>()(
                 additionalCapabilities: t.additionalCapabilities.filter(
                   (c) => c !== id
                 ),
+              };
+            }
+            // First capability picked becomes primary; otherwise added as
+            // an additional perspective.
+            if (t.capability === null) {
+              return {
+                ...t,
+                capability: id,
+                locationProvided: false,
+                measurementConfirmed: false,
               };
             }
             return {
@@ -323,7 +344,7 @@ export const useAriStore = create<AriState>()(
               ...t,
               capability: id,
               additionalCapabilities: [
-                previousPrimary,
+                ...(previousPrimary ? [previousPrimary] : []),
                 ...t.additionalCapabilities.filter((c) => c !== id),
               ],
               locationProvided: false,
@@ -415,7 +436,10 @@ export const useAriStore = create<AriState>()(
     }),
     {
       name: "ari-session",
-      version: 2,
+      // v3 → capability is now optional; clear stale primary selections from
+      // pre-v3 sessions so the new auto-detect default takes effect for
+      // tabs that have not started a conversation yet.
+      version: 3,
       storage: createJSONStorage(() => sessionStorage),
       // Persist tabs (minus heavy attachment blobs). Mirror fields are
       // recomputed on rehydrate so we don't bother storing them.
@@ -423,6 +447,26 @@ export const useAriStore = create<AriState>()(
         tabs: s.tabs.map((t) => ({ ...t, attachments: [] })),
         activeTabId: s.activeTabId,
       }),
+      migrate: (persisted, fromVersion) => {
+        const p = persisted as Partial<AriState> | undefined;
+        if (!p?.tabs) return p as any;
+        if (fromVersion < 3) {
+          return {
+            ...p,
+            tabs: p.tabs.map((t: any) => ({
+              ...t,
+              // Only clear capability for empty tabs — preserve the choice
+              // for any tab that already has a conversation in progress so
+              // continuing answers stay consistent.
+              capability:
+                Array.isArray(t.messages) && t.messages.length > 0
+                  ? t.capability
+                  : null,
+            })),
+          } as any;
+        }
+        return p as any;
+      },
       merge: (persisted, current) => {
         const p = persisted as Partial<AriState> | undefined;
         if (!p?.tabs?.length) return current;
