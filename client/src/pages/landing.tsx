@@ -62,7 +62,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
-import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
+import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 import doctorTelemedicineImg from "@assets/generated_images/doctor-telemedicine.png";
 import doctorNewsImg from "@assets/generated_images/doctor-news.png";
 import doctorIncomeImg from "@assets/generated_images/doctor-income.png";

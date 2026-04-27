@@ -1,5 +1,5 @@
 import { useState } from "react";
-import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
+import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

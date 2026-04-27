@@ -1,4 +1,4 @@
-import aribotLogoPath from "@assets/20260226140824_1772181173123.png";
+import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
