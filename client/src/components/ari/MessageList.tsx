@@ -3,6 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AriMessage } from "@/components/ari/AriMessage";
 import { useAriStore, type AriMessage as AriMessageType } from "@/stores/ariStore";
+import {
+  ShieldCheck,
+  Lock,
+  UserCheck,
+  BookOpen,
+  Keyboard,
+  Mic,
+  Upload,
+} from "lucide-react";
 
 interface MessageListProps {
   messages: AriMessageType[];
@@ -18,18 +27,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
   }, [messages, streaming]);
 
   if (messages.length === 0) {
-    return (
-      <div
-        className="flex h-full items-center justify-center px-6 text-center"
-        data-testid="state-ari-empty"
-      >
-        <div className="max-w-md text-sm text-muted-foreground">
-          Select a capability and describe the clinical question. Ari will
-          respond with cited, primary-source guidance. ER mode skips retrieval
-          for speed and is not verified — confirm before acting.
-        </div>
-      </div>
-    );
+    return <EmptyState />;
   }
 
   return (
@@ -116,6 +114,88 @@ function MessageBubble({
         />
       </div>
     </motion.div>
+  );
+}
+
+function EmptyState() {
+  const trustBadges = [
+    { icon: ShieldCheck, label: "HIPAA-compliant" },
+    { icon: Lock, label: "Fully private chat" },
+    { icon: UserCheck, label: "Human expert–derived" },
+    { icon: BookOpen, label: "Evidence-based references" },
+  ];
+  const inputModes = [
+    { icon: Keyboard, label: "Type" },
+    { icon: Mic, label: "Speak" },
+    { icon: Upload, label: "Upload" },
+  ];
+  return (
+    <div
+      className="flex h-full items-center justify-center px-6 py-6"
+      data-testid="state-ari-empty"
+    >
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-5 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <h2
+            className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
+            data-testid="text-ask-sy-headline"
+          >
+            Ask Sy
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Your clinical assistant. Cited, fail-closed, fully private.
+          </p>
+        </div>
+
+        <div
+          className="flex flex-wrap items-center justify-center gap-2"
+          data-testid="region-trust-badges"
+        >
+          {trustBadges.map(({ icon: Icon, label }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-foreground"
+              data-testid={`badge-trust-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+            >
+              <Icon className="h-3.5 w-3.5 text-primary" />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        <p
+          className="max-w-xl text-xs leading-relaxed text-muted-foreground"
+          data-testid="text-evidence-stats"
+        >
+          5M Clinical Triage Data; 220M+ peer-reviewed papers; 50k curated
+          guidelines; 40M+ PubMed citations; 2M+ Central records plus 530k+
+          Clinical Trials studies; 38.4M Open Targets evidence items
+          associations.
+        </p>
+
+        <div
+          className="flex items-center gap-3 text-xs text-muted-foreground"
+          data-testid="region-input-modes"
+        >
+          {inputModes.map(({ icon: Icon, label }, i) => (
+            <span key={label} className="inline-flex items-center gap-3">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-foreground"
+                data-testid={`hint-input-${label.toLowerCase()}`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </span>
+              {i < inputModes.length - 1 && (
+                <span aria-hidden="true" className="text-muted-foreground/50">
+                  ·
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
