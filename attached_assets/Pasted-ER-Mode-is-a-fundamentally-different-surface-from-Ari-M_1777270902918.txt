@@ -1,0 +1,28 @@
+ER Mode is a fundamentally different surface from Ari Mode. Make sure the separation is enforced everywhere.
+
+1. Visual:
+   - Top banner spans full width, sticky, red background (use a calm clinical red — Tailwind red-600 with red-50 text-shadow, not pure red), white text: "ER MODE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE ACTING."
+   - Sidebar background tints faintly red (red-50/30) so it's impossible to forget which mode you're in.
+   - Composer border is red instead of default.
+   - Send button label changes from "Send" to "Send (ER, unverified)".
+
+2. Behavior:
+   - File upload button hidden (verify from prompt 5).
+   - Gate UI hidden (verify from prompt 6).
+   - Retrieval trace panel hidden — ER mode emits no step blocks per the system prompt.
+   - Attachment store is cleared when switching INTO ER mode (with the AlertDialog confirmation already implemented in prompt 3).
+   - Capability picker still works — ER mode uses the same nine capabilities, just without retrieval.
+
+3. Mode switching:
+   - Switching ER → Ari: confirmation dialog, then clear messages and attachments.
+   - Switching Ari → ER: confirmation dialog with stronger copy: "ER Mode disables source verification. Responses will be based on the model's training only and have not been confirmed against current guidelines. Switch to ER Mode?"
+   - Track mode-switch events in store.modeHistory: Array<{from, to, at: timestamp}>. Surface this in a small "Mode log" link at the bottom of the chat (dev-only or admin-only).
+
+4. ER response rendering:
+   - First line of every ER response should be the "ER MODE ACTIVE — RESPONSE NOT VERIFIED…" disclaimer per the system prompt. If the model emits it, render it in a yellow-tinted callout box at the top of the message. If the model omits it (drift), the renderer prepends it client-side as a fallback callout, with a small dev-only badge "(client-injected fallback)".
+   - No Verified/Unverified claim badges in ER mode — there are no claim blocks. Just prose.
+   - "Copy clinical summary" button is renamed "Copy ER protocol notes" and appends a footer: "— Generated in ER Mode without source verification. Confirm before clinical use."
+
+5. Telemetry hook (just stub for now): client/src/lib/ariTelemetry.ts with logErModeSession({ capability, durationMs, messageCount }) called on mode switch out of ER. Write to console for now — real telemetry can wire in later.
+
+ER Mode is a sharp tool. The UI's job is to make sure the clinician always knows it's in their hand.

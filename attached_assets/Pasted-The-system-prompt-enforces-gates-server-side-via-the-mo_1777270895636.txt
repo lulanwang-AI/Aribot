@@ -1,0 +1,20 @@
+The system prompt enforces gates server-side via the model. Add UI nudges that help clinicians satisfy gates faster — but DO NOT bypass them. The model is the source of truth.
+
+1. antibiotic_stewardship location gate:
+   - When this capability is selected, show a small persistent chip above the composer: "Location required" (gray) or "Location detected" (green) based on store.locationProvided.
+   - Detect locationProvided heuristically on textarea change: regex for common patterns (city + state, hospital name, country, "in <PlaceName>", ZIP code). Update store.locationProvided accordingly. False negatives are fine — the model still asks if missing. False positives are also fine — the chip is a hint, not a gate.
+   - Add a "Location templates" small button next to the chip: a Popover with quick-fill chips for common LA-area facilities (since the user is in Southern California — but ALSO include "Other..." which inserts "Patient is at [facility name in <city>]" as a placeholder the clinician edits). Templates: "Cedars-Sinai LA", "UCLA Health", "Kaiser Permanente SoCal", "Huntington Memorial Pasadena", "Other...". On click, prepend "Patient location: <template>. " to the textarea.
+
+2. wound_skin measurement gate:
+   - When this capability is selected AND an image attachment is present, show a checkbox above the send button: "Reference object visible (ruler, tape, coin, etc.)". Default unchecked. Bind to store.measurementConfirmed.
+   - Send button is disabled until the box is checked. Tooltip on the disabled button: "Confirm a reference object is visible — required for accurate wound measurement."
+   - This is a UI nudge only. The model still applies its own gate from the system prompt; this just prevents the obvious case of submitting a non-measurable photo.
+
+3. ER mode override:
+   - In ER mode, gate UI is hidden. The whole point of ER mode is fast unverified protocol recall — gates would slow that down. The system prompt already handles this (no retrieval steps, no claim/citation blocks in ER mode).
+
+4. Do not auto-fill location or auto-detect rulers from images. Both are clinician-confirmed inputs. The UI's job is to prompt and remind, never to assume.
+
+5. Add small inline help: each gate chip is hoverable with a Popover explaining WHY the gate exists. Location: "Antibiotic resistance patterns vary by region. Local data is required for evidence-based empiric therapy." Measurement: "NPUAP wound staging requires accurate dimensions. Reference objects let the AI estimate size from the photo."
+
+Test: switch to antibiotic_stewardship, type "treat MRSA pneumonia" → location chip stays gray, send anyway, model should ask for location per the system prompt. Then add "patient at UCLA" → chip turns green. Verify the model proceeds.
