@@ -63,8 +63,17 @@ export function TopBar({ onClear }: TopBarProps) {
             data-testid="img-ari-logo"
           />
           <div>
-            <h1 className="text-base font-semibold leading-tight" data-testid="text-ari-title">
+            <h1
+              className="flex items-center gap-2 text-base font-semibold leading-tight"
+              data-testid="text-ari-title"
+            >
               Ari
+              <span
+                className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                data-testid="badge-ari-version"
+              >
+                V3.0
+              </span>
             </h1>
             <p className="text-xs text-muted-foreground">
               Clinical assistant — primary-source citations, fail-closed gating
