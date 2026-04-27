@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
+import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 
 interface TopBarProps {
   onClear: () => void;
@@ -52,6 +53,12 @@ export function TopBar({ onClear }: TopBarProps) {
     <>
       <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
+          <img
+            src={aribotLogoPath}
+            alt="Aribot"
+            className="h-9 w-9 shrink-0 object-contain"
+            data-testid="img-ari-logo"
+          />
           <div>
             <h1 className="text-base font-semibold leading-tight" data-testid="text-ari-title">
               Ari
