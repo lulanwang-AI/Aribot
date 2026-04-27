@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -8,6 +8,9 @@ import {
   ExternalLink,
   Copy as CopyIcon,
   Check,
+  Loader2,
+  XCircle,
+  Activity,
 } from "lucide-react";
 import {
   Collapsible,
@@ -84,8 +87,14 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
             <SectionPill key={i} block={g.block} />
           ) : null;
         }
-        if (g.kind === "step") {
-          return <StepRow key={i} block={g.block} />;
+        if (g.kind === "steps") {
+          return (
+            <StepsPanel
+              key={i}
+              steps={g.blocks}
+              streaming={!!streaming}
+            />
+          );
         }
         if (g.kind === "claim") {
           return (
@@ -138,7 +147,7 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
 
 type GroupedBlock =
   | { kind: "section"; block: AriSectionBlock }
-  | { kind: "step"; block: AriStepBlock }
+  | { kind: "steps"; blocks: AriStepBlock[] }
   | { kind: "claim"; block: AriClaimBlock; followingProse: string | null }
   | { kind: "citations"; blocks: AriCitationBlock[] }
   | { kind: "prose"; text: string };
@@ -152,8 +161,14 @@ function groupBlocks(blocks: AriBlock[]): GroupedBlock[] {
       out.push({ kind: "section", block: b });
       i += 1;
     } else if (b.kind === "step") {
-      out.push({ kind: "step", block: b });
-      i += 1;
+      const group: AriStepBlock[] = [b];
+      let j = i + 1;
+      while (j < blocks.length && blocks[j].kind === "step") {
+        group.push(blocks[j] as AriStepBlock);
+        j += 1;
+      }
+      out.push({ kind: "steps", blocks: group });
+      i = j;
     } else if (b.kind === "claim") {
       const next = blocks[i + 1];
       if (next && next.kind === "prose") {
@@ -203,35 +218,48 @@ function SectionPill({ block }: { block: AriSectionBlock }) {
   );
 }
 
-function StepRow({ block }: { block: AriStepBlock }) {
-  const [open, setOpen] = useState(false);
-  const dotColor =
-    block.status === "complete"
-      ? "bg-emerald-500"
-      : block.status === "partial"
-        ? "bg-amber-400"
-        : "bg-muted-foreground/60";
+function StepsPanel({
+  steps,
+  streaming,
+}: {
+  steps: AriStepBlock[];
+  streaming: boolean;
+}) {
+  // Auto-collapse the trace once Ari is done. While streaming, keep it open so
+  // the clinician can watch each callback land in real time.
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (!streaming) setOpen(false);
+  }, [streaming]);
+
+  const lastStepNum = steps[steps.length - 1]?.stepNumber ?? 0;
+  const allComplete = steps.every((s) => s.status === "complete");
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <div
-        className="rounded-md border border-border bg-muted/30"
-        data-testid={`ari-step-${block.stepNumber}`}
+        className="overflow-hidden rounded-md border border-border bg-card"
+        data-testid="ari-steps-panel"
       >
         <CollapsibleTrigger
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
-          data-testid={`button-ari-step-toggle-${block.stepNumber}`}
+          className="flex w-full items-center gap-2 border-b border-border bg-muted/40 px-3 py-2 text-left text-xs hover:bg-muted/60"
+          data-testid="button-ari-steps-toggle"
         >
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Retrieval trace
+          <Activity className="h-3.5 w-3.5 text-primary" />
+          <span className="font-semibold text-foreground">
+            {streaming
+              ? `Working through your question — Step ${lastStepNum}`
+              : `Reasoning steps · ${steps.length}`}
           </span>
-          <span
-            className={cn("inline-block h-2 w-2 rounded-full", dotColor)}
-            aria-hidden="true"
-          />
-          <span className="font-medium">Step {block.stepNumber}</span>
-          <span className="truncate text-muted-foreground">
-            {block.description}
-          </span>
+          {streaming && (
+            <Loader2
+              className="h-3 w-3 animate-spin text-muted-foreground"
+              aria-hidden="true"
+            />
+          )}
+          {!streaming && allComplete && (
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          )}
           <ChevronDown
             className={cn(
               "ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform",
@@ -240,21 +268,82 @@ function StepRow({ block }: { block: AriStepBlock }) {
           />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="border-t border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-            <div className="mb-1 font-medium text-foreground">
-              Status: {block.status.replace("_", " ")}
-            </div>
-            {block.partialResults ? (
-              <pre className="whitespace-pre-wrap break-words font-sans">
-                {block.partialResults}
-              </pre>
-            ) : (
-              <div className="italic">No partial results recorded.</div>
-            )}
-          </div>
+          <ol className="flex flex-col">
+            {steps.map((s, idx) => {
+              const isLast = idx === steps.length - 1;
+              const isInFlight = streaming && isLast;
+              return (
+                <StepItem
+                  key={s.stepNumber}
+                  step={s}
+                  inFlight={isInFlight}
+                />
+              );
+            })}
+          </ol>
         </CollapsibleContent>
       </div>
     </Collapsible>
+  );
+}
+
+function StepItem({
+  step,
+  inFlight,
+}: {
+  step: AriStepBlock;
+  inFlight: boolean;
+}) {
+  const StatusIcon = inFlight
+    ? Loader2
+    : step.status === "complete"
+      ? CheckCircle2
+      : step.status === "partial"
+        ? AlertTriangle
+        : XCircle;
+  const iconColor = inFlight
+    ? "text-primary"
+    : step.status === "complete"
+      ? "text-emerald-600"
+      : step.status === "partial"
+        ? "text-amber-500"
+        : "text-muted-foreground";
+
+  return (
+    <li
+      className="flex gap-3 border-b border-border px-3 py-2 last:border-b-0"
+      data-testid={`ari-step-${step.stepNumber}`}
+    >
+      <div className="flex flex-col items-center pt-0.5">
+        <StatusIcon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            iconColor,
+            inFlight && "animate-spin"
+          )}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 text-xs">
+          <span className="font-semibold text-foreground">
+            Step {step.stepNumber}
+          </span>
+          <span className="font-medium text-foreground">
+            {step.description}
+          </span>
+        </div>
+        {step.partialResults && (
+          <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+            {step.partialResults}
+          </p>
+        )}
+        {!step.partialResults && step.status === "no_result" && (
+          <p className="mt-1 text-xs italic text-muted-foreground">
+            No result returned for this step.
+          </p>
+        )}
+      </div>
+    </li>
   );
 }
 
