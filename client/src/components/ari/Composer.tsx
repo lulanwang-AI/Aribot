@@ -54,6 +54,8 @@ export function Composer({
   const mode = useAriStore((s) => s.mode);
   const capabilityId = useAriStore((s) => s.capability);
   const setCapability = useAriStore((s) => s.setCapability);
+  const additionalCapabilities = useAriStore((s) => s.additionalCapabilities);
+  const toggleCapability = useAriStore((s) => s.toggleCapability);
   const attachments = useAriStore((s) => s.attachments);
   const addAttachment = useAriStore((s) => s.addAttachment);
   const removeAttachment = useAriStore((s) => s.removeAttachment);
@@ -318,11 +320,19 @@ export function Composer({
                   data-testid="popover-ari-capability-menu"
                 >
                   <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Choose capability
+                    Choose capabilities
+                  </div>
+                  <div className="px-2 pb-1 text-[11px] text-muted-foreground">
+                    Pick one or more. The first stays primary; extras add
+                    perspective to each answer.
                   </div>
                   <ul className="max-h-72 overflow-y-auto">
                     {ARI_CAPABILITIES.map((cap) => {
-                      const selected = cap.id === capabilityId;
+                      const isPrimary = cap.id === capabilityId;
+                      const isAdditional = additionalCapabilities.includes(
+                        cap.id as AriCapabilityId
+                      );
+                      const selected = isPrimary || isAdditional;
                       return (
                         <li key={cap.id}>
                           <button
@@ -332,8 +342,14 @@ export function Composer({
                               selected && "bg-accent/60"
                             )}
                             onClick={() => {
-                              setCapability(cap.id as AriCapabilityId);
-                              setCapabilityMenuOpen(false);
+                              if (isPrimary || isAdditional) {
+                                toggleCapability(cap.id as AriCapabilityId);
+                              } else {
+                                // Adding a brand-new selection: if none was the
+                                // primary before, just promote it. Otherwise
+                                // append as additional.
+                                toggleCapability(cap.id as AriCapabilityId);
+                              }
                             }}
                             data-testid={`button-pick-capability-${cap.id}`}
                           >
@@ -343,8 +359,15 @@ export function Composer({
                               ) : null}
                             </span>
                             <span className="flex-1">
-                              <span className="block font-medium text-foreground">
-                                {cap.displayName}
+                              <span className="flex items-center gap-1.5">
+                                <span className="font-medium text-foreground">
+                                  {cap.displayName}
+                                </span>
+                                {isPrimary && (
+                                  <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-semibold uppercase tracking-wider text-primary">
+                                    Primary
+                                  </span>
+                                )}
                               </span>
                               <span className="block text-[11px] text-muted-foreground">
                                 {cap.shortDescription}

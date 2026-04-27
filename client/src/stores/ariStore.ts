@@ -47,6 +47,10 @@ interface ErSessionStart {
 interface AriState {
   mode: AriMode;
   capability: AriCapabilityId;
+  // Extra capabilities the clinician wants Ari to also bring into the answer.
+  // Does NOT include the primary `capability`. The primary still drives the
+  // gate UI, input hint, and the strict capability sent to the backend.
+  additionalCapabilities: AriCapabilityId[];
   attachments: AriAttachment[];
   messages: AriMessage[];
   locationProvided: boolean;
@@ -58,6 +62,16 @@ interface AriState {
 
   setMode: (mode: AriMode) => void;
   setCapability: (capability: AriCapabilityId) => void;
+  // Toggles a capability on/off across primary+additional.
+  // - Adds to additional if not selected.
+  // - Removes from additional if it's an additional one.
+  // - If it's the primary AND there's an additional, promotes the first
+  //   additional to primary and drops the previous primary entirely.
+  // - If it's the primary and the only selection, no-op (must keep ≥1).
+  toggleCapability: (id: AriCapabilityId) => void;
+  // Promote an additional capability to primary (swap with current primary,
+  // which becomes an additional capability so nothing is lost).
+  promoteCapability: (id: AriCapabilityId) => void;
   addAttachment: (attachment: AriAttachment) => void;
   removeAttachment: (filename: string) => void;
   clearAttachments: () => void;
@@ -71,6 +85,7 @@ interface AriState {
 const DEFAULT_STATE = {
   mode: "ari" as AriMode,
   capability: "antibiotic_stewardship" as AriCapabilityId,
+  additionalCapabilities: [] as AriCapabilityId[],
   attachments: [] as AriAttachment[],
   messages: [] as AriMessage[],
   locationProvided: false,
@@ -121,11 +136,64 @@ export const useAriStore = create<AriState>()(
       },
 
       setCapability: (capability) =>
-        set({
+        set((s) => ({
           capability,
-          // Reset gate flags when capability changes — gates are capability-specific.
+          // If the new primary is currently in additionals, drop it from there.
+          additionalCapabilities: s.additionalCapabilities.filter(
+            (c) => c !== capability
+          ),
+          // Reset gate flags when primary capability changes — gates are
+          // capability-specific.
           locationProvided: false,
           measurementConfirmed: false,
+        })),
+
+      toggleCapability: (id) =>
+        set((s) => {
+          // Already the primary
+          if (s.capability === id) {
+            // If it's the only thing selected, keep it (must have ≥1).
+            if (s.additionalCapabilities.length === 0) return s;
+            // Otherwise promote the first additional to primary; drop this one
+            // entirely from the selection.
+            const [nextPrimary, ...rest] = s.additionalCapabilities;
+            return {
+              capability: nextPrimary,
+              additionalCapabilities: rest,
+              locationProvided: false,
+              measurementConfirmed: false,
+            };
+          }
+          // Already an additional → remove it
+          if (s.additionalCapabilities.includes(id)) {
+            return {
+              additionalCapabilities: s.additionalCapabilities.filter(
+                (c) => c !== id
+              ),
+            };
+          }
+          // Not selected → add as additional
+          return {
+            additionalCapabilities: [...s.additionalCapabilities, id],
+          };
+        }),
+
+      promoteCapability: (id) =>
+        set((s) => {
+          if (s.capability === id) return s;
+          if (!s.additionalCapabilities.includes(id)) return s;
+          // Swap: previous primary becomes an additional; new primary leaves
+          // the additionals.
+          const previousPrimary = s.capability;
+          return {
+            capability: id,
+            additionalCapabilities: [
+              previousPrimary,
+              ...s.additionalCapabilities.filter((c) => c !== id),
+            ],
+            locationProvided: false,
+            measurementConfirmed: false,
+          };
         }),
 
       addAttachment: (attachment) =>
@@ -169,6 +237,7 @@ export const useAriStore = create<AriState>()(
           // want to clear the conversation, not reset their tool selection.
           mode: s.mode,
           capability: s.capability,
+          additionalCapabilities: s.additionalCapabilities,
           modeHistory: s.modeHistory,
           sessionStartedAt: s.sessionStartedAt,
         })),
@@ -181,6 +250,7 @@ export const useAriStore = create<AriState>()(
       partialize: (s) => ({
         mode: s.mode,
         capability: s.capability,
+        additionalCapabilities: s.additionalCapabilities,
         messages: s.messages,
         locationProvided: s.locationProvided,
         measurementConfirmed: s.measurementConfirmed,

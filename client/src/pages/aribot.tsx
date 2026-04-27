@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, Star } from "lucide-react";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
 import { MessageList } from "@/components/ari/MessageList";
@@ -9,8 +9,10 @@ import { useAriStore, type AriMessage } from "@/stores/ariStore";
 import { sendAriMessage } from "@/lib/ariApi";
 import {
   ACTIVE_CAPABILITY_IDS,
+  getCapability,
   type AriCapabilityId,
 } from "@shared/ari/capabilities";
+import { cn } from "@/lib/utils";
 
 interface MeResponse {
   user: {
@@ -41,6 +43,9 @@ export default function Aribot() {
   const mode = useAriStore((s) => s.mode);
   const capability = useAriStore((s) => s.capability);
   const setCapability = useAriStore((s) => s.setCapability);
+  const additionalCapabilities = useAriStore((s) => s.additionalCapabilities);
+  const toggleCapability = useAriStore((s) => s.toggleCapability);
+  const promoteCapability = useAriStore((s) => s.promoteCapability);
   const messages = useAriStore((s) => s.messages);
   const addMessage = useAriStore((s) => s.addMessage);
   const appendToLastMessage = useAriStore((s) => s.appendToLastMessage);
@@ -81,7 +86,20 @@ export default function Aribot() {
       filename: a.filename,
     }));
 
-    const sentQuery = trimmed;
+    // If the clinician has additional capabilities pinned, prefix the query
+    // with a short directive so Ari knows to also bring those perspectives
+    // into the answer. The strict `capability` value sent to the backend
+    // continues to drive system prompt + gating.
+    const additionalNames = additionalCapabilities
+      .map((id) => getCapability(id).displayName)
+      .filter(Boolean);
+    const sentQuery =
+      additionalNames.length > 0
+        ? `[Also bring perspectives from: ${additionalNames.join(
+            ", "
+          )}]\n\n${trimmed}`
+        : trimmed;
+
     setQuery("");
     clearAttachments();
     setStreaming(true);
@@ -112,6 +130,7 @@ export default function Aribot() {
     streaming,
     mode,
     capability,
+    additionalCapabilities,
     attachments,
     addMessage,
     appendToLastMessage,
@@ -158,6 +177,12 @@ export default function Aribot() {
       <TopBar onClear={handleClearScratch} />
       <div className="flex min-h-0 flex-1 flex-col">
         <main className="flex min-h-0 flex-1 flex-col">
+          <CapabilityChips
+            primary={capability}
+            additional={additionalCapabilities}
+            onRemove={(id) => toggleCapability(id)}
+            onPromote={(id) => promoteCapability(id)}
+          />
           <div
             className="flex-1 overflow-y-auto"
             data-testid="region-ari-conversation"
@@ -202,3 +227,87 @@ export default function Aribot() {
     </div>
   );
 }
+
+interface CapabilityChipsProps {
+  primary: AriCapabilityId;
+  additional: AriCapabilityId[];
+  onRemove: (id: AriCapabilityId) => void;
+  onPromote: (id: AriCapabilityId) => void;
+}
+
+function CapabilityChips({
+  primary,
+  additional,
+  onRemove,
+  onPromote,
+}: CapabilityChipsProps) {
+  const all: { id: AriCapabilityId; isPrimary: boolean }[] = [
+    { id: primary, isPrimary: true },
+    ...additional.map((id) => ({ id, isPrimary: false })),
+  ];
+  return (
+    <div
+      className="border-b border-border bg-muted/30 px-4 py-2 sm:px-6"
+      data-testid="region-ari-capability-chips"
+    >
+      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Capabilities
+        </span>
+        {all.map((cap) => {
+          const meta = getCapability(cap.id);
+          return (
+            <span
+              key={cap.id}
+              data-testid={`chip-capability-${cap.id}`}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
+                cap.isPrimary
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              )}
+            >
+              {cap.isPrimary && (
+                <Star className="h-3 w-3 fill-primary text-primary" aria-label="Primary" />
+              )}
+              {!cap.isPrimary && (
+                <button
+                  type="button"
+                  onClick={() => onPromote(cap.id)}
+                  className="rounded p-0.5 hover:bg-accent"
+                  data-testid={`button-promote-capability-${cap.id}`}
+                  aria-label={`Make ${meta.displayName} the primary capability`}
+                  title="Make primary"
+                >
+                  <Star className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
+              )}
+              <span>{meta.displayName}</span>
+              <button
+                type="button"
+                onClick={() => onRemove(cap.id)}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-accent"
+                data-testid={`button-remove-capability-${cap.id}`}
+                aria-label={`Remove ${meta.displayName}`}
+                title={
+                  cap.isPrimary && additional.length === 0
+                    ? "At least one capability is required"
+                    : "Remove"
+                }
+                disabled={cap.isPrimary && additional.length === 0}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          );
+        })}
+        {additional.length === 0 && (
+          <span className="text-[11px] text-muted-foreground">
+            Use the + button in the chat to add more.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
