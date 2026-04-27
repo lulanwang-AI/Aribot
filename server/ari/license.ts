@@ -32,9 +32,12 @@ export type AriClinicianContext = {
 };
 
 /**
- * Read the user's session and confirm they completed Ari onboarding. If they
- * haven't, return 403 with { redirect: "/aribot/onboarding" }.
+ * Resolve the current Ari clinician. Both sign-in and onboarding are
+ * currently optional — when no session exists we fall back to the seeded
+ * default clinician (`u1`) so anyone can use Ari without forced signup.
  */
+export const ARI_GUEST_USER_ID = "u1";
+
 export async function requireAriClinician(
   req: Request,
   res: Response,
@@ -44,42 +47,18 @@ export async function requireAriClinician(
     isAuthenticated?: () => boolean;
     user?: { id?: string };
   };
-  const route = `${req.method} ${req.path}`;
-  if (
-    typeof r.isAuthenticated !== "function" ||
-    !r.isAuthenticated() ||
-    !r.user?.id
-  ) {
-    ariAudit.write({
-      userId: "anonymous",
-      licenseType: "UNKNOWN",
-      mode: "ari",
-      capability: route,
-      query: "",
-      attachmentCount: 0,
-      latencyMs: 0,
-      success: false,
-      errorCode: "auth_missing",
-    });
-    return res
-      .status(401)
-      .json({ message: "Authentication required for Ari clinical workflows." });
-  }
-
-  const user = await storage.getUser(r.user.id);
+  const sessionUserId =
+    typeof r.isAuthenticated === "function" && r.isAuthenticated()
+      ? r.user?.id
+      : undefined;
+  const userId = sessionUserId || ARI_GUEST_USER_ID;
+  const user = await storage.getUser(userId);
   if (!user) {
-    ariAudit.write({
-      userId: r.user.id,
-      licenseType: "UNKNOWN",
-      mode: "ari",
-      capability: route,
-      query: "",
-      attachmentCount: 0,
-      latencyMs: 0,
-      success: false,
-      errorCode: "session_user_missing",
+    // Neither the session user nor the seeded guest is available — only
+    // happens in a totally empty store. Surface a clear error.
+    return res.status(500).json({
+      message: "Ari user context unavailable.",
     });
-    return res.status(401).json({ message: "Session user not found." });
   }
   // Onboarding is currently optional. If the user has completed it we use
   // their declared license type and terms-acceptance timestamp; otherwise we

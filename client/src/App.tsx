@@ -114,9 +114,12 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
 }
 
 function AppContent() {
-  const [authenticated, setAuthenticated] = useState(() => {
-    return localStorage.getItem("aribot_authenticated") === "true";
-  });
+  // Sign-in is currently optional: anyone can use the tools without an
+  // account. The login page is still reachable explicitly at /login, and
+  // signing in still records a session cookie that the server uses for
+  // attribution. The localStorage flag is preserved so an explicit sign-out
+  // (which clears it) can still take effect for the duration of that tab.
+  const [authenticated, setAuthenticated] = useState(true);
   const [location, setLocation] = useLocation();
 
   async function handleSignOut() {

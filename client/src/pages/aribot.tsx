@@ -158,19 +158,10 @@ export default function Aribot() {
     );
   }
 
-  // The /me endpoint returned 401 (or the user has no record) — treat as
-  // unauthenticated and send to login.
-  if (meQuery.isError || !meQuery.data) {
-    return (
-      <div className="flex h-full items-center justify-center" data-testid="error-ari-me">
-        <div className="text-sm text-muted-foreground">
-          Sign in required to use Ari.
-        </div>
-      </div>
-    );
-  }
-
-  const user = meQuery.data.user;
+  // /me should always succeed now that sign-in is optional, but if it does
+  // fail (network blip, server error) keep the page usable instead of
+  // forcing the user to a sign-in screen.
+  const user = meQuery.data?.user ?? null;
 
   return (
     <div className="flex h-full flex-col" data-testid="page-aribot">
@@ -239,8 +230,8 @@ export default function Aribot() {
           >
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2">
               <span>
-                {user.licenseType || "Clinician"}
-                {(user.email || user.username) && (
+                {user?.licenseType || "Clinician"}
+                {(user?.email || user?.username) && (
                   <>
                     {" · "}
                     <span data-testid="text-ari-user">

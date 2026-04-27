@@ -4,6 +4,7 @@ import { anthropic } from "./client";
 import { ARI_MODEL_ID, ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./config";
 import { AriRequestSchema, type AriAttachment } from "./schema";
 import {
+  ARI_GUEST_USER_ID,
   buildClinicianPromptAddendum,
   onboardingSchema,
   requireAriClinician,
@@ -49,19 +50,24 @@ router.post("/onboarding", async (req, res) => {
   return res.json({ user: safe });
 });
 
-// --- Status endpoint for onboarding gate on the frontend.
+// --- Status endpoint for the Ari frontend. Sign-in is currently optional;
+// when no session exists we fall back to the seeded clinician (u1) so the
+// page renders without redirecting to the login screen.
 router.get("/me", async (req, res) => {
   const r = req as any;
-  if (typeof r.isAuthenticated !== "function" || !r.isAuthenticated() || !r.user?.id) {
-    return res.status(401).json({ message: "Sign in required." });
-  }
-  const user = await storage.getUser(r.user.id);
+  const sessionUserId =
+    typeof r.isAuthenticated === "function" && r.isAuthenticated()
+      ? r.user?.id
+      : undefined;
+  const userId = sessionUserId || ARI_GUEST_USER_ID;
+  const user = await storage.getUser(userId);
   if (!user) return res.status(404).json({ message: "User not found." });
   const { password: _, ...safe } = user;
   return res.json({
     user: safe,
     onboarded: Boolean((user as any).licenseType && (user as any).acceptedAriTermsAt),
     sessionStartedAt: Date.now(),
+    guest: !sessionUserId,
   });
 });
 
