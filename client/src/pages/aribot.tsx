@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { recordEvent } from "@/lib/analytics";
@@ -35,7 +34,6 @@ interface MeResponse {
 }
 
 export default function Aribot() {
-  const [, setLocation] = useLocation();
 
   useEffect(() => {
     recordEvent("page_view", { section: "aribot" });
@@ -47,13 +45,8 @@ export default function Aribot() {
     retry: false,
   });
 
-  // If not onboarded, push to the onboarding page. We tolerate a brief flash
-  // of the loader during the redirect.
-  useEffect(() => {
-    if (meQuery.isSuccess && !meQuery.data?.onboarded) {
-      setLocation("/aribot/onboarding");
-    }
-  }, [meQuery.isSuccess, meQuery.data?.onboarded, setLocation]);
+  // Onboarding is currently optional — clinicians can complete it at
+  // /aribot/onboarding but are no longer forced through it before using Ari.
 
   const mode = useAriStore((s) => s.mode);
   const capability = useAriStore((s) => s.capability);
@@ -173,15 +166,6 @@ export default function Aribot() {
         <div className="text-sm text-muted-foreground">
           Sign in required to use Ari.
         </div>
-      </div>
-    );
-  }
-
-  // Brief flash while redirect to onboarding fires.
-  if (!meQuery.data.onboarded) {
-    return (
-      <div className="flex h-full items-center justify-center" data-testid="redirect-ari-onboarding">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }

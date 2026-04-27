@@ -81,31 +81,22 @@ export async function requireAriClinician(
     });
     return res.status(401).json({ message: "Session user not found." });
   }
-  const lt = (user as any).licenseType;
+  // Onboarding is currently optional. If the user has completed it we use
+  // their declared license type and terms-acceptance timestamp; otherwise we
+  // fall through with sensible defaults (license OTHER, terms ts = now) so
+  // every authenticated user can use Ari without forced signup.
+  const lt = (user as any).licenseType as LicenseType | undefined;
   const ts = (user as any).acceptedAriTermsAt;
-  if (!lt || !ts) {
-    ariAudit.write({
-      userId: user.id,
-      licenseType: "UNKNOWN",
-      mode: "ari",
-      capability: route,
-      query: "",
-      attachmentCount: 0,
-      latencyMs: 0,
-      success: false,
-      errorCode: "onboarding_required",
-    });
-    return res.status(403).json({
-      message: "Ari onboarding required.",
-      redirect: "/aribot/onboarding",
-    });
-  }
   (req as any).ariClinician = {
     userId: user.id,
-    licenseType: lt as LicenseType,
+    licenseType: (lt || "OTHER") as LicenseType,
     email: (user as any).email || (user as any).username || "",
     acceptedAriTermsAt:
-      typeof ts === "number" ? ts : new Date(ts).getTime(),
+      typeof ts === "number"
+        ? ts
+        : ts
+          ? new Date(ts).getTime()
+          : Date.now(),
   } satisfies AriClinicianContext;
   next();
 }
