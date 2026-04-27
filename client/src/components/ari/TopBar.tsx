@@ -16,6 +16,7 @@ import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/use-theme";
 import { ExplainerSheet } from "@/components/ari/ExplainerSheet";
+import { HistorySheet } from "@/components/ari/HistorySheet";
 import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 
 interface TopBarProps {
@@ -95,6 +96,7 @@ export function TopBar({ onClear }: TopBarProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <HistorySheet />
           <ExplainerSheet />
           <Button
             variant="outline"

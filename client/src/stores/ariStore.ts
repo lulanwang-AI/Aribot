@@ -61,6 +61,9 @@ export interface AriTab {
   measurementConfirmed: boolean;
   modeHistory: ModeSwitchEvent[];
   sessionStartedAt: number;
+  // Bumped every time a message is added or streamed into. Used to sort
+  // the History panel so the most recent conversations float to the top.
+  updatedAt: number;
   // Telemetry helper — not persisted across reloads on purpose.
   _erSessionStart?: ErSessionStart;
 }
@@ -88,6 +91,8 @@ interface AriState {
   closeTab: (id: string) => void;
   switchTab: (id: string) => void;
   renameTab: (id: string, title: string) => void;
+  // History actions — wipe every saved conversation and start a fresh tab.
+  clearHistory: () => void;
 
   // Existing actions — operate on the active tab.
   setMode: (mode: AriMode) => void;
@@ -105,11 +110,37 @@ interface AriState {
   resetSession: () => void;
 }
 
+// Cap on how many past chats are kept in localStorage. 100 strikes a
+// balance between long-term recall and keeping the persisted blob small
+// enough to load fast on every page open.
+const MAX_HISTORY_TABS = 100;
+
+const PERSIST_KEY = "ari-session";
+
+// One-shot bridge: in earlier builds the store used sessionStorage. When
+// users upgrade to v4 we want their in-progress chats to carry over
+// instead of being silently dropped. Run before zustand's persist middleware
+// reads from localStorage.
+function bridgeSessionStorageToLocalStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (window.localStorage.getItem(PERSIST_KEY)) return; // already migrated
+    const legacy = window.sessionStorage.getItem(PERSIST_KEY);
+    if (!legacy) return;
+    window.localStorage.setItem(PERSIST_KEY, legacy);
+    window.sessionStorage.removeItem(PERSIST_KEY);
+  } catch {
+    // Quota / privacy mode — fail silently, the user just starts fresh.
+  }
+}
+bridgeSessionStorageToLocalStorage();
+
 function makeTabId(): string {
   return `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function createTab(overrides: Partial<AriTab> = {}): AriTab {
+  const now = Date.now();
   return {
     id: makeTabId(),
     title: "New chat",
@@ -122,7 +153,8 @@ function createTab(overrides: Partial<AriTab> = {}): AriTab {
     locationProvided: false,
     measurementConfirmed: false,
     modeHistory: [],
-    sessionStartedAt: Date.now(),
+    sessionStartedAt: now,
+    updatedAt: now,
     ...overrides,
   };
 }
@@ -235,6 +267,15 @@ export const useAriStore = create<AriState>()(
           // we still want to set tabs).
           return { tabs: nextTabs };
         }),
+
+      clearHistory: () => {
+        const fresh = createTab();
+        set({
+          tabs: [fresh],
+          activeTabId: fresh.id,
+          ...mirror(fresh),
+        });
+      },
 
       // ── Per-tab actions ───────────────────────────────────────
       setMode: (mode) => {
@@ -387,10 +428,18 @@ export const useAriStore = create<AriState>()(
                 ? deriveTitleFromUserMessage(message.content)
                 : t.title,
               messages: [...t.messages, stamped],
+              updatedAt: Date.now(),
             };
           })
         ),
 
+      // NOTE: We intentionally do NOT bump `updatedAt` on every streaming
+      // delta. It would cause `persist` to re-serialize the whole tab list
+      // to localStorage on every chunk, which thrashes the main thread
+      // during long replies. `addMessage` already bumps `updatedAt` when the
+      // assistant message is first created, which is enough granularity for
+      // History sorting (chats are still ordered by their start time, and
+      // the next user reply will bump it again).
       appendToLastMessage: (delta) =>
         set((s) =>
           applyToActive(s, (t) => {
@@ -436,36 +485,51 @@ export const useAriStore = create<AriState>()(
     }),
     {
       name: "ari-session",
-      // v3 → capability is now optional; clear stale primary selections from
-      // pre-v3 sessions so the new auto-detect default takes effect for
-      // tabs that have not started a conversation yet.
-      version: 3,
-      storage: createJSONStorage(() => sessionStorage),
-      // Persist tabs (minus heavy attachment blobs). Mirror fields are
-      // recomputed on rehydrate so we don't bother storing them.
-      partialize: (s) => ({
-        tabs: s.tabs.map((t) => ({ ...t, attachments: [] })),
-        activeTabId: s.activeTabId,
-      }),
+      // v3 → capability is now optional.
+      // v4 → chat history persists across browser sessions (localStorage)
+      //      and each tab gains an `updatedAt` field for History sorting.
+      version: 4,
+      storage: createJSONStorage(() => localStorage),
+      // Persist tabs (minus heavy attachment blobs). Cap at MAX_HISTORY_TABS
+      // to keep localStorage from ballooning indefinitely. Mirror fields
+      // are recomputed on rehydrate so we don't bother storing them.
+      partialize: (s) => {
+        const sorted = [...s.tabs].sort((a, b) => b.updatedAt - a.updatedAt);
+        const kept = sorted.slice(0, MAX_HISTORY_TABS);
+        const keptIds = new Set(kept.map((t) => t.id));
+        return {
+          tabs: kept.map((t) => ({ ...t, attachments: [] })),
+          // If the active tab was pruned, fall back to the most recent.
+          activeTabId: keptIds.has(s.activeTabId)
+            ? s.activeTabId
+            : kept[0]?.id || s.activeTabId,
+        };
+      },
       migrate: (persisted, fromVersion) => {
         const p = persisted as Partial<AriState> | undefined;
         if (!p?.tabs) return p as any;
+        let tabs = p.tabs as any[];
         if (fromVersion < 3) {
-          return {
-            ...p,
-            tabs: p.tabs.map((t: any) => ({
-              ...t,
-              // Only clear capability for empty tabs — preserve the choice
-              // for any tab that already has a conversation in progress so
-              // continuing answers stay consistent.
-              capability:
-                Array.isArray(t.messages) && t.messages.length > 0
-                  ? t.capability
-                  : null,
-            })),
-          } as any;
+          tabs = tabs.map((t: any) => ({
+            ...t,
+            // Only clear capability for empty tabs — preserve the choice
+            // for any tab that already has a conversation in progress so
+            // continuing answers stay consistent.
+            capability:
+              Array.isArray(t.messages) && t.messages.length > 0
+                ? t.capability
+                : null,
+          }));
         }
-        return p as any;
+        if (fromVersion < 4) {
+          // Backfill updatedAt from sessionStartedAt (or now) so existing
+          // tabs sort sensibly in the History panel.
+          tabs = tabs.map((t: any) => ({
+            ...t,
+            updatedAt: t.updatedAt ?? t.sessionStartedAt ?? Date.now(),
+          }));
+        }
+        return { ...p, tabs } as any;
       },
       merge: (persisted, current) => {
         const p = persisted as Partial<AriState> | undefined;
