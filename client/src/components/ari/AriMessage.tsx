@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -11,7 +11,11 @@ import {
   Loader2,
   XCircle,
   Activity,
+  Volume2,
+  Square as SquareIcon,
 } from "lucide-react";
+import { speakText, stopActivePlayback, type TtsHandle } from "@/lib/ariVoice";
+import { useToast } from "@/hooks/use-toast";
 import {
   Collapsible,
   CollapsibleContent,
@@ -45,11 +49,74 @@ const ER_DISCLAIMER =
 
 export function AriMessage({ text, mode, streaming }: AriMessageProps) {
   const [copied, setCopied] = useState(false);
+  const [speechState, setSpeechState] = useState<
+    "idle" | "loading" | "playing"
+  >("idle");
+  const speechHandleRef = useRef<TtsHandle | null>(null);
+  const { toast } = useToast();
 
   const { blocks, trailingBuffer } = useMemo(
     () => parseAriStreamPartial(text + (text.endsWith("\n") ? "" : "\n")),
     [text]
   );
+
+  // Stop playback if the message unmounts mid-speech.
+  useEffect(() => {
+    return () => {
+      speechHandleRef.current?.stop();
+      speechHandleRef.current = null;
+    };
+  }, []);
+
+  async function handleListen() {
+    if (speechState === "playing") {
+      speechHandleRef.current?.stop();
+      speechHandleRef.current = null;
+      setSpeechState("idle");
+      return;
+    }
+    if (speechState === "loading") return;
+
+    const prose = extractProseOnly(blocks).trim();
+    if (!prose) {
+      toast({
+        title: "Nothing to read aloud",
+        description: "This response has no narrative text yet.",
+      });
+      return;
+    }
+
+    // Cap to keep playback short and to stay within the server's per-request
+    // character cap (4000). 3500 leaves headroom for the trailing reminder.
+    const spoken =
+      prose.length > 3500 ? prose.slice(0, 3500) + " (truncated)" : prose;
+
+    try {
+      stopActivePlayback();
+      setSpeechState("loading");
+      const handle = await speakText(spoken);
+      speechHandleRef.current = handle;
+      setSpeechState("playing");
+      handle.ended
+        .catch(() => {
+          /* error already surfaced */
+        })
+        .finally(() => {
+          if (speechHandleRef.current === handle) {
+            speechHandleRef.current = null;
+            setSpeechState("idle");
+          }
+        });
+    } catch (err: any) {
+      setSpeechState("idle");
+      speechHandleRef.current = null;
+      toast({
+        title: "Voice playback failed",
+        description: err?.message || "Unable to synthesize speech.",
+        variant: "destructive",
+      });
+    }
+  }
 
   const erHasDisclaimer = useMemo(() => {
     if (mode !== "er") return true;
@@ -124,6 +191,33 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
       )}
 
       <div className="flex items-center justify-end gap-2 pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleListen}
+          disabled={speechState === "loading" || streaming}
+          data-testid="button-ari-listen"
+          aria-pressed={speechState === "playing"}
+          aria-label={
+            speechState === "playing"
+              ? "Stop voice playback"
+              : "Listen to this response"
+          }
+        >
+          {speechState === "loading" ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : speechState === "playing" ? (
+            <SquareIcon className="mr-1.5 h-3.5 w-3.5" />
+          ) : (
+            <Volume2 className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {speechState === "loading"
+            ? "Loading…"
+            : speechState === "playing"
+              ? "Stop"
+              : "Listen"}
+        </Button>
         <Button
           type="button"
           variant="ghost"

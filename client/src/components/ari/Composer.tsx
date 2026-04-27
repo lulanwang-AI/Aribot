@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, HelpCircle, Paperclip, Plus, Send, Square } from "lucide-react";
+import {
+  Check,
+  HelpCircle,
+  Loader2,
+  Mic,
+  MicOff,
+  Paperclip,
+  Plus,
+  Send,
+  Square,
+} from "lucide-react";
+import { VoiceRecorder, transcribeAudio } from "@/lib/ariVoice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -78,9 +89,79 @@ export function Composer({
   const [uploadingName, setUploadingName] = useState<string | null>(null);
   const [capabilityMenuOpen, setCapabilityMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const dragDepthRef = useRef(0);
+  const recorderRef = useRef<VoiceRecorder | null>(null);
+  const voiceSupported = VoiceRecorder.isSupported();
+
+  // Stop any in-flight recording if the composer unmounts or the user
+  // switches tabs away mid-record.
+  useEffect(() => {
+    return () => {
+      recorderRef.current?.cancel();
+      recorderRef.current = null;
+    };
+  }, []);
+
+  async function handleVoiceClick() {
+    if (transcribing) return;
+    if (recording) {
+      // Stop & transcribe.
+      const rec = recorderRef.current;
+      if (!rec) {
+        setRecording(false);
+        return;
+      }
+      setTranscribing(true);
+      setRecording(false);
+      try {
+        const blob = await rec.stop();
+        const text = await transcribeAudio(blob);
+        if (text) {
+          // Append to existing draft so users can dictate multiple snippets.
+          const next = query
+            ? `${query.replace(/\s+$/, "")} ${text}`
+            : text;
+          setQuery(next.slice(0, MAX_QUERY));
+          textareaRef.current?.focus();
+        } else {
+          toast({
+            title: "No speech detected",
+            description: "Try recording again — speak a bit closer to the mic.",
+          });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Voice input failed",
+          description: err?.message || "Unable to transcribe audio.",
+          variant: "destructive",
+        });
+      } finally {
+        recorderRef.current = null;
+        setTranscribing(false);
+      }
+      return;
+    }
+
+    // Start recording.
+    const rec = new VoiceRecorder();
+    try {
+      await rec.start();
+      recorderRef.current = rec;
+      setRecording(true);
+    } catch (err: any) {
+      toast({
+        title: "Microphone unavailable",
+        description:
+          err?.message ||
+          "Allow microphone access in your browser to dictate questions.",
+        variant: "destructive",
+      });
+    }
+  }
 
   // Soften the location gate when the user types something that mentions a
   // location/facility. Sticky once detected.
@@ -437,6 +518,55 @@ export function Composer({
                 onChange={(e) => handleFiles(e.target.files)}
                 data-testid="input-ari-file"
               />
+              {voiceSupported && (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          type="button"
+                          variant={recording ? "destructive" : "outline"}
+                          size="sm"
+                          disabled={disabled || transcribing || streaming}
+                          onClick={handleVoiceClick}
+                          data-testid="button-ari-voice"
+                          aria-pressed={recording}
+                          aria-label={
+                            recording
+                              ? "Stop recording and transcribe"
+                              : "Dictate with voice"
+                          }
+                          className={cn(recording && "animate-pulse")}
+                        >
+                          {transcribing ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              Transcribing…
+                            </>
+                          ) : recording ? (
+                            <>
+                              <MicOff className="mr-1.5 h-4 w-4" />
+                              Stop
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="mr-1.5 h-4 w-4" />
+                              Speak
+                            </>
+                          )}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {recording
+                        ? "Click again to stop and transcribe."
+                        : transcribing
+                          ? "Sending audio to transcription…"
+                          : "Dictate your question — voice is converted to text via ElevenLabs."}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <span
                 className={cn(
                   "ml-1 text-xs tabular-nums",

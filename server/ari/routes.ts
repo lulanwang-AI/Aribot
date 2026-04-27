@@ -13,6 +13,7 @@ import { ariAudit } from "./audit";
 import { detectPhi, PHI_REJECTION_MESSAGE } from "./phi";
 import { getMemoryStore } from "./memory";
 import { ariUploadRouter } from "./upload";
+import { ariVoiceRouter } from "./voice";
 import { storage } from "../storage";
 import { parseAriStream } from "@shared/ari/blocks";
 import {
@@ -93,6 +94,7 @@ router.get("/memory", requireAriClinician, async (req, res) => {
 
 // --- File upload (mounted as a sub-router so multer middleware is scoped).
 router.use("/", ariUploadRouter);
+router.use("/", ariVoiceRouter);
 
 // --- Main chat endpoint (streaming SSE).
 router.post("/chat", requireAriClinician, async (req, res) => {
