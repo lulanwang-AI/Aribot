@@ -56,8 +56,8 @@ export function TopBar({ onClear }: TopBarProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-2 border-b border-border bg-background px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <div className="flex flex-row items-center justify-between gap-2 border-b border-border bg-background px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <img
             src={aribotLogoPath}
             alt="Aribot"
