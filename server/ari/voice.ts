@@ -19,7 +19,11 @@ const connectors = new ReplitConnectors();
 const ARIA_VOICE_ID = "9BWtsMINqrJLrRacOk9x";
 const DEFAULT_VOICE_ID =
   (process.env.ARI_DEFAULT_VOICE_ID || "").trim() || ARIA_VOICE_ID;
-const DEFAULT_TTS_MODEL = "eleven_turbo_v2_5";
+// `eleven_flash_v2_5` is ElevenLabs's lowest-latency TTS model (~75 ms
+// time-to-first-byte vs ~250–300 ms for turbo), which keeps the speak
+// button feeling instant in the chat. Quality is slightly behind turbo
+// on long-form prose but is more than adequate for short Ari replies.
+const DEFAULT_TTS_MODEL = "eleven_flash_v2_5";
 const DEFAULT_STT_MODEL = "scribe_v1";
 
 // Cap requests at sensible sizes so a runaway client can't spend our quota.
