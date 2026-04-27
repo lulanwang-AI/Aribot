@@ -248,24 +248,13 @@ function CapabilityChips({
     ...(primary ? [{ id: primary, isPrimary: true }] : []),
     ...additional.map((id) => ({ id, isPrimary: false })),
   ];
-  const noneSelected = all.length === 0;
+  if (all.length === 0) return null;
   return (
     <div
       className="border-t border-border bg-muted/30 px-4 py-2 sm:px-6"
       data-testid="region-ari-capability-chips"
     >
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Capabilities
-        </span>
-        {noneSelected && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-background px-2 py-0.5 text-xs text-muted-foreground"
-            data-testid="chip-capability-auto"
-          >
-            Auto-detect
-          </span>
-        )}
         {all.map((cap) => {
           const meta = getCapability(cap.id);
           return (
@@ -308,11 +297,6 @@ function CapabilityChips({
             </span>
           );
         })}
-        <span className="text-[11px] text-muted-foreground">
-          {noneSelected
-            ? "Ari will infer the right capability from your question — or use the + button to pick one."
-            : "Use the + button in the chat to add more."}
-        </span>
       </div>
     </div>
   );
