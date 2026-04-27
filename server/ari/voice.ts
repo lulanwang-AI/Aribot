@@ -10,10 +10,15 @@ import { requireAriClinician } from "./license";
 
 const connectors = new ReplitConnectors();
 
-// Default voice ID — "Rachel" is a clear, neutral English voice that ships
-// on every ElevenLabs account. Override per-request via the `voiceId` body
-// field if a clinician wants a different reader.
-const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+// Default voice ID — "Aria" is a young, warm, friendly English-speaking
+// female voice that ships on every ElevenLabs account, and matches the
+// "Ari" branding of the chatbot. Override per-request via the `voiceId`
+// body field if a clinician wants a different reader, or globally via
+// the `ARI_DEFAULT_VOICE_ID` env var so ops can change voices without
+// a redeploy.
+const ARIA_VOICE_ID = "9BWtsMINqrJLrRacOk9x";
+const DEFAULT_VOICE_ID =
+  (process.env.ARI_DEFAULT_VOICE_ID || "").trim() || ARIA_VOICE_ID;
 const DEFAULT_TTS_MODEL = "eleven_turbo_v2_5";
 const DEFAULT_STT_MODEL = "scribe_v1";
 
@@ -27,6 +32,63 @@ const upload = multer({
 });
 
 export const ariVoiceRouter = Router();
+
+// Wrap `connectors.proxy(...)` with one retry on transient upstream failures
+// (503/504 from the connector edge or Cloudflare in front of ElevenLabs).
+// We only retry once, with a small backoff, so a slow user request doesn't
+// hang for many seconds while the proxy thrashes. Network errors (thrown
+// by fetch) are also retried once. Body must be a string/Buffer/URLSearchParams
+// for retry to work — FormData streams cannot be replayed safely, so the
+// caller is responsible for passing a `buildBody` function in that case.
+async function proxyWithRetry(
+  connectorName: string,
+  path: string,
+  buildOptions: () => {
+    method: string;
+    headers?: Record<string, string>;
+    body?: any;
+  },
+): Promise<Response> {
+  const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+  const MAX_ATTEMPTS = 2; // initial + 1 retry — keeps user latency bounded
+  let lastResponse: Response | null = null;
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const opts = buildOptions();
+      const resp = await connectors.proxy(connectorName, path, opts);
+      if (!TRANSIENT_STATUSES.has(resp.status)) {
+        // Either success or a deterministic error we should surface (4xx).
+        return resp;
+      }
+      lastResponse = resp;
+      console.warn(
+        `[ari/voice] proxy ${connectorName}${path} -> ${resp.status}, attempt ${attempt}/${MAX_ATTEMPTS}`,
+      );
+      // Drain so the underlying connection is freed before the retry, but
+      // only if we're going to retry — otherwise the caller may want the
+      // body for diagnostics.
+      if (attempt < MAX_ATTEMPTS) {
+        try { await resp.text(); } catch { /* noop */ }
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(
+        `[ari/voice] proxy ${connectorName}${path} threw on attempt ${attempt}/${MAX_ATTEMPTS}:`,
+        (err as Error).message,
+      );
+    }
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }
+  // Exhausted retries. Prefer returning the last response (if any) so the
+  // caller can surface the actual upstream status code; otherwise rethrow.
+  if (lastResponse) return lastResponse;
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`proxy ${connectorName}${path} failed after ${MAX_ATTEMPTS} attempts`);
+}
 
 // Extract a short, human-readable hint from an ElevenLabs error body.
 // Bodies are usually JSON like { detail: { message: "..." } } or
@@ -72,10 +134,10 @@ ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
       : DEFAULT_VOICE_ID;
 
   try {
-    const elevenResp = await connectors.proxy(
+    const elevenResp = await proxyWithRetry(
       "elevenlabs",
       `/v1/text-to-speech/${voice}`,
-      {
+      () => ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,13 +148,28 @@ ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
           model_id: DEFAULT_TTS_MODEL,
           voice_settings: { stability: 0.5, similarity_boost: 0.75 },
         }),
-      }
+      }),
     );
 
     if (!elevenResp.ok) {
-      await elevenResp.text().catch(() => "");
-      console.error("[ari/voice/tts] ElevenLabs error status:", elevenResp.status);
-      return res.status(502).json({ message: "Text-to-speech provider error." });
+      // Capture body for log diagnosis (rate limits, voice not found, proxy
+      // errors, etc.) but never echo it back to the client.
+      const raw = await elevenResp.text().catch(() => "");
+      const hint = extractErrorHint(raw);
+      console.error(
+        "[ari/voice/tts] ElevenLabs error status:",
+        elevenResp.status,
+        hint || "(no body)"
+      );
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
+              ? "Voice provider is temporarily unavailable. Please try again."
+              : "Text-to-speech provider error.";
+      return res.status(502).json({ message: friendly });
     }
 
     const buf = Buffer.from(await elevenResp.arrayBuffer());
@@ -101,8 +178,16 @@ ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     return res.send(buf);
   } catch (err: any) {
-    console.error("[ari/voice/tts] failure:", err?.message || "unknown error");
-    return res.status(500).json({ message: "Text-to-speech failed." });
+    // proxyWithRetry rethrows when both attempts threw (network/transport
+    // outage, no Response object). Map that to the same friendly 502 the
+    // upstream-5xx path uses so the client sees a consistent "temporarily
+    // unavailable" message instead of a misleading internal-error code.
+    const msg = err?.message || "unknown error";
+    console.error("[ari/voice/tts] failure:", msg);
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
+    return res.status(502).json({ message: friendly });
   }
 });
 
@@ -139,20 +224,24 @@ ariVoiceRouter.post(
   }
 
   try {
-    // Build a multipart form for ElevenLabs. We re-wrap the buffer in a Blob
-    // so global FormData (Node 20+) accepts it without us needing form-data.
-    const form = new FormData();
-    const blob = new Blob([file.buffer], { type: file.mimetype });
-    form.append("file", blob, file.originalname || "speech.webm");
-    form.append("model_id", DEFAULT_STT_MODEL);
+    // We rebuild the multipart form on each retry because FormData is a
+    // single-use stream — once it has been consumed by fetch we cannot
+    // replay it for the second attempt.
+    const buildForm = () => {
+      const form = new FormData();
+      const blob = new Blob([file.buffer], { type: file.mimetype });
+      form.append("file", blob, file.originalname || "speech.webm");
+      form.append("model_id", DEFAULT_STT_MODEL);
+      return form;
+    };
 
-    const elevenResp = await connectors.proxy(
+    const elevenResp = await proxyWithRetry(
       "elevenlabs",
       "/v1/speech-to-text",
-      {
+      () => ({
         method: "POST",
-        body: form,
-      }
+        body: buildForm(),
+      }),
     );
 
     if (!elevenResp.ok) {
@@ -173,7 +262,9 @@ ariVoiceRouter.post(
             ? "Voice provider is rate-limited. Wait a moment and try again."
             : elevenResp.status === 413
               ? "Recording is too long for the transcription provider."
-              : `Speech-to-text provider error${hint ? `: ${hint}` : ""}.`;
+              : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
+                ? "Voice provider is temporarily unavailable. Please try again."
+                : "Speech-to-text provider error.";
       return res.status(502).json({ message: friendly });
     }
 
@@ -182,13 +273,15 @@ ariVoiceRouter.post(
   } catch (err: any) {
     // Log the raw error server-side for ops/debugging, but never echo
     // internal connector/provider error text to the client. Only the
-    // narrow, well-understood "not connected" case gets a tailored hint.
+    // narrow, well-understood "not connected" case gets a tailored hint;
+    // transport failures bubble up as the same friendly 502 the upstream-
+    // 5xx path uses so the client sees a consistent message.
     const msg = err?.message || "unknown error";
     console.error("[ari/voice/stt] failure:", msg);
     const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
       ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
-      : "Speech-to-text failed. Please try again in a moment.";
-    return res.status(500).json({ message: friendly });
+      : "Voice provider is temporarily unavailable. Please try again.";
+    return res.status(502).json({ message: friendly });
   }
   }
 );

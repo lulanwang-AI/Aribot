@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "3kCwpqPCoV34kNvDW8XhR"
@@ -18,3 +17,9 @@ id = "rkODWH7emopkoUfO7iVR_"
 uri = "file://attached_assets/generated_images/doctor-income.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "Yic7IifM-uIj0_DTJ6CCK"
+uri = "file://attached_assets/aria_voice_hello.mp3"
+type = "audio"
+title = "New default voice — Aria (young, warm female)"
