@@ -2,6 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import ariRouter from "./ari/routes";
+import "./ari/client";
+import { ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./ari/config";
 
 const app = express();
 const httpServer = createServer(app);
@@ -61,6 +64,15 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
+
+  // Mount Ari clinical workflows (separate from existing OpenAI-backed routes).
+  app.use("/api/ari", ariRouter);
+
+  // Startup health check: by this point config and client have been imported,
+  // so the JSON loaded and the API key is present (otherwise we would have thrown).
+  if (ARI_SYSTEM_PROMPT && MCP_SERVERS.length >= 0 && process.env.ANTHROPIC_API_KEY) {
+    log("Ari clinical workflows: READY");
+  }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -48,9 +48,15 @@ client/src/
     team.tsx              - Team members display + moderation queue
     telemed.tsx           - Telemedicine: inquiries, consultations, video call, earnings
 server/
-  routes.ts               - API endpoints
+  routes.ts               - API endpoints (existing OpenAI-backed clinical features)
   storage.ts              - In-memory storage with seed data
   seed.ts                 - Deterministic seed data generator (200 doctors, 80 news, 60 cases, etc.)
+  ari/                    - Ari clinical AI feature (Anthropic Claude + MCP, isolated from OpenAI)
+    config.ts             - Loads attached_assets/ari-agent.json (system prompt, MCP servers); throws on startup if missing/malformed
+    client.ts             - Singleton Anthropic client; throws on startup if ANTHROPIC_API_KEY missing
+    schema.ts             - Zod schema for /api/ari/chat request body
+    auth.ts               - Strict requireAriAuth middleware (Passport session required; 401 otherwise)
+    routes.ts             - POST /api/ari/chat: SSE-streamed Claude response with MCP tools
 shared/
   schema.ts               - TypeScript types and Zod schemas
 ```
@@ -110,6 +116,15 @@ shared/
 - `POST /api/clinical-chat` - Clinical AI chat with streaming responses
 - `POST /api/soap` - Generate/regenerate SOAP note sections
 - `POST /api/summary` - Generate patient-facing visit summary
+- `POST /api/ari/chat` - Ari clinical workflows (Claude + MCP, SSE streaming, requires auth)
+
+## Ari Clinical AI (separate from OpenAI flows)
+- Backed by Anthropic Claude (`claude-sonnet-4-6`) with MCP servers (PubMed, ChEMBL, CMS Coverage, etc.)
+- Config loaded at startup from `attached_assets/ari-agent.json` (system prompt + mcp_servers); fails closed if missing
+- Requires `ANTHROPIC_API_KEY` secret; server throws at boot if absent
+- Streaming via Server-Sent Events: `data: <text>` per delta, `event: done` on completion, `event: error` on failure
+- Auth: strict Passport session check; returns 401 if not authenticated. NOTE: Passport is in deps but not yet wired up in this project — wire it before exposing Ari to clinicians.
+- Active capabilities: antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging
 
 ## Key Features
 - **Clinical Workflow**: Four-module clinical encounter system (Pre-charting → AI Consult → SOAP Note → Visit Summary) sharing patient state via Zustand + sessionStorage
