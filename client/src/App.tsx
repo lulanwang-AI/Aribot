@@ -36,6 +36,7 @@ import Login from "@/pages/login";
 import Landing from "@/pages/landing";
 import Whitepaper from "@/pages/whitepaper";
 import { AuthContext } from "@/lib/auth";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function SidebarEdgeTrigger() {
@@ -159,12 +160,14 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppContent />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <AppContent />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
