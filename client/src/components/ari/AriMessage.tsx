@@ -344,36 +344,50 @@ function CitationGroup({ blocks }: { blocks: AriCitationBlock[] }) {
         Sources
       </div>
       <ul className="space-y-2">
-        {blocks.map((c, i) => (
-          <li
-            key={i}
-            className="flex flex-col gap-1 rounded border border-border bg-muted/40 px-3 py-2 text-xs"
-            data-testid={`ari-citation-${i}`}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold">{c.source}</span>
-              {c.evidenceClass && (
-                <Badge variant="outline" className="text-[10px]">
-                  {c.evidenceClass}
-                </Badge>
+        {blocks.map((c, i) => {
+          const linkLabel = c.title?.trim() || c.source || c.doiOrUrl;
+          return (
+            <li
+              key={i}
+              className="flex flex-col gap-1 rounded border border-border bg-muted/40 px-3 py-2 text-xs"
+              data-testid={`ari-citation-${i}`}
+            >
+              {c.doiOrUrl ? (
+                <a
+                  href={c.doiOrUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-start gap-1 text-sm font-medium text-primary hover:underline"
+                  data-testid={`link-ari-citation-${i}`}
+                >
+                  <span className="break-words">{linkLabel}</span>
+                  <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-sm font-medium text-foreground">
+                  {linkLabel}
+                </span>
               )}
-            </div>
-            {c.doiOrUrl ? (
-              <a
-                href={c.doiOrUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 break-all text-primary hover:underline"
-                data-testid={`link-ari-citation-${i}`}
-              >
-                {c.doiOrUrl}
-                <ExternalLink className="h-3 w-3 shrink-0" />
-              </a>
-            ) : (
-              <span className="text-muted-foreground">No URL provided</span>
-            )}
-          </li>
-        ))}
+              <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                {c.title && c.source && c.title !== c.source && (
+                  <span data-testid={`text-ari-citation-source-${i}`}>
+                    {c.source}
+                  </span>
+                )}
+                {c.evidenceClass && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {c.evidenceClass}
+                  </Badge>
+                )}
+                {c.doiOrUrl && (
+                  <span className="break-all text-[11px] opacity-70">
+                    {c.doiOrUrl}
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

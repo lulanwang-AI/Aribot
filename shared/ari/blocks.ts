@@ -27,6 +27,7 @@ export type AriClaimBlock = {
 export type AriCitationBlock = {
   kind: "citation";
   source: string;
+  title: string;
   doiOrUrl: string;
   evidenceClass: string;
 };
@@ -102,6 +103,8 @@ function tryParseStructured(line: string): AriBlock | null {
     return {
       kind: "citation",
       source: parsed.ari_citation,
+      title:
+        typeof parsed.title === "string" ? parsed.title : "",
       doiOrUrl:
         typeof parsed.doi_or_url === "string" ? parsed.doi_or_url : "",
       evidenceClass:
