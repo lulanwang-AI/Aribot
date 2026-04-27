@@ -15,6 +15,7 @@ import { LogOut, Moon, Sun } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/use-theme";
+import { ExplainerSheet } from "@/components/ari/ExplainerSheet";
 import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 
 interface TopBarProps {
@@ -94,6 +95,7 @@ export function TopBar({ onClear }: TopBarProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <ExplainerSheet />
           <Button
             variant="outline"
             size="icon"
