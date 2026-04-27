@@ -4,7 +4,6 @@ import { Loader2, X, Star } from "lucide-react";
 import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
-import { TabStrip } from "@/components/ari/TabStrip";
 import { MessageList } from "@/components/ari/MessageList";
 import { Composer } from "@/components/ari/Composer";
 import { useAriStore, type AriMessage } from "@/stores/ariStore";
@@ -186,7 +185,6 @@ export default function Aribot() {
   return (
     <div className="flex h-full flex-col" data-testid="page-aribot">
       <TopBar onClear={handleClearScratch} />
-      <TabStrip />
       <div className="flex min-h-0 flex-1 flex-col">
         <main className="flex min-h-0 flex-1 flex-col">
           <div
