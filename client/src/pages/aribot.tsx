@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, X, Star } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
@@ -46,7 +46,6 @@ export default function Aribot() {
   const setCapability = useAriStore((s) => s.setCapability);
   const additionalCapabilities = useAriStore((s) => s.additionalCapabilities);
   const toggleCapability = useAriStore((s) => s.toggleCapability);
-  const promoteCapability = useAriStore((s) => s.promoteCapability);
   const messages = useAriStore((s) => s.messages);
   const addMessage = useAriStore((s) => s.addMessage);
   const appendToLastMessage = useAriStore((s) => s.appendToLastMessage);
@@ -200,7 +199,6 @@ export default function Aribot() {
               primary={capability}
               additional={additionalCapabilities}
               onRemove={(id) => toggleCapability(id)}
-              onPromote={(id) => promoteCapability(id)}
             />
           )}
           <Composer
@@ -244,69 +242,41 @@ interface CapabilityChipsProps {
   primary: AriCapabilityId | null;
   additional: AriCapabilityId[];
   onRemove: (id: AriCapabilityId) => void;
-  onPromote: (id: AriCapabilityId) => void;
 }
 
 function CapabilityChips({
   primary,
   additional,
   onRemove,
-  onPromote,
 }: CapabilityChipsProps) {
-  const all: { id: AriCapabilityId; isPrimary: boolean }[] = [
-    ...(primary ? [{ id: primary, isPrimary: true }] : []),
-    ...additional.map((id) => ({ id, isPrimary: false })),
+  const ids: AriCapabilityId[] = [
+    ...(primary ? [primary] : []),
+    ...additional,
   ];
-  if (all.length === 0) return null;
+  if (ids.length === 0) return null;
   return (
     <div
       className="border-t border-border bg-muted/30 px-4 py-2 sm:px-6"
       data-testid="region-ari-capability-chips"
     >
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">
-        {all.map((cap, idx) => {
-          const meta = getCapability(cap.id);
-          const Icon = getCapabilityIcon(cap.id);
+        {ids.map((id, idx) => {
+          const meta = getCapability(id);
+          const Icon = getCapabilityIcon(id);
           return (
             <span
-              key={cap.id}
-              data-testid={`chip-capability-${cap.id}`}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs animate-in fade-in-0 slide-in-from-left-1 fill-mode-both",
-                cap.isPrimary
-                  ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
-              )}
+              key={id}
+              data-testid={`chip-capability-${id}`}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary animate-in fade-in-0 slide-in-from-left-1 fill-mode-both"
               style={{ animationDelay: `${idx * 30}ms`, animationDuration: "240ms" }}
             >
-              <Icon
-                className={cn(
-                  "h-3 w-3",
-                  cap.isPrimary ? "text-primary" : "text-muted-foreground"
-                )}
-                aria-hidden
-              />
-              {cap.isPrimary && (
-                <Star className="h-3 w-3 fill-primary text-primary" aria-label="Primary" />
-              )}
-              {!cap.isPrimary && (
-                <button
-                  type="button"
-                  onClick={() => onPromote(cap.id)}
-                  className="rounded p-0.5 hover:bg-accent"
-                  data-testid={`button-promote-capability-${cap.id}`}
-                  aria-label={`Make ${meta.displayName} the primary capability`}
-                  title="Make primary"
-                >
-                  <Star className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                </button>
-              )}
+              <Icon className="h-3 w-3 text-primary" aria-hidden />
               <span>{meta.displayName}</span>
               <button
                 type="button"
-                onClick={() => onRemove(cap.id)}
+                onClick={() => onRemove(id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-accent"
-                data-testid={`button-remove-capability-${cap.id}`}
+                data-testid={`button-remove-capability-${id}`}
                 aria-label={`Remove ${meta.displayName}`}
                 title="Remove"
               >

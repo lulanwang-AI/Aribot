@@ -424,8 +424,7 @@ export function Composer({
                     Choose capabilities
                   </div>
                   <div className="px-2 pb-1.5 text-[11px] text-muted-foreground">
-                    Pick one or more. The first stays primary; extras add
-                    perspective to each answer.
+                    Pick one or more to focus the answer.
                   </div>
                   <ul className="max-h-72 overflow-y-auto">
                     {ARI_CAPABILITIES.map((cap, idx) => {
@@ -468,15 +467,8 @@ export function Composer({
                               )}
                             </span>
                             <span className="flex-1">
-                              <span className="flex items-center gap-1.5">
-                                <span className="font-medium text-foreground">
-                                  {cap.displayName}
-                                </span>
-                                {isPrimary && (
-                                  <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-semibold uppercase tracking-wider text-primary">
-                                    Primary
-                                  </span>
-                                )}
+                              <span className="font-medium text-foreground">
+                                {cap.displayName}
                               </span>
                               <span className="block text-[11px] text-muted-foreground">
                                 {cap.shortDescription}
