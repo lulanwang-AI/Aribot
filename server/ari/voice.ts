@@ -28,6 +28,28 @@ const upload = multer({
 
 export const ariVoiceRouter = Router();
 
+// Extract a short, human-readable hint from an ElevenLabs error body.
+// Bodies are usually JSON like { detail: { message: "..." } } or
+// { error: { message: "..." } }, but we handle plain text too. We trim
+// to 140 chars so the message stays usable in a toast.
+function extractErrorHint(raw: string): string {
+  if (!raw) return "";
+  let txt = raw;
+  try {
+    const j = JSON.parse(raw);
+    txt =
+      j?.detail?.message ||
+      j?.detail?.status ||
+      (typeof j?.detail === "string" ? j.detail : "") ||
+      j?.error?.message ||
+      j?.message ||
+      raw;
+  } catch {
+    /* not JSON — use raw text */
+  }
+  return String(txt).replace(/\s+/g, " ").trim().slice(0, 140);
+}
+
 // POST /api/ari/voice/tts → audio/mpeg stream
 ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
   const { text, voiceId } = (req.body ?? {}) as {
@@ -134,20 +156,39 @@ ariVoiceRouter.post(
     );
 
     if (!elevenResp.ok) {
-      // Drain the body so the connection can be reused, but don't log it —
-      // upstream payloads can echo the user's audio metadata.
-      await elevenResp.text().catch(() => "");
-      console.error("[ari/voice/stt] ElevenLabs error status:", elevenResp.status);
-      return res
-        .status(502)
-        .json({ message: "Speech-to-text provider error." });
+      // Pull a short error hint from upstream so the user can actually see
+      // what went wrong (rate limit, unauthorized, bad audio, etc.). We
+      // sanitize and bound it so we never echo audio metadata back.
+      const raw = await elevenResp.text().catch(() => "");
+      const hint = extractErrorHint(raw);
+      console.error(
+        "[ari/voice/stt] ElevenLabs error status:",
+        elevenResp.status,
+        hint || "(no body)"
+      );
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : elevenResp.status === 413
+              ? "Recording is too long for the transcription provider."
+              : `Speech-to-text provider error${hint ? `: ${hint}` : ""}.`;
+      return res.status(502).json({ message: friendly });
     }
 
     const data = (await elevenResp.json()) as { text?: string };
     return res.json({ text: (data.text || "").trim() });
   } catch (err: any) {
-    console.error("[ari/voice/stt] failure:", err?.message || "unknown error");
-    return res.status(500).json({ message: "Speech-to-text failed." });
+    // Log the raw error server-side for ops/debugging, but never echo
+    // internal connector/provider error text to the client. Only the
+    // narrow, well-understood "not connected" case gets a tailored hint.
+    const msg = err?.message || "unknown error";
+    console.error("[ari/voice/stt] failure:", msg);
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Speech-to-text failed. Please try again in a moment.";
+    return res.status(500).json({ message: friendly });
   }
   }
 );

@@ -247,6 +247,108 @@ export async function speakText(text: string): Promise<TtsHandle> {
   };
 }
 
+// ── Live interim transcription via the browser's Web Speech API ──────────
+// This is a UX nicety only — it lets us stream interim text into the
+// composer while the user is still talking so they can see "what the
+// system thinks they're saying". The authoritative transcription is still
+// produced by ElevenLabs Scribe on stop (more accurate, multilingual,
+// punctuation-aware). When the browser doesn't support SpeechRecognition
+// (Firefox, some Safari versions), `LiveTranscriber.isSupported()` returns
+// false and the composer simply hides the live preview line.
+
+type SpeechRecognitionCtor = new () => any;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
+export interface LiveTranscriberCallbacks {
+  // Fired whenever the recognizer emits an updated interim result. The
+  // text is the concatenation of all final + the latest interim chunk so
+  // the UI can simply render it without buffering itself.
+  onInterim?: (text: string) => void;
+  // Fired when a phrase is finalized by the recognizer (typically after
+  // a short silence). Useful if you want to gradually accumulate text.
+  onFinal?: (text: string) => void;
+  // Fired on a recognizer error so the UI can fall back gracefully.
+  onError?: (message: string) => void;
+}
+
+export class LiveTranscriber {
+  private rec: any | null = null;
+  private finalChunks: string[] = [];
+
+  static isSupported(): boolean {
+    return getSpeechRecognitionCtor() !== null;
+  }
+
+  start(cb: LiveTranscriberCallbacks = {}): boolean {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return false;
+    try {
+      const rec = new Ctor();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang =
+        (typeof navigator !== "undefined" && navigator.language) || "en-US";
+      this.finalChunks = [];
+      rec.onresult = (event: any) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          const text: string = result[0]?.transcript ?? "";
+          if (result.isFinal) {
+            const trimmed = text.trim();
+            if (trimmed) {
+              this.finalChunks.push(trimmed);
+              cb.onFinal?.(trimmed);
+            }
+          } else {
+            interim += text;
+          }
+        }
+        const combined = [
+          this.finalChunks.join(" "),
+          interim.trim(),
+        ]
+          .filter(Boolean)
+          .join(" ");
+        cb.onInterim?.(combined);
+      };
+      rec.onerror = (event: any) => {
+        // "no-speech" and "aborted" are common and harmless; surface only
+        // the genuinely useful errors.
+        const code = event?.error || "unknown";
+        if (code === "no-speech" || code === "aborted") return;
+        cb.onError?.(code);
+      };
+      rec.start();
+      this.rec = rec;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  stop(): void {
+    if (!this.rec) return;
+    try {
+      this.rec.onresult = null;
+      this.rec.onerror = null;
+      this.rec.stop();
+    } catch {
+      /* noop */
+    }
+    this.rec = null;
+    this.finalChunks = [];
+  }
+}
+
 export function stopActivePlayback(): void {
   const current = active;
   if (!current) return;

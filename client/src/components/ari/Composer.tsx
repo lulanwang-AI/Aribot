@@ -11,7 +11,7 @@ import {
   Square,
 } from "lucide-react";
 import { getCapabilityIcon } from "@/lib/capabilityIcons";
-import { VoiceRecorder, transcribeAudio } from "@/lib/ariVoice";
+import { VoiceRecorder, LiveTranscriber, transcribeAudio } from "@/lib/ariVoice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -94,11 +94,24 @@ export function Composer({
   const [isDragging, setIsDragging] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  // Live interim transcript surfaced inside the composer while the user
+  // is speaking. Authoritative final text still comes from the server.
+  const [liveTranscript, setLiveTranscript] = useState("");
+  // Elapsed time for the recording banner. Bumped every 250ms so the
+  // displayed mm:ss is smooth without thrashing renders.
+  const [recordElapsedMs, setRecordElapsedMs] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const dragDepthRef = useRef(0);
   const recorderRef = useRef<VoiceRecorder | null>(null);
+  const liveTranscriberRef = useRef<LiveTranscriber | null>(null);
+  const recordTickRef = useRef<number | null>(null);
+  // Guards against rapid double-clicks of the mic button starting two
+  // overlapping recorder/transcriber sessions while `await rec.start()`
+  // is still pending and `setRecording(true)` has not yet committed.
+  const voiceBusyRef = useRef(false);
   const voiceSupported = VoiceRecorder.isSupported();
+  const liveSupported = LiveTranscriber.isSupported();
 
   // Stop any in-flight recording if the composer unmounts or the user
   // switches tabs away mid-record.
@@ -106,16 +119,57 @@ export function Composer({
     return () => {
       recorderRef.current?.cancel();
       recorderRef.current = null;
+      liveTranscriberRef.current?.stop();
+      liveTranscriberRef.current = null;
+      if (recordTickRef.current !== null) {
+        window.clearInterval(recordTickRef.current);
+        recordTickRef.current = null;
+      }
     };
   }, []);
 
+  function startRecordingTimer() {
+    const startedAt = Date.now();
+    setRecordElapsedMs(0);
+    if (recordTickRef.current !== null) {
+      window.clearInterval(recordTickRef.current);
+    }
+    recordTickRef.current = window.setInterval(() => {
+      setRecordElapsedMs(Date.now() - startedAt);
+    }, 250);
+  }
+
+  function stopRecordingTimer() {
+    if (recordTickRef.current !== null) {
+      window.clearInterval(recordTickRef.current);
+      recordTickRef.current = null;
+    }
+  }
+
   async function handleVoiceClick() {
     if (transcribing) return;
+    // Reentrancy guard: prevents a fast double-click from starting two
+    // recorders before `setRecording(true)` commits.
+    if (voiceBusyRef.current) return;
+    voiceBusyRef.current = true;
+    try {
+      await runVoiceClick();
+    } finally {
+      voiceBusyRef.current = false;
+    }
+  }
+
+  async function runVoiceClick() {
     if (recording) {
       // Stop & transcribe.
       const rec = recorderRef.current;
+      const live = liveTranscriberRef.current;
+      live?.stop();
+      liveTranscriberRef.current = null;
+      stopRecordingTimer();
       if (!rec) {
         setRecording(false);
+        setLiveTranscript("");
         return;
       }
       setTranscribing(true);
@@ -145,6 +199,7 @@ export function Composer({
       } finally {
         recorderRef.current = null;
         setTranscribing(false);
+        setLiveTranscript("");
       }
       return;
     }
@@ -155,7 +210,30 @@ export function Composer({
       await rec.start();
       recorderRef.current = rec;
       setRecording(true);
+      startRecordingTimer();
+      // Tell the user we're recording with a quick non-blocking toast so
+      // the action is unmistakable, even if the banner is below the fold.
+      toast({
+        title: "Recording — speak now",
+        description:
+          "Click the mic again to stop and transcribe. Your audio goes only to the transcription provider.",
+      });
+      // Best-effort live preview via the Web Speech API. If the browser
+      // doesn't support it, we just skip the live transcript and rely on
+      // the final ElevenLabs transcription.
+      if (liveSupported) {
+        const live = new LiveTranscriber();
+        const ok = live.start({
+          onInterim: (text) => setLiveTranscript(text),
+          onError: () => {
+            // Fail silently — the final transcription still works.
+            setLiveTranscript("");
+          },
+        });
+        if (ok) liveTranscriberRef.current = live;
+      }
     } catch (err: any) {
+      stopRecordingTimer();
       toast({
         title: "Microphone unavailable",
         description:
@@ -346,6 +424,24 @@ export function Composer({
             onInsertLocation={handleLocationInsert}
             attachments={attachments}
           />
+        )}
+
+        {recording && (
+          <RecordingBanner
+            elapsedMs={recordElapsedMs}
+            liveText={liveTranscript}
+            liveSupported={liveSupported}
+            onStop={handleVoiceClick}
+          />
+        )}
+        {transcribing && !recording && (
+          <div
+            className="mb-2 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+            data-testid="banner-ari-transcribing"
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>Transcribing your recording…</span>
+          </div>
         )}
 
         <div
@@ -810,4 +906,85 @@ function GateStrip(props: {
   }
 
   return null;
+}
+
+interface RecordingBannerProps {
+  elapsedMs: number;
+  liveText: string;
+  liveSupported: boolean;
+  onStop: () => void;
+}
+
+function RecordingBanner({
+  elapsedMs,
+  liveText,
+  liveSupported,
+  onStop,
+}: RecordingBannerProps) {
+  const seconds = Math.floor(elapsedMs / 1000);
+  const mm = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const ss = (seconds % 60).toString().padStart(2, "0");
+  return (
+    <div
+      className="mb-2 flex items-start gap-3 rounded-md border border-rose-300 bg-rose-50/80 px-3 py-2 text-rose-900 dark:border-rose-700/60 dark:bg-rose-950/30 dark:text-rose-100"
+      data-testid="banner-ari-recording"
+    >
+      {/* Single, one-shot screen-reader announcement when recording starts.
+          The visible timer and interim transcript update many times per
+          second, so we keep them aria-hidden to avoid noisy announcements,
+          and announce just the coarse state change here. */}
+      <span className="sr-only" role="status" aria-live="polite">
+        Recording in progress. Click stop and transcribe when finished.
+      </span>
+      <div className="mt-0.5 flex shrink-0 items-center gap-2" aria-hidden>
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-600" />
+        </span>
+        <span className="text-xs font-semibold uppercase tracking-wide">
+          Recording
+        </span>
+        <span
+          className="text-xs font-medium tabular-nums opacity-80"
+          data-testid="text-ari-record-elapsed"
+        >
+          {mm}:{ss}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1" aria-hidden>
+        {liveSupported ? (
+          liveText ? (
+            <p
+              className="line-clamp-2 text-xs leading-relaxed"
+              data-testid="text-ari-live-transcript"
+              title="Live preview — final transcript may differ"
+            >
+              <span className="mr-1 rounded bg-rose-200/70 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-rose-800 dark:bg-rose-900/60 dark:text-rose-100">
+                Preview
+              </span>
+              <span className="opacity-90">{liveText}</span>
+              <span className="ml-0.5 inline-block w-px animate-pulse">|</span>
+            </p>
+          ) : (
+            <p className="text-xs italic opacity-70">
+              Listening… speak now. Click the mic again to stop and transcribe.
+            </p>
+          )
+        ) : (
+          <p className="text-xs italic opacity-70">
+            Speak now. Click the mic again to stop and transcribe.
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onStop}
+        className="shrink-0 rounded-md border border-rose-300 bg-white/80 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-white dark:border-rose-700/60 dark:bg-rose-950/50 dark:text-rose-100 dark:hover:bg-rose-950/70"
+        data-testid="button-ari-record-stop"
+        aria-label="Stop recording and transcribe"
+      >
+        Stop & transcribe
+      </button>
+    </div>
+  );
 }
