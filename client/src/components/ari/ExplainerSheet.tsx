@@ -135,8 +135,8 @@ export function ExplainerSheet({ trigger }: ExplainerSheetProps) {
             aria-label="What can Ari do?"
             title="What can Ari do?"
           >
-            <Info className="mr-1.5 h-4 w-4" />
-            What Ari can do
+            <Info className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">What Ari can do</span>
           </Button>
         )}
       </SheetTrigger>

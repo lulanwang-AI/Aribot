@@ -86,11 +86,11 @@ export function HistorySheet() {
           aria-label="Open chat history"
           title="Chat history"
         >
-          <HistoryIcon className="mr-1.5 h-4 w-4" />
-          History
+          <HistoryIcon className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">History</span>
           {sorted.length > 0 && (
             <span
-              className="ml-1.5 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground"
+              className="ml-1 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground sm:ml-1.5"
               data-testid="badge-history-count"
             >
               {sorted.length}

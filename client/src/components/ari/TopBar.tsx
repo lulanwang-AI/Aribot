@@ -56,15 +56,15 @@ export function TopBar({ onClear }: TopBarProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 border-b border-border bg-background px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img
             src={aribotLogoPath}
             alt="Aribot"
-            className="h-9 w-9 shrink-0 object-contain"
+            className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9"
             data-testid="img-ari-logo"
           />
-          <div>
+          <div className="min-w-0">
             <h1
               className="flex items-center gap-2 text-base font-semibold leading-tight"
               data-testid="text-ari-title"
@@ -77,22 +77,22 @@ export function TopBar({ onClear }: TopBarProps) {
                 V3.0
               </span>
             </h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="hidden text-xs text-muted-foreground md:block">
               Clinical assistant — primary-source citations, fail-closed gating
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:gap-3">
           <Tabs
             value={mode}
             onValueChange={(v) => handleModeChange(v as AriMode)}
           >
             <TabsList data-testid="tabs-ari-mode">
               <TabsTrigger value="ari" data-testid="tab-ari-mode-ari">
-                Ari Mode
+                Ari<span className="hidden sm:inline">&nbsp;Mode</span>
               </TabsTrigger>
               <TabsTrigger value="er" data-testid="tab-ari-mode-er">
-                ER Mode
+                ER<span className="hidden sm:inline">&nbsp;Mode</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -118,9 +118,11 @@ export function TopBar({ onClear }: TopBarProps) {
               size="sm"
               onClick={auth.signOut}
               data-testid="button-ari-signout"
+              aria-label="Sign out"
+              title="Sign out"
             >
-              <LogOut className="mr-1.5 h-4 w-4" />
-              Sign out
+              <LogOut className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           )}
         </div>
