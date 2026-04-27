@@ -22,17 +22,14 @@ import {
   MapPin,
   Award,
   Trophy,
-  Moon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useTheme } from "@/hooks/use-theme";
 import type { User } from "@shared/schema";
 
 export default function Account() {
   const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
   const { toast } = useToast();
   const { signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<User>) => {
@@ -125,31 +122,6 @@ export default function Account() {
                 Verified
               </Badge>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Moon className="h-4 w-4" />
-            Appearance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium">Night mode</p>
-              <p className="text-xs text-muted-foreground">
-                Use a dark color theme across the app. Your choice is saved on this device.
-              </p>
-            </div>
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-              data-testid="switch-night-mode"
-              aria-label="Toggle night mode"
-            />
           </div>
         </CardContent>
       </Card>

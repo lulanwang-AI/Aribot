@@ -11,9 +11,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/hooks/use-theme";
 import aribotLogoPath from "@assets/aribot-mark-primary-1024_1777274279204.png";
 
 interface TopBarProps {
@@ -22,10 +23,12 @@ interface TopBarProps {
 
 export function TopBar({ onClear }: TopBarProps) {
   const auth = useAuth();
+  const { theme, setTheme } = useTheme();
   const mode = useAriStore((s) => s.mode);
   const setMode = useAriStore((s) => s.setMode);
   const messages = useAriStore((s) => s.messages);
   const resetSession = useAriStore((s) => s.resetSession);
+  const isDark = theme === "dark";
 
   const [pendingMode, setPendingMode] = useState<AriMode | null>(null);
 
@@ -82,6 +85,20 @@ export function TopBar({ onClear }: TopBarProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            data-testid="button-ari-theme-toggle"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
           {auth?.signOut && (
             <Button
               variant="outline"
