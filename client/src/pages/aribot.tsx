@@ -3,22 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
-import { CapabilitySidebar } from "@/components/ari/CapabilitySidebar";
 import { MessageList } from "@/components/ari/MessageList";
 import { Composer } from "@/components/ari/Composer";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAriStore, type AriMessage } from "@/stores/ariStore";
 import { sendAriMessage } from "@/lib/ariApi";
-import { cn } from "@/lib/utils";
 import {
   ACTIVE_CAPABILITY_IDS,
-  ARI_CAPABILITIES,
   type AriCapabilityId,
 } from "@shared/ari/capabilities";
 
@@ -166,48 +156,7 @@ export default function Aribot() {
   return (
     <div className="flex h-full flex-col" data-testid="page-aribot">
       <TopBar onClear={handleClearScratch} />
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside
-          className={cn(
-            "hidden w-72 shrink-0 overflow-y-auto border-r border-border lg:block",
-            mode === "er"
-              ? "bg-red-50 dark:bg-red-950/30"
-              : "bg-muted/30"
-          )}
-          data-testid="region-ari-sidebar"
-        >
-          <CapabilitySidebar
-            selected={capability}
-            onSelect={(id) => setCapability(id)}
-          />
-        </aside>
-
-        <div className="border-b border-border bg-muted/30 px-3 py-2 lg:hidden">
-          <Select
-            value={capability}
-            onValueChange={(v) => setCapability(v as AriCapabilityId)}
-          >
-            <SelectTrigger
-              className="w-full"
-              data-testid="select-capability-mobile"
-              aria-label="Select Ari capability"
-            >
-              <SelectValue placeholder="Select capability" />
-            </SelectTrigger>
-            <SelectContent>
-              {ARI_CAPABILITIES.map((cap) => (
-                <SelectItem
-                  key={cap.id}
-                  value={cap.id}
-                  data-testid={`option-capability-${cap.id}`}
-                >
-                  {cap.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
+      <div className="flex min-h-0 flex-1 flex-col">
         <main className="flex min-h-0 flex-1 flex-col">
           <div
             className="flex-1 overflow-y-auto"

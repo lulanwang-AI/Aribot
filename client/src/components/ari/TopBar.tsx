@@ -10,13 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { LogOut, History } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
 
@@ -30,10 +25,8 @@ export function TopBar({ onClear }: TopBarProps) {
   const setMode = useAriStore((s) => s.setMode);
   const messages = useAriStore((s) => s.messages);
   const resetSession = useAriStore((s) => s.resetSession);
-  const modeHistory = useAriStore((s) => s.modeHistory);
 
   const [pendingMode, setPendingMode] = useState<AriMode | null>(null);
-  const [showModeLog, setShowModeLog] = useState(false);
 
   function handleModeChange(next: AriMode) {
     if (next === mode) return;
@@ -82,50 +75,6 @@ export function TopBar({ onClear }: TopBarProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          {import.meta.env.DEV && (
-            <Popover open={showModeLog} onOpenChange={setShowModeLog}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  data-testid="button-mode-log"
-                  aria-label="Mode log"
-                >
-                  <History className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-80 max-h-72 overflow-y-auto p-3 text-xs"
-                data-testid="popover-mode-log"
-              >
-                <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Mode log (dev)
-                </div>
-                {modeHistory.length === 0 ? (
-                  <div className="text-muted-foreground">No mode switches yet.</div>
-                ) : (
-                  <ul className="space-y-1">
-                    {modeHistory
-                      .slice()
-                      .reverse()
-                      .map((e, i) => (
-                        <li key={i} className="flex justify-between gap-2">
-                          <span>
-                            <span className="uppercase">{e.from}</span>
-                            <span className="mx-1 text-muted-foreground">→</span>
-                            <span className="uppercase">{e.to}</span>
-                          </span>
-                          <span className="text-muted-foreground">
-                            {new Date(e.at).toLocaleTimeString()}
-                          </span>
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </PopoverContent>
-            </Popover>
-          )}
           {auth?.signOut && (
             <Button
               variant="outline"
