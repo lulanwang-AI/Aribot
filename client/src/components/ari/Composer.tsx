@@ -317,8 +317,10 @@ export function Composer({
   return (
     <div
       className={cn(
-        "border-t border-border bg-background",
-        mode === "er" && "border-red-500"
+        "border-t bg-background/85 backdrop-blur-sm transition-[background-color,border-color,box-shadow] duration-500",
+        mode === "er"
+          ? "border-rose-400/70 shadow-[0_-6px_24px_-12px_rgba(244,63,94,0.35)] dark:border-rose-500/50"
+          : "border-border"
       )}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}

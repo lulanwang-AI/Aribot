@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -54,9 +55,31 @@ export function TopBar({ onClear }: TopBarProps) {
 
   const isSwitchToEr = pendingMode === "er";
 
+  const isEr = mode === "er";
+
   return (
     <>
-      <div className="flex flex-row items-center justify-between gap-2 border-b border-border bg-background px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+      <div
+        className="relative flex flex-row items-center justify-between gap-2 border-b border-border bg-background/70 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-6 sm:py-3"
+        data-testid="topbar-ari"
+      >
+        {/* Thin accent line that crossfades between Ari and ER tints —
+            two stacked layers with opacity transitions ensure a smooth,
+            deterministic animation (browsers can't tween gradient strings). */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,rgba(56,189,248,0)_0%,rgba(99,102,241,0.55)_50%,rgba(167,139,250,0)_100%)]"
+          initial={false}
+          animate={{ opacity: isEr ? 0 : 1 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,rgba(244,63,94,0)_0%,rgba(244,63,94,0.7)_50%,rgba(251,146,60,0)_100%)]"
+          initial={false}
+          animate={{ opacity: isEr ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        />
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <img
             src={aribotLogoPath}
@@ -87,14 +110,52 @@ export function TopBar({ onClear }: TopBarProps) {
             value={mode}
             onValueChange={(v) => handleModeChange(v as AriMode)}
           >
-            <TabsList data-testid="tabs-ari-mode">
-              <TabsTrigger value="ari" data-testid="tab-ari-mode-ari">
-                Ari<span className="hidden sm:inline">&nbsp;Mode</span>
-              </TabsTrigger>
-              <TabsTrigger value="er" data-testid="tab-ari-mode-er">
-                ER<span className="hidden sm:inline">&nbsp;Mode</span>
-              </TabsTrigger>
-            </TabsList>
+            <LayoutGroup id="ari-mode-tabs">
+              <TabsList
+                data-testid="tabs-ari-mode"
+                className={
+                  "relative transition-colors duration-500 " +
+                  (isEr
+                    ? "bg-rose-100/70 dark:bg-rose-950/40"
+                    : "bg-sky-100/60 dark:bg-sky-950/30")
+                }
+              >
+                <TabsTrigger
+                  value="ari"
+                  data-testid="tab-ari-mode-ari"
+                  className="relative z-10 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  {!isEr && (
+                    <motion.span
+                      layoutId="ari-mode-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-sm bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-700 shadow-sm dark:from-sky-500 dark:via-indigo-600 dark:to-purple-700"
+                      transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">
+                    Ari<span className="hidden sm:inline">&nbsp;Mode</span>
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="er"
+                  data-testid="tab-ari-mode-er"
+                  className="relative z-10 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  {isEr && (
+                    <motion.span
+                      layoutId="ari-mode-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-sm bg-gradient-to-br from-rose-600 via-red-600 to-orange-700 shadow-sm dark:from-rose-600 dark:via-red-700 dark:to-orange-700"
+                      transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">
+                    ER<span className="hidden sm:inline">&nbsp;Mode</span>
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </LayoutGroup>
           </Tabs>
           <HistorySheet />
           <ExplainerSheet />

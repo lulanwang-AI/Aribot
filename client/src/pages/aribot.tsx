@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { recordEvent } from "@/lib/analytics";
 import { TopBar } from "@/components/ari/TopBar";
@@ -181,8 +182,33 @@ export default function Aribot() {
   // forcing the user to a sign-in screen.
   const user = meQuery.data?.user ?? null;
 
+  const isEr = mode === "er";
+
   return (
-    <div className="flex h-full flex-col" data-testid="page-aribot">
+    <div
+      className="relative flex h-full flex-col overflow-hidden"
+      data-testid="page-aribot"
+      data-mode={mode}
+    >
+      {/* Mode-aware animated gradient backdrops. Two layers crossfade
+          when the user toggles between Ari and ER so the whole surface
+          gently shifts color rather than snapping. */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-50/60 via-background to-indigo-50/40 dark:from-sky-950/30 dark:via-background dark:to-indigo-950/20"
+        initial={false}
+        animate={{ opacity: isEr ? 0 : 1 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
+        data-testid="bg-ari-gradient"
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-rose-100/70 via-orange-50/40 to-amber-100/50 dark:from-rose-950/40 dark:via-background dark:to-orange-950/25"
+        initial={false}
+        animate={{ opacity: isEr ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
+        data-testid="bg-er-gradient"
+      />
       <TopBar onClear={handleClearScratch} />
       <div className="flex min-h-0 flex-1 flex-col">
         <main className="flex min-h-0 flex-1 flex-col">
@@ -209,7 +235,7 @@ export default function Aribot() {
             streaming={streaming}
           />
           <footer
-            className="border-t border-border bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground sm:px-6"
+            className="border-t border-border bg-muted/10 px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-sm sm:px-6"
             data-testid="footer-ari"
           >
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2">
