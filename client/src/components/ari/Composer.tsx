@@ -248,9 +248,9 @@ export function Composer({
 
         <div
           className={cn(
-            "rounded-lg border bg-card",
+            "rounded-lg border bg-card transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0",
             mode === "er"
-              ? "border-red-500"
+              ? "border-red-500 focus-within:ring-red-400"
               : gate.ok
                 ? "border-border"
                 : "border-amber-300 dark:border-amber-700"
