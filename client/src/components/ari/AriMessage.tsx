@@ -8,8 +8,6 @@ import {
   ExternalLink,
   Copy as CopyIcon,
   Check,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import {
   Collapsible,
@@ -43,7 +41,6 @@ const ER_DISCLAIMER =
   "ER MODE ACTIVE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE CLINICAL USE.";
 
 export function AriMessage({ text, mode, streaming }: AriMessageProps) {
-  const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const { blocks, trailingBuffer } = useMemo(
@@ -132,33 +129,7 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
           )}
           {mode === "er" ? "Copy ER protocol notes" : "Copy clinical summary"}
         </Button>
-
-        {import.meta.env.DEV && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowRaw((v) => !v)}
-            data-testid="button-ari-show-raw"
-          >
-            {showRaw ? (
-              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-            ) : (
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            {showRaw ? "Hide raw" : "Show raw response"}
-          </Button>
-        )}
       </div>
-
-      {showRaw && import.meta.env.DEV && (
-        <pre
-          className="overflow-x-auto rounded border border-border bg-muted px-3 py-2 text-[11px] leading-snug"
-          data-testid="ari-raw-response"
-        >
-          <code>{text}</code>
-        </pre>
-      )}
     </div>
   );
 }

@@ -68,39 +68,52 @@ function MessageBubble({
   streaming: boolean;
 }) {
   const isUser = message.role === "user";
+
+  // User messages stay as a compact right-aligned bubble. Assistant
+  // responses render flat across the full content column — no bubble, no
+  // border — so long answers read like a document instead of a chat reply.
+  if (isUser) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className="flex flex-col items-end gap-1"
+        data-testid={`message-user-${message.id}`}
+      >
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          You
+        </div>
+        <div
+          className={cn(
+            "max-w-[85ch] rounded-lg border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-foreground"
+          )}
+        >
+          <pre className="whitespace-pre-wrap break-words font-sans">
+            {message.content}
+          </pre>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
-      className={cn(
-        "flex flex-col gap-1",
-        isUser ? "items-end" : "items-start"
-      )}
-      data-testid={`message-${message.role}-${message.id}`}
+      className="flex w-full flex-col gap-1"
+      data-testid={`message-assistant-${message.id}`}
     >
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {isUser ? "You" : "Ari"}
+        Ari
       </div>
-      <div
-        className={cn(
-          "max-w-[85ch] rounded-lg border px-4 py-3 text-sm leading-relaxed",
-          isUser
-            ? "border-border bg-muted text-foreground"
-            : "border-border bg-card text-foreground"
-        )}
-      >
-        {isUser ? (
-          <pre className="whitespace-pre-wrap break-words font-sans">
-            {message.content}
-          </pre>
-        ) : (
-          <AriMessage
-            text={message.content}
-            mode={message.mode || mode}
-            streaming={streaming}
-          />
-        )}
+      <div className="w-full text-sm leading-relaxed text-foreground">
+        <AriMessage
+          text={message.content}
+          mode={message.mode || mode}
+          streaming={streaming}
+        />
       </div>
     </motion.div>
   );

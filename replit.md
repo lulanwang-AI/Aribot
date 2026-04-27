@@ -1,181 +1,63 @@
 # ARIbots - Clinical AI Community Platform
 
 ## Overview
-ARIbots is a doctor-only clinical AI community platform featuring an AI assistant (Aribots AI), clinical case discussions, medical news, professional groups, events, peer messaging, training modules, and team moderation tools.
+ARIbots is a doctor-only clinical AI community platform designed to integrate an advanced AI assistant (Aribots AI) with a comprehensive suite of clinical community features. Its primary purpose is to facilitate clinical case discussions, disseminate medical news, foster professional networking through groups and events, provide peer messaging, and offer training modules. The platform also includes team moderation tools and a dedicated telemedicine component. The vision is to empower medical professionals with cutting-edge AI tools and a collaborative environment to enhance clinical practice and knowledge sharing.
 
-## Architecture
-- **Frontend**: React + TypeScript with Vite, Tailwind CSS, shadcn/ui components
-- **Backend**: Express.js with in-memory storage (MemStorage)
-- **Routing**: wouter (client-side), Express (server-side API)
-- **State Management**: TanStack React Query
-- **Auth**: Mock login (localStorage-based, any credentials accepted)
+## User Preferences
+Not specified.
 
-## Demo User
-- Dr. Sarah Chen (u1), Cardiology, MGH, verified physician, ranking score 87
+## System Architecture
+The ARIbots platform employs a modern web architecture, featuring a React + TypeScript frontend built with Vite, styled using Tailwind CSS and shadcn/ui components for a clean, EHR-style UI/UX with calm neutral grays and minimal AI flair. The backend is an Express.js server utilizing in-memory storage (MemStorage) for development and demonstration. Client-side routing is handled by wouter, while server-side API routing is managed by Express. State management is implemented using TanStack React Query. Authentication is currently a mock system based on localStorage, accepting any credentials.
 
-## Project Structure
-```
-client/src/
-  components/
-    app-sidebar.tsx           - Collapsible sidebar with Aribot section + notification badges
-    floating-aribot.tsx       - Floating Aribot widget (bottom-right on non-home pages)
-    doctor-profile-sheet.tsx  - LinkedIn-style doctor profile sheet with avatar images
-    doctor-directory.tsx      - Searchable/sortable doctor directory component (full screen)
-    trending-panel.tsx        - Trending topics panel (analytics-powered)
-    phi-warning-panel.tsx     - PHI detection warnings + posting rules
-    context-bar.tsx           - Aribot context bar + suggested prompts
-    ui/                       - shadcn/ui components
-  lib/
-    analytics.ts          - localStorage-based analytics module
-    phi.ts                - PHI detection and redaction heuristics
-    queryClient.ts        - TanStack Query client + API helper
-  pages/
-    login.tsx             - Mock auth login screen
-    aribot.tsx            - Dify iframe AI assistant (home route /)
-    aribot-history.tsx    - Aribot chat history
-    aribot-folders.tsx    - Aribot folder management (CRUD)
-    home.tsx              - Dashboard with calendar view showing events
-    triage.tsx            - Clinical case discussions with sort
-    triage-detail.tsx     - Case detail with nested comments (reply at any depth), likes
-    news.tsx              - Medical news with likes, comments, source/specialty filters
-    groups.tsx            - Professional groups with type filter, clickable to detail
-    group-detail.tsx      - Group detail with member list and avatars
-    events.tsx            - Medical events with photos, RSVP, capacity display
-    doctors.tsx           - Full-screen doctor directory page
-    chats.tsx             - Peer messaging (thread list + messages)
-    training.tsx          - Training modules with completion tracking
-    account.tsx           - User profile, settings, sign out
-    team.tsx              - Team members display + moderation queue
-    telemed.tsx           - Telemedicine: inquiries, consultations, video call, earnings
-server/
-  routes.ts               - API endpoints (existing OpenAI-backed clinical features)
-  storage.ts              - In-memory storage with seed data
-  seed.ts                 - Deterministic seed data generator (200 doctors, 80 news, 60 cases, etc.)
-  ari/                    - Ari clinical AI feature (Anthropic Claude + MCP, isolated from OpenAI)
-    config.ts             - Loads attached_assets/ari-agent.json (system prompt, MCP servers); throws on startup if missing/malformed
-    client.ts             - Singleton Anthropic client; throws on startup if ANTHROPIC_API_KEY missing
-    schema.ts             - Zod schema for /api/ari/chat request body
-    auth.ts               - Strict requireAriAuth middleware (Passport session required; 401 otherwise)
-    routes.ts             - POST /api/ari/chat: SSE-streamed Claude response with MCP tools
-shared/
-  schema.ts               - TypeScript types and Zod schemas
-```
+**Key Technical Implementations & Design Choices:**
 
-## Routes
-- `/` - Aribot AI (Dify iframe)
-- `/aribot/history` - Chat history
-- `/aribot/folders` - Folder management
-- `/pre-charting` - Clinical pre-charting intake form
-- `/clinical-chat` - AI clinical consult chat
-- `/soap` - SOAP note generator with inline editing
-- `/visit-summary` - Patient-facing visit summary with PDF export
-- `/home` - Dashboard with calendar
-- `/triage` - Clinical cases (sort: newest/trending/discussed)
-- `/triage/:id` - Case detail with nested comments
-- `/news` - News feed with likes, comments, filters
-- `/groups` - Professional groups (clickable)
-- `/groups/:id` - Group detail with member list
-- `/events` - Medical events with photos, RSVP
-- `/doctors` - Full-screen doctor directory
-- `/chats` - Peer messaging
-- `/training` - Training modules
-- `/account` - Settings & sign out
-- `/team` - Team members + moderation queue
-- `/telemed` - Telemedicine (inquiries, my consultations, video call, earnings)
+-   **Clinical Workflow System:** A four-module system (Pre-charting → AI Consult → SOAP Note → Visit Summary) is implemented, sharing patient state via Zustand and sessionStorage.
+-   **Ari Clinical AI:** This is the core AI assistant, backed by Anthropic Claude (claude-sonnet-4-6) and integrated with multiple MCP (Medical Content Provider) servers including PubMed, bioRxiv, Open Targets, ClinicalTrials, ChEMBL, CMS Coverage, and NPI Registry. It supports 9 distinct clinical capabilities.
+    -   Configuration is loaded from `attached_assets/ari-agent.json` at startup, containing the system prompt and MCP server details.
+    -   Streaming responses are delivered via Server-Sent Events (SSE).
+    -   Authentication for Ari AI features uses real Passport sessions (`express-session` + `passport-local`).
+    -   Capability gating and validation are implemented both on the client-side for UI nudges and robustly on the backend.
+    -   ER (Emergency Room) mode provides a visually distinct and functionally streamlined interface for urgent cases.
+    -   **Ari Clinical Hardening:** Includes block parsing and rendering for structured AI responses (`ari_section`, `ari_claim`, `ari_step`, `ari_citation`), file upload capabilities (JPEG/PNG/WEBP/GIF/PDF/text with PDF parsing), gate UI nudges (e.g., location input, wound measurement checkbox), ER mode separation with distinct UI elements, and an opt-in memory store (`DrizzleMemoryStore`) for verified clinical claims with PHI redaction.
+    -   **Security & Compliance:** User authentication includes license verification, acceptance of Ari terms, and comprehensive audit logging for all AI interactions and access attempts. PHI detection guards against sensitive data exposure.
+    -   **Admin Access:** Memory access for administrators is restricted via an allowlist.
+-   **Triage Module:** Features nested comments, anonymous posting, PHI detection, and liking functionality.
+-   **News Feed:** Allows users to like and comment on articles, with filtering by source and specialty.
+-   **Groups & Events:** Provides professional networking with group details (member lists, avatars) and event management (photos, RSVP, capacity tracking).
+-   **Messaging (Chats):** Supports direct and group threads with file attachment indicators.
+-   **Training Modules:** Expandable modules with completion tracking.
+-   **Doctors Directory:** A full-screen searchable directory with ranking scores and verified badges.
+-   **Dashboard:** Offers a calendar view of upcoming events.
+-   **Telemedicine:** Includes patient inquiry queues, video call simulation, earnings tracking, and consultation completion features.
+-   **PHI Handling:** Client-side detection and auto-redaction capabilities with user confirmation.
 
-## API Endpoints
-- `GET/PATCH /api/me` - Current user
-- `GET /api/users`, `GET /api/users/:id` - User listing/detail
-- `GET /api/doctors?q=&specialty=&sort=ranking` - Doctor search
-- `GET/POST /api/triage?sort=` - Cases with sorting
-- `GET /api/triage/:id` - Case detail with comments
-- `POST /api/triage/:id/like|flag|comments` - Case interactions
-- `POST /api/comments/:id/like|flag` - Comment interactions
-- `GET /api/news?source=&specialty=&search=` - News with filters
-- `GET /api/news/:id` - News detail with comments
-- `POST /api/news/:id/like|comments` - News interactions
-- `POST /api/news-comments/:id/like` - News comment likes
-- `GET /api/groups`, `GET /api/groups/:id` - Groups with member details
-- `POST /api/groups/:id/join|leave` - Group membership
-- `GET /api/events`, `POST /api/events/:id/rsvp|unrsvp` - Events
-- `GET/POST /api/chats`, `GET/POST /api/chats/:id/messages` - Messaging
-- `GET /api/training`, `PATCH /api/training/:id/complete` - Training
-- `GET/POST /api/aribot/history` - Chat history
-- `GET/POST/PATCH/DELETE /api/aribot/folders` - Folder CRUD
-- `GET /api/teams` - Teams with enriched member data
-- `GET /api/moderation`, `PATCH /api/moderation/:id` - Moderation
-- `GET /api/notifications` - Notification counts for sidebar badges
-- `GET /api/telemed/consultations?status=&urgency=` - Telemedicine consultations
-- `GET /api/telemed/consultations/:id` - Single consultation
-- `POST /api/telemed/consultations/:id/accept` - Accept consultation
-- `POST /api/telemed/consultations/:id/complete` - Complete with notes/diagnosis
-- `PATCH /api/telemed/consultations/:id/notes` - Update notes
-- `GET /api/telemed/earnings` - Earnings summary
-- `GET /api/telemed/stats` - Dashboard stats
-- `POST /api/prechart` - Generate encounter primer from pre-charting data
-- `POST /api/clinical-chat` - Clinical AI chat with streaming responses
-- `POST /api/soap` - Generate/regenerate SOAP note sections
-- `POST /api/summary` - Generate patient-facing visit summary
-- `POST /api/ari/chat` - Ari clinical workflows (Claude + MCP, SSE streaming, requires auth)
-
-## Ari Clinical AI (replaces the old Aribots AI/Dify chatbot and the "Agentic Customization" panel)
-- Backed by Anthropic Claude (`claude-sonnet-4-6`) with MCP servers (PubMed, bioRxiv, Open Targets, ClinicalTrials, ChEMBL, CMS Coverage, NPI Registry)
-- Config loaded at startup from `attached_assets/ari-agent.json` (system prompt + mcp_servers); fails closed if missing or malformed
-- Requires `ANTHROPIC_API_KEY` secret; server throws at boot if absent
-- Streaming via Server-Sent Events: each Anthropic text delta forwarded as `data: <text>` lines (multi-line deltas split into multiple `data:` lines per the SSE spec), `event: done` on completion, `event: error` with sanitized JSON on failure (no stack traces or keys leaked)
-- Auth: real Passport session via `express-session` + `passport-local`. `requireAriAuth` accepts only requests where `req.isAuthenticated()` is true. Login at `POST /api/auth/login`, logout at `POST /api/auth/logout`.
-- Dev-only credentials: in development, the LocalStrategy accepts any non-empty email/password and resolves to seed user `u1`. In production, the strategy hard-fails closed and `SESSION_SECRET` is required at startup. Replace with bcrypt-checked credentials before flipping `NODE_ENV=production`.
-- Active capabilities (9): antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging — defined once in `shared/ari/capabilities.ts` (the single source of truth) and consumed by both the server (validation + rejection prose) and the client (UI registry, gates, hints, examples)
-- Capability rejection: requests with an unknown capability return HTTP 400 with the exact prose `"That capability is not currently active. Available capabilities are: antibiotic_stewardship, wound_skin, pharmacy, ventilator, calculators, clinical_protocols, er_triage, cms_billing, rad_onc_imaging."` (matches the system prompt; checked before Zod so the message isn't masked by enum errors)
-- Capability gates (UI-side soft gates; backend always re-validates via the system prompt):
-  - `antibiotic_stewardship` requires patient location/facility — the composer auto-detects location keywords in the query to satisfy this gate
-  - `wound_skin` requires an image attachment + a checkbox confirming a ruler/known-size reference is in the photo
-- Frontend layout (EHR-style, calm neutral grays, no AI flair):
-  - `client/src/pages/aribot.tsx` — top bar (Ari/ER mode toggle + Clear) → ER red banner when in ER → desktop sidebar / mobile Select for capability → message list + composer
-  - `client/src/components/ari/{TopBar,CapabilitySidebar,MessageList,Composer}.tsx` — focused sub-components
-  - `client/src/stores/ariStore.ts` — Zustand session store with sessionStorage persistence (mode, capability, messages, gate flags persisted; raw base64 attachments are NOT persisted)
-  - `client/src/lib/ariApi.ts` — fetch + ReadableStream SSE parser (events terminated by blank lines, multi-line `data:` joined with `\n`, deltas concatenated verbatim, supports AbortController)
-  - Animations via Framer Motion (fade + 4px slide), prose via react-markdown + remark-gfm (skipped inside ari_* JSON fences which are reserved for the next prompt)
-  - Floating quick-access button (`client/src/components/floating-aribot.tsx`) navigates to `/aribot` rather than opening a small drawer (the new layout doesn't fit usefully in 420×640)
-  - Keyboard shortcuts: Cmd/Ctrl+Enter sends; Cmd/Ctrl+1-9 switches capability
-- Old `aribot-history.tsx`, `aribot-folders.tsx`, the legacy `client/src/components/ari-chat.tsx`, and the `/api/aribot/history` + `/api/aribot/folders` endpoints have been removed.
-
-### Ari clinical hardening (six-feature pass)
-- **Block parsing & rendering**: `shared/ari/blocks.ts` (`parseAriStream` / `parseAriStreamPartial`) parses streamed `ari_section / ari_claim / ari_step / ari_citation` JSON objects; `client/src/components/ari/AriMessage.tsx` renders prose, section pills, claim verified/unverified badges, citation groups, collapsible steps, ER disclaimer fallback, copy-summary, and a dev raw-toggle. Dev fixture page at `/aribot/dev/blocks`.
-- **File uploads**: `POST /api/ari/upload` (multer in-memory, 10 MB / 4 files max, MIME sniff) accepts JPEG/PNG/WEBP/GIF/PDF/text. PDFs are parsed via lazy `pdf-parse` import; the chat handler forwards Anthropic image / document blocks and adds `pdfs-2024-09-25` beta header when needed. Frontend `AttachmentChip` shows thumbnails, page count, and text-preview tooltip; attachments are cleared automatically when capability changes.
-- **Gate UI nudges**: `Composer.tsx` shows location chip + LA-area templates Popover (Cedars-Sinai / UCLA / Kaiser / Huntington / Other), wound measurement checkbox with help Popover, and a Send button that disables with a tooltip until the gate is satisfied. Gates are bypassed in ER mode.
-- **ER mode separation**: sticky red banner in `TopBar.tsx`, sidebar tinted red in `aribot.tsx`, composer red border, "Send (ER, unverified)" button label, stronger Ari→ER confirmation copy, dev-only mode-log Popover backed by `modeHistory` in the Zustand store.
-- **Memory store**: `shared/db/ari-memory.ts` Drizzle table; `server/ari/memory.ts` exposes `NullMemoryStore` (default) and `DrizzleMemoryStore` (in-memory shim) gated behind `ARI_MEMORY_ENABLED=true`. Writes are derived **only** from parsed `ari_claim` blocks where `verified === true` (no freeform model extraction over assistant text), with PHI redaction abort if redaction ratio > 30 %.
-- **License + auth + audit + onboarding**: `shared/schema.ts` `User` extended with `email / licenseType / licenseNumber / licenseState / licenseVerifiedAt / acceptedAriTermsAt`. `requireAriClinician` middleware enforces session + onboarding on all `/api/ari/*` (except `/onboarding` and `/me`) and writes audit entries on auth-missing, session-user-missing, and onboarding-required failures. `/chat` writes audit entries on success and on capability/PHI/schema/stream errors via `server/ari/audit.ts` (sha-256 query hash). PHI guard (`server/ari/phi.ts`) detects SSN / phone / DOB / MRN / long-digit-run / address / state-zip / honorific-name / patient-name / email. `AriOnboarding` page at `/aribot/onboarding`; `/aribot` route guard redirects when `!onboarded`. Footer shows license type · email · session start; sign-out button on top-right.
-- **Admin memory access**: `GET /api/ari/memory` is locked behind `ARI_MEMORY_ADMIN_USERS` (comma-separated user-id allowlist). When unset, the endpoint returns 403 to all callers — no enumeration leak by default.
-
-## Key Features
-- **Clinical Workflow**: Four-module clinical encounter system (Pre-charting → AI Consult → SOAP Note → Visit Summary) sharing patient state via Zustand + sessionStorage
-- **Ari Clinical AI**: Anthropic Claude + MCP-backed clinical assistant with 9 capabilities, full page at `/aribot` and floating quick-assist drawer on non-home pages
-- **Triage**: Nested comments (reply at any depth), anonymous posting, PHI detection, likes
-- **News**: Like/comment on articles, filter by source/specialty, journal name shown after title
-- **Groups**: Clickable cards to group detail, Hospital vs Interest type, member avatars
-- **Events**: Photos per event type, capacity tracking, attendee avatars, event types include Lab/Conference/Meeting/Grand Rounds/Coffee Chat
-- **Chats**: Direct + group threads, file attachment indicators
-- **Training**: Expandable modules with step completion
-- **Doctors**: Full-screen searchable directory with avatar faces, ranking scores, verified badges
-- **Dashboard**: Calendar view showing upcoming events
-- **Teams**: Populated team members with avatars, rankings, and roles
-- **Notifications**: Badge counts on News, Triage, Events, Chats nav items
-- **Telemedicine**: Patient inquiry queue, accept/join video calls, simulated call UI, earnings tracking, consultation completion with diagnosis/prescriptions
-- **Auth**: Mock login screen, sign out from Account page
-- **PHI**: Client-side detection, auto-redact, confirmation checkboxes
-
-## Seed Data (deterministic, seed=42)
-- 200 doctors with DiceBear avatar faces across 14 specialties and 24 hospitals
-- 80 news articles with likes and comments from 5 major sources
-- 60 triage cases with 3-12 comments each (some nested/anonymous)
-- 40 groups (hospital + interest types) with member avatars
-- 30 events with photos (Lab/Conference/Meeting/Grand Rounds/Coffee Chat types)
-- 25 chat threads with messages
-- 12 training modules
-- 30 telemedicine consultations (mixed statuses, urgencies, complaints)
-- 6 teams with enriched member data
-
-## Running
-- `npm run dev` starts Express backend + Vite frontend on port 5000
+## External Dependencies
+-   **AI Services:**
+    -   Anthropic Claude (`claude-sonnet-4-6`)
+-   **Medical Content Providers (MCPs) integrated with Ari AI:**
+    -   PubMed
+    -   bioRxiv
+    -   Open Targets
+    -   ClinicalTrials
+    -   ChEMBL
+    -   CMS Coverage
+    -   NPI Registry
+-   **Frontend Libraries:**
+    -   React
+    -   TypeScript
+    -   Vite (build tool)
+    -   Tailwind CSS (styling)
+    -   shadcn/ui (UI components)
+    -   wouter (client-side routing)
+    -   TanStack React Query (state management)
+    -   Zustand (session store)
+    -   Framer Motion (animations)
+    -   react-markdown, remark-gfm (Markdown rendering)
+-   **Backend Libraries/Tools:**
+    -   Express.js (server framework)
+    -   multer (file uploads)
+    -   pdf-parse (PDF parsing)
+    -   express-session (session management)
+    -   passport-local (local authentication strategy)
+    -   Zod (schema validation)
+    -   Drizzle (ORM for memory store)

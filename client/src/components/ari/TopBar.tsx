@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { LogOut, Trash2, History } from "lucide-react";
+import { LogOut, History } from "lucide-react";
 import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
 
@@ -33,7 +33,6 @@ export function TopBar({ onClear }: TopBarProps) {
   const modeHistory = useAriStore((s) => s.modeHistory);
 
   const [pendingMode, setPendingMode] = useState<AriMode | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
   const [showModeLog, setShowModeLog] = useState(false);
 
   function handleModeChange(next: AriMode) {
@@ -52,11 +51,6 @@ export function TopBar({ onClear }: TopBarProps) {
       onClear();
     }
     setPendingMode(null);
-  }
-
-  function handleClearClick() {
-    if (messages.length === 0) return;
-    setConfirmClear(true);
   }
 
   const isSwitchToEr = pendingMode === "er";
@@ -132,16 +126,6 @@ export function TopBar({ onClear }: TopBarProps) {
               </PopoverContent>
             </Popover>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearClick}
-            disabled={messages.length === 0}
-            data-testid="button-ari-clear"
-          >
-            <Trash2 className="mr-1.5 h-4 w-4" />
-            Clear
-          </Button>
           {auth?.signOut && (
             <Button
               variant="outline"
@@ -155,16 +139,6 @@ export function TopBar({ onClear }: TopBarProps) {
           )}
         </div>
       </div>
-
-      {mode === "er" && (
-        <div
-          role="alert"
-          className="sticky top-0 z-20 border-b border-red-700 bg-red-600 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-white shadow-sm sm:px-6"
-          data-testid="banner-er-mode"
-        >
-          ER MODE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE ACTING.
-        </div>
-      )}
 
       <AlertDialog
         open={pendingMode !== null}
@@ -197,32 +171,6 @@ export function TopBar({ onClear }: TopBarProps) {
               data-testid="button-ari-mode-confirm"
             >
               {isSwitchToEr ? "Switch to ER Mode" : "Switch and clear"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialogContent data-testid="dialog-ari-clear">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear conversation?</AlertDialogTitle>
-            <AlertDialogDescription>
-              All messages and attachments in this Ari session will be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-ari-clear-cancel">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                resetSession();
-                onClear();
-                setConfirmClear(false);
-              }}
-              data-testid="button-ari-clear-confirm"
-            >
-              Clear
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { HelpCircle, Paperclip, Send, Square } from "lucide-react";
+import { Check, HelpCircle, Paperclip, Plus, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,8 +25,10 @@ import {
   type AriAttachment,
 } from "@/stores/ariStore";
 import {
+  ARI_CAPABILITIES,
   getCapability,
   type AriCapability,
+  type AriCapabilityId,
 } from "@shared/ari/capabilities";
 
 interface ComposerProps {
@@ -51,6 +53,7 @@ export function Composer({
 }: ComposerProps) {
   const mode = useAriStore((s) => s.mode);
   const capabilityId = useAriStore((s) => s.capability);
+  const setCapability = useAriStore((s) => s.setCapability);
   const attachments = useAriStore((s) => s.attachments);
   const addAttachment = useAriStore((s) => s.addAttachment);
   const removeAttachment = useAriStore((s) => s.removeAttachment);
@@ -65,8 +68,11 @@ export function Composer({
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
+  const [capabilityMenuOpen, setCapabilityMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const dragDepthRef = useRef(0);
 
   // Soften the location gate when the user types something that mentions a
   // location/facility. Sticky once detected.
@@ -101,7 +107,6 @@ export function Composer({
   }, [capabilityId]);
 
   const fileAccept = buildAcceptAttribute(capability);
-  const attachmentsHidden = mode === "er";
   const attachmentsDisabled =
     !capability.acceptsImages && !capability.acceptsPdfs;
 
@@ -171,14 +176,64 @@ export function Composer({
     textareaRef.current?.focus();
   }
 
+  function hasFiles(e: React.DragEvent) {
+    return Array.from(e.dataTransfer?.types || []).includes("Files");
+  }
+
+  function handleDragEnter(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+    if (attachmentsDisabled) {
+      setUploadError(
+        `${capability.displayName} does not accept attachments.`
+      );
+      return;
+    }
+    handleFiles(e.dataTransfer.files);
+  }
+
   return (
     <div
       className={cn(
         "border-t border-border bg-background",
         mode === "er" && "border-red-500"
       )}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
-      <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6">
+      <div className="relative mx-auto w-full max-w-4xl px-4 py-4 sm:px-6">
+        {isDragging && (
+          <div
+            className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 text-sm font-medium text-primary"
+            data-testid="overlay-ari-dropzone"
+          >
+            Drop files to attach (images, PDFs, text — up to 4 × 10 MB)
+          </div>
+        )}
         {/* Gate strip */}
         {capability.gateRequirement.type !== "none" && mode !== "er" && (
           <GateStrip
@@ -241,38 +296,101 @@ export function Composer({
           )}
 
           <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
-            <div className="flex items-center gap-2">
-              {!attachmentsHidden && (
-                <TooltipProvider delayDuration={150}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={
-                            attachmentsDisabled ||
-                            disabled ||
-                            attachments.length >= MAX_ATTACHMENTS ||
-                            uploadingName !== null
-                          }
-                          onClick={() => fileInputRef.current?.click()}
-                          data-testid="button-ari-attach"
-                        >
-                          <Paperclip className="mr-1.5 h-4 w-4" />
-                          {uploadingName ? "Uploading…" : "Attach"}
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {attachmentsDisabled && (
-                      <TooltipContent>
-                        This capability does not accept attachments.
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+            <div className="flex items-center gap-1">
+              {/* Plus button — opens an inline picker for any capability so
+                  users don't need the sidebar to switch context. */}
+              <Popover open={capabilityMenuOpen} onOpenChange={setCapabilityMenuOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={disabled}
+                    data-testid="button-ari-capability-menu"
+                    aria-label="Switch capability"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-72 p-1"
+                  data-testid="popover-ari-capability-menu"
+                >
+                  <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Choose capability
+                  </div>
+                  <ul className="max-h-72 overflow-y-auto">
+                    {ARI_CAPABILITIES.map((cap) => {
+                      const selected = cap.id === capabilityId;
+                      return (
+                        <li key={cap.id}>
+                          <button
+                            type="button"
+                            className={cn(
+                              "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs transition hover:bg-accent",
+                              selected && "bg-accent/60"
+                            )}
+                            onClick={() => {
+                              setCapability(cap.id as AriCapabilityId);
+                              setCapabilityMenuOpen(false);
+                            }}
+                            data-testid={`button-pick-capability-${cap.id}`}
+                          >
+                            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                              {selected ? (
+                                <Check className="h-3.5 w-3.5 text-primary" />
+                              ) : null}
+                            </span>
+                            <span className="flex-1">
+                              <span className="block font-medium text-foreground">
+                                {cap.displayName}
+                              </span>
+                              <span className="block text-[11px] text-muted-foreground">
+                                {cap.shortDescription}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </PopoverContent>
+              </Popover>
+
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={
+                          attachmentsDisabled ||
+                          disabled ||
+                          attachments.length >= MAX_ATTACHMENTS ||
+                          uploadingName !== null
+                        }
+                        onClick={() => fileInputRef.current?.click()}
+                        data-testid="button-ari-attach"
+                      >
+                        <Paperclip className="mr-1.5 h-4 w-4" />
+                        {uploadingName ? "Uploading…" : "Attach"}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {attachmentsDisabled ? (
+                    <TooltipContent>
+                      This capability does not accept attachments.
+                    </TooltipContent>
+                  ) : (
+                    <TooltipContent>
+                      Attach images, PDFs, or text (drag & drop also supported).
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -284,7 +402,7 @@ export function Composer({
               />
               <span
                 className={cn(
-                  "text-xs tabular-nums",
+                  "ml-1 text-xs tabular-nums",
                   query.length > MAX_QUERY * 0.9
                     ? "text-amber-600 dark:text-amber-400"
                     : "text-muted-foreground"
