@@ -83,7 +83,9 @@ export function Composer({
   const capability = capabilityId ? getCapability(capabilityId) : null;
   const inputHint = capability
     ? capability.inputHint
-    : "Ask Ari anything — pick a capability with + or let Ari choose.";
+    : mode === "er"
+      ? "Describe the case — ER mode is unverified, confirm before clinical use."
+      : "Ask Ari anything — pick a capability with + or let Ari choose.";
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
@@ -395,7 +397,9 @@ export function Composer({
           <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
             <div className="flex items-center gap-1">
               {/* Plus button — opens an inline picker for any capability so
-                  users don't need the sidebar to switch context. */}
+                  users don't need the sidebar to switch context.
+                  Hidden in ER mode: ER bypasses capability gating entirely. */}
+              {mode !== "er" && (
               <Popover open={capabilityMenuOpen} onOpenChange={setCapabilityMenuOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -475,6 +479,7 @@ export function Composer({
                   </ul>
                 </PopoverContent>
               </Popover>
+              )}
 
               <TooltipProvider delayDuration={150}>
                 <Tooltip>

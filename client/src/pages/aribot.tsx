@@ -88,13 +88,21 @@ export default function Aribot() {
       filename: a.filename,
     }));
 
+    // ER mode bypasses capability gating entirely — drop both primary and
+    // additional capability hints from the request so the backend sees a
+    // clean ER query (matches the hidden chip strip / picker on the UI).
+    const isEr = mode === "er";
+    const effectiveCapability = isEr ? null : capability;
+    const additionalNames = isEr
+      ? []
+      : additionalCapabilities
+          .map((id) => getCapability(id).displayName)
+          .filter(Boolean);
+
     // If the clinician has additional capabilities pinned, prefix the query
     // with a short directive so Ari knows to also bring those perspectives
     // into the answer. The strict `capability` value sent to the backend
     // continues to drive system prompt + gating.
-    const additionalNames = additionalCapabilities
-      .map((id) => getCapability(id).displayName)
-      .filter(Boolean);
     const sentQuery =
       additionalNames.length > 0
         ? `[Also bring perspectives from: ${additionalNames.join(
@@ -113,7 +121,7 @@ export default function Aribot() {
       await sendAriMessage(
         {
           mode,
-          capability,
+          capability: effectiveCapability,
           query: sentQuery,
           attachments: payloadAttachments.length > 0 ? payloadAttachments : undefined,
         },
@@ -188,12 +196,14 @@ export default function Aribot() {
               <MessageList messages={messages} streaming={streaming} />
             </div>
           </div>
-          <CapabilityChips
-            primary={capability}
-            additional={additionalCapabilities}
-            onRemove={(id) => toggleCapability(id)}
-            onPromote={(id) => promoteCapability(id)}
-          />
+          {mode !== "er" && (
+            <CapabilityChips
+              primary={capability}
+              additional={additionalCapabilities}
+              onRemove={(id) => toggleCapability(id)}
+              onPromote={(id) => promoteCapability(id)}
+            />
+          )}
           <Composer
             query={query}
             setQuery={setQuery}
