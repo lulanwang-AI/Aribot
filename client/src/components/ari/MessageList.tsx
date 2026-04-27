@@ -5,7 +5,7 @@ import { AriMessage } from "@/components/ari/AriMessage";
 import { useAriStore, type AriMessage as AriMessageType } from "@/stores/ariStore";
 import {
   ShieldCheck,
-  Lock,
+  Languages,
   UserCheck,
   BookOpen,
   Keyboard,
@@ -120,7 +120,7 @@ function MessageBubble({
 function EmptyState() {
   const trustBadges = [
     { icon: ShieldCheck, label: "HIPAA-compliant" },
-    { icon: Lock, label: "Fully private chat" },
+    { icon: Languages, label: "Multi-language support" },
     { icon: UserCheck, label: "Human expert–derived" },
     { icon: BookOpen, label: "Evidence-based references" },
   ];
@@ -143,7 +143,7 @@ function EmptyState() {
             Ask Ari
           </h2>
           <p className="text-sm text-muted-foreground">
-            Your clinical assistant. Cited, fail-closed, fully private.
+            Your clinical assistant. Cited, fail-closed, multi-language support.
           </p>
         </div>
 
