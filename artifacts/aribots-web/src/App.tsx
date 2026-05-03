@@ -1,0 +1,171 @@
+import { useState } from "react";
+import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { ProfileSheetProvider } from "@/components/doctor-profile-sheet";
+import { FloatingAribot } from "@/components/floating-aribot";
+import { NetworkBackground } from "@/components/network-background";
+import NotFound from "@/pages/not-found";
+import Home from "@/pages/home";
+import Aribot from "@/pages/aribot";
+import AribotOnboarding from "@/pages/aribot-onboarding";
+import AribotDevBlocks from "@/pages/aribot-dev-blocks";
+import Triage from "@/pages/triage";
+import TriageDetail from "@/pages/triage-detail";
+import News from "@/pages/news";
+import Groups from "@/pages/groups";
+import GroupDetail from "@/pages/group-detail";
+import Events from "@/pages/events";
+import Account from "@/pages/account";
+import Team from "@/pages/team";
+import Chats from "@/pages/chats";
+import Training from "@/pages/training";
+import Doctors from "@/pages/doctors";
+import Telemed from "@/pages/telemed";
+import Admin from "@/pages/admin";
+import PreCharting from "@/pages/pre-charting";
+import ClinicalChat from "@/pages/clinical-chat";
+import SoapNote from "@/pages/soap";
+import VisitSummary from "@/pages/visit-summary";
+import WorkflowHistory from "@/pages/workflow-history";
+import Login from "@/pages/login";
+import Landing from "@/pages/landing";
+import Whitepaper from "@/pages/whitepaper";
+import { AuthContext } from "@/lib/auth";
+import { ThemeProvider } from "@/hooks/use-theme";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+function SidebarEdgeTrigger() {
+  const { toggleSidebar, state } = useSidebar();
+  const isOpen = state === "expanded";
+  return (
+    <button
+      onClick={toggleSidebar}
+      data-testid="button-sidebar-toggle"
+      className="absolute top-1/2 left-0 -translate-y-1/2 z-10 h-12 w-5 flex items-center justify-center bg-background/80 backdrop-blur-sm border border-l-0 rounded-r-md shadow-sm hover:bg-accent transition-colors"
+    >
+      {isOpen ? <ChevronLeft className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+    </button>
+  );
+}
+
+function AppRouter() {
+  return (
+    <Switch>
+      <Route path="/aribot/onboarding" component={AribotOnboarding} />
+      <Route path="/aribot/dev/blocks" component={AribotDevBlocks} />
+      <Route path="/aribot" component={Aribot} />
+      <Route path="/home" component={Home} />
+      <Route path="/triage" component={Triage} />
+      <Route path="/triage/:id">
+        {(params) => <TriageDetail id={params.id} />}
+      </Route>
+      <Route path="/news" component={News} />
+      <Route path="/groups" component={Groups} />
+      <Route path="/groups/:id">
+        {(params) => <GroupDetail id={params.id} />}
+      </Route>
+      <Route path="/events" component={Events} />
+      <Route path="/chats" component={Chats} />
+      <Route path="/training" component={Training} />
+      <Route path="/doctors" component={Doctors} />
+      <Route path="/account" component={Account} />
+      <Route path="/team" component={Team} />
+      <Route path="/telemed" component={Telemed} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/pre-charting" component={PreCharting} />
+      <Route path="/clinical-chat" component={ClinicalChat} />
+      <Route path="/soap" component={SoapNote} />
+      <Route path="/visit-summary" component={VisitSummary} />
+      <Route path="/workflow-history" component={WorkflowHistory} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+const sidebarStyle = {
+  "--sidebar-width": "15rem",
+  "--sidebar-width-icon": "3rem",
+};
+
+function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <AuthContext.Provider value={{ signOut: onSignOut }}>
+      <ProfileSheetProvider>
+        <NetworkBackground />
+        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+          <div className="flex h-screen w-full">
+            <AppSidebar />
+            <div className="flex flex-col flex-1 min-w-0 relative">
+              <main className="flex-1 overflow-auto">
+                <AppRouter />
+              </main>
+              <SidebarEdgeTrigger />
+            </div>
+          </div>
+          <FloatingAribot />
+        </SidebarProvider>
+      </ProfileSheetProvider>
+    </AuthContext.Provider>
+  );
+}
+
+function AppContent() {
+  const [authenticated, setAuthenticated] = useState(true);
+  const [location, setLocation] = useLocation();
+
+  async function handleSignOut() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Logout best-effort: even if the call fails, drop local state below.
+    }
+    localStorage.removeItem("aribot_authenticated");
+    queryClient.clear();
+    setAuthenticated(false);
+    setLocation("/");
+  }
+
+  if (location === "/" || location === "/landing") {
+    return <Landing />;
+  }
+
+  if (location === "/whitepaper") {
+    return <Whitepaper />;
+  }
+
+  if (!authenticated || location === "/login") {
+    return (
+      <Login
+        onLogin={() => {
+          setAuthenticated(true);
+          setLocation("/aribot");
+        }}
+        onNavigateToLanding={() => setLocation("/")}
+      />
+    );
+  }
+
+  return <AuthenticatedApp onSignOut={handleSignOut} />;
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Toaster />
+            <AppContent />
+          </WouterRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

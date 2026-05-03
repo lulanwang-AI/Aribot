@@ -1,0 +1,34 @@
+Add file upload support to Ari. The wound_skin and rad_onc_imaging capabilities need images via Anthropic's vision API. PDFs (labs, discharge summaries, RT plan summaries) go through pdf-parse and are inserted as document blocks.
+
+Backend:
+
+1. In server/ari/routes.ts, add POST /api/ari/upload using existing Multer setup. Accept multipart/form-data with field "file". Limits: 10MB per file, max 4 files per upload. Allowed mime types: image/jpeg, image/png, image/webp, image/gif, application/pdf, text/plain.
+
+2. Process server-side:
+   - Images: read buffer, base64 encode, return { type: "image", mediaType, data: base64, filename, sizeBytes }.
+   - PDFs: run pdf-parse, extract text. If text length > 50000 chars, truncate with a "[truncated]" marker. Return { type: "document", mediaType: "application/pdf", data: extractedText, filename, sizeBytes, pageCount }. Also keep the original PDF base64 for the model — Anthropic's API supports native PDF input via document blocks. Return both: textPreview (for UI) and data (base64 for the model).
+   - Plain text: read as utf-8, return as { type: "document", mediaType: "text/plain", data: text, filename, sizeBytes }.
+
+3. Reject files that fail mime sniffing (don't trust the Content-Type header alone). Use file-type or a header-byte check.
+
+4. Authenticated route — same Passport guard as /api/ari/chat.
+
+5. In the /api/ari/chat handler, when attachments are present, build the user message content as an array:
+   - For each image attachment: { type: "image", source: { type: "base64", media_type, data } }
+   - For each PDF attachment: { type: "document", source: { type: "base64", media_type: "application/pdf", data: <base64 of original pdf> } } (use Anthropic's PDF support, beta header "pdfs-2024-09-25" if not yet GA in the SDK version)
+   - For plain text documents: include as a text block prefixed with "Attached document: <filename>\n\n<content>"
+   - Then the JSON payload text block last: JSON.stringify({ mode, capability, query })
+
+Frontend:
+
+6. In client/src/components/ari/AttachmentButton.tsx: a paperclip icon button that opens a file picker. accept attribute is computed from current capability: if capability.acceptsImages add image/*; if capability.acceptsPdfs add application/pdf,text/plain. Multiple files allowed.
+
+7. On select, POST to /api/ari/upload one file at a time (sequential, not parallel — keeps progress simple). Show per-file progress. On success, push the returned attachment metadata to the Zustand store.
+
+8. Render attachments in the composer as chips below the textarea. For images, show a 40px thumbnail. For PDFs, show a file icon + filename + page count + textPreview tooltip. Each chip has a remove (×) button.
+
+9. When the clinician switches capability and existing attachments are no longer accepted (e.g. switching from wound_skin to pharmacy clears images), show a small confirmation toast and remove them.
+
+10. ER mode: hide the attachment button entirely (already handled in prompt 3 — verify it's actually hidden, not just disabled).
+
+Do not store uploaded files on disk. Process in memory, send to Anthropic, discard. Patient images and PDFs may contain PHI — they live in memory only for the duration of the request.

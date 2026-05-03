@@ -1,0 +1,40 @@
+#1 - ARI Bots Marketing Landing Page
+
+What & Why
+
+Build a high-tech, dark-themed public marketing website (landing page) for ARI bots — an AI-powered medical platform built by physicians for physicians. The page should showcase and elaborate on ARI's core functions using animated, interactive sections, matching the brand's dark/neon-green aesthetic seen in the screenshot and content provided.
+
+Done looks like
+
+A public route (/landing) renders a fully scrollable, single-page marketing website
+Hero section: full-screen dark background with animated neural network (node/line particle system using canvas), bold headline "EMPOWERING MEDICINE WITH AI", tagline "built by physicians for physicians", and a "Request Demo" CTA button
+"Meet ARI" section: animated feature cards for EFFICIENT / SMART / SECURE with icon illustrations and expanding descriptions; animated stat counters (e.g., "Reduce mortality rates", "Shorten hospital stays", "Lower healthcare costs")
+"How ARI Works" section: elaborated step-by-step breakdown of ARI's AI functions — clinical decision support, real-time triage assessment, differential diagnosis generation, evidence-based treatment recommendations, continuous learning from outcomes — each with a distinct icon and short description
+"AI in Healthcare" section: an illustrated split layout showing AI capabilities (natural language processing, predictive analytics, electronic health record integration, HIPAA-compliant data security) with animated callouts
+"Our Vision" section: About/story content with founder details (CEO = physician + Director of Infectious Disease at Vibra Hospitals), team multidisciplinary composition
+"Schedule a Demo" section: a contact form with Name, Email, Organization, Role, and Message fields; on submit it stores the entry to the database and shows a success confirmation
+Navigation bar: ARI bots hexagon logo (lime green, dark background), links to Home / Team / Request Demo / Contact, smooth-scroll behavior
+The Login page retains a "Learn More" link that navigates to /landing so unauthenticated visitors can read about the product
+Fully responsive (mobile, tablet, desktop)
+Color palette: near-black background (#1a1a1a / #111), lime/neon green accent (#c8f135 or similar), white text, subtle gray borders
+Out of scope
+
+Authentication changes (keep existing login flow intact)
+Actual backend AI integrations
+Blog, news feed, or job listings
+Payments or subscriptions
+Tasks
+
+Database schema & storage — Add a demo_requests table (name, email, organization, role, message, created_at) to the shared schema and implement the insert/list methods in storage, plus a POST /api/demo-requests route.
+Landing page component — Create client/src/pages/landing.tsx as a long-scrollable single-page marketing site with all sections: Hero (animated canvas neural network), Meet ARI (feature cards with animated entry), How ARI Works (step breakdown), AI in Healthcare (capabilities grid), Our Vision (founder/team story), and Schedule a Demo (contact form wired to the API).
+Navbar & routing integration — Add a sticky top navigation bar component for the landing page (logo, section scroll links, CTA), register /landing route in App.tsx as a public route (bypasses auth check), and add a "Learn More" or "See the Platform" link on the Login page pointing to /landing.
+Relevant files
+
+client/src/App.tsx
+client/src/pages/login.tsx
+client/src/index.css
+shared/schema.ts
+server/storage.ts
+server/routes.ts
+attached_assets/screenshot-1773432457315.png
+attached_assets/content-1773432458244.md

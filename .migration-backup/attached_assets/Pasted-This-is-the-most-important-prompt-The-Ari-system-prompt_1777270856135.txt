@@ -1,0 +1,40 @@
+This is the most important prompt. The Ari system prompt emits four structured JSON block types interleaved with prose: ari_section, ari_claim, ari_step, ari_citation. The UI must parse these from the streaming response and render them as verifiability affordances. This is what makes the tool trustworthy to physicians.
+
+1. Create shared/ari/blocks.ts:
+
+export type AriBlock =
+  | { kind: "section"; capability: string; mode: "ari" | "er" }
+  | { kind: "claim"; claim: string; verified: boolean; verificationSource: string }
+  | { kind: "citation"; source: string; doiOrUrl: string; evidenceClass: string }
+  | { kind: "step"; stepNumber: number; description: string; status: "complete" | "partial" | "no_result"; partialResults: string }
+  | { kind: "prose"; text: string };
+
+Export parseAriStream(fullText: string): AriBlock[]. Parsing rules:
+- Scan the text line by line.
+- A line that starts with "{" and ends with "}" and parses as JSON with one of these keys is a structured block: ari_section, ari_claim, ari_step, ari_citation. Map fields:
+  - ari_section -> { kind: "section", capability: <value>, mode: <value> }
+  - ari_claim -> { kind: "claim", claim, verified, verificationSource: verification_source }
+  - ari_citation -> { kind: "citation", source: ari_citation, doiOrUrl: doi_or_url, evidenceClass: evidence_class }
+  - ari_step -> { kind: "step", stepNumber: ari_step, description, status, partialResults: partial_results }
+- All other text is accumulated into prose blocks. Consecutive prose lines collapse into one prose block separated by single newlines. Blank lines between blocks are discarded.
+- If a line looks like JSON but fails to parse, treat it as prose (do not crash).
+
+This parser must work on partial streams — so also export parseAriStreamPartial that returns { blocks, trailingBuffer } where trailingBuffer is incomplete trailing text not yet committed to a block (e.g. the model is mid-way through a JSON line). The renderer shows committed blocks and the trailing buffer as live-typing prose.
+
+2. Create client/src/components/ari/AriMessage.tsx that renders an array of AriBlock:
+
+- "section" block: render as a small pill at the top of the message showing "Ari · <capability displayName>" (look up displayName from shared/ari/capabilities.ts). Don't show the section block in ER mode (the banner already conveys it).
+- "step" block: render as a collapsible row in a "Retrieval trace" panel. Default collapsed. Show step number, description, and a status dot (green=complete, yellow=partial, gray=no_result). Expanded shows partialResults. Use shadcn Collapsible.
+- "claim" block: render the claim text with a small badge to the right. Verified=true: green check + "Verified via <verificationSource>". Verified=false: yellow warning + "UNVERIFIED — confirm independently." The claim text itself is faint until the next prose block (prose immediately following a claim block visually pairs with it).
+- "citation" block: render as an expandable source card with the source name (bold), evidence class (small chip if present), and doiOrUrl as a clickable external link (open in new tab, rel="noopener noreferrer"). If doiOrUrl is empty, show "No URL provided" in gray. Group consecutive citations under one heading "Sources" if more than one appears in a row.
+- "prose" block: render with react-markdown + remark-gfm.
+
+3. Visual hierarchy: claims are the user's primary trust signal. Make the verified/unverified badge unmissable. Citations are secondary — visible but not loud. Step traces are tertiary — collapsed by default, available on demand.
+
+4. In ER mode, the parser still runs but only "section" and "prose" blocks should appear (per the system prompt, ER mode emits no claim/step/citation blocks). If any do appear, render them but tag them with a "(unexpected in ER mode)" note in dev — this surfaces system prompt drift.
+
+5. Add a "Copy clinical summary" button on each assistant message that copies prose-only content to the clipboard (strips block UI for pasting into the EHR).
+
+6. Add a "Show raw response" dev-only toggle (visible only when import.meta.env.DEV) that shows the unparsed stream text. Useful for verifying the model is emitting the JSON blocks correctly.
+
+Test this with a fixture: create client/src/components/ari/__fixtures__/sample-response.txt containing a realistic Ari response with all four block types interleaved with prose, and a Storybook-style page at /ari/dev/blocks that renders it. This lets you iterate on the visual without burning API calls.

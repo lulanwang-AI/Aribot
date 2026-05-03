@@ -1,0 +1,41 @@
+The Ari system prompt says "for licensed physicians, nurses, and pharmacists." Wire that into the existing Passport auth so every Ari request is bound to a known clinician role.
+
+1. Extend the user schema (Drizzle) to add:
+   - licenseType: text enum "MD" | "DO" | "NP" | "PA" | "RN" | "PharmD" | "OTHER"
+   - licenseNumber: text (optional, for future verification)
+   - licenseState: text (optional)
+   - licenseVerifiedAt: timestamp (null until verified — verification flow is out of scope for v1)
+   - acceptedAriTermsAt: timestamp (null until accepted)
+
+Migration with drizzle-kit. Add the columns nullable so existing users aren't broken; gate Ari access on them being set.
+
+2. Create client/src/pages/AriOnboarding.tsx — first-time gate before /ari is reachable:
+   - Single page, calm and clinical.
+   - License type select (required).
+   - License number + state (optional, with text "We'll verify these later for full feature access").
+   - Terms acknowledgment checkbox (required): "I acknowledge that Ari provides clinical decision support, not clinical decisions. I am responsible for verifying any recommendation before acting on it. I will not enter patient identifiers (names, MRNs, DOBs, addresses, phone numbers) into Ari."
+   - On submit, POST /api/ari/onboarding to write licenseType + acceptedAriTermsAt. Then redirect to /ari.
+
+3. Middleware on /api/ari/* (except /api/ari/onboarding):
+   - Require authenticated session.
+   - Require user.licenseType set and user.acceptedAriTermsAt not null.
+   - On fail, return 403 with { redirect: "/ari/onboarding" }.
+   - Frontend route guard at /ari uses TanStack Query to check /api/auth/me; if missing license fields, redirect to /ari/onboarding.
+
+4. License-aware system prompt augmentation:
+   - In server/ari/routes.ts, before the anthropic.messages.create call, prepend a small clinician-context block to the system prompt:
+     "\n\nClinician context for this session: license type <licenseType>. Tailor terminology and depth accordingly. Pharmacists receive deeper PK/PD detail; nurses receive workflow-focused framing; physicians receive full differential discussion. This context never overrides safety gates."
+   - This is a gentle nudge, not a permission system. All nine capabilities are available to all license types in v1. (Future: PA/NP/RN may have a narrower capability list — registry already supports this via a per-capability allowedLicenseTypes field you can add later.)
+
+5. Audit log: every /api/ari/chat request writes a row to ari_audit_log:
+   - userId, licenseType, mode, capability, queryHash (sha256 of query for dedup, NOT the query itself), attachmentCount, latencyMs, success, errorCode, createdAt.
+   - Do NOT log query content or response content. The audit log is for usage shape and reliability, not content review.
+   - Drizzle table + migration.
+
+6. PHI guard at request time: server-side regex check on the query field for patterns that look like PHI (SSN format, common MRN formats, phone numbers, full DOBs). If matched, reject the request with 422 and message: "Query appears to contain personal identifiers. Please rephrase using clinical descriptors only (age range, sex, relevant conditions). Do not include names, MRNs, dates of birth, addresses, or phone numbers." Frontend shows this as a prominent inline error above the composer.
+
+7. On the chat surface, add a small persistent footer: "<licenseType> · <user.email> · Logged at <session start time>". Lets the clinician confirm the session is bound to their license.
+
+8. Logout button in the top-right of the Ari page (in addition to anywhere it exists in the parent shell) — clinical sessions should be easy to end.
+
+This closes the loop: every clinical response is bound to an identified, licensed clinician who has acknowledged the tool's limits, with an audit trail that contains shape but not content. That's the minimum bar for a clinical decision support tool.

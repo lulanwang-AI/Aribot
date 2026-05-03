@@ -1,0 +1,44 @@
+The system prompt describes a /mnt/memory/ store for clinically significant learnings. We're on in-memory storage right now, so wire this to Drizzle + Postgres tables that can flip on later. Behind a feature flag — disabled by default per "skip silently if not writable."
+
+1. shared/db/ari-memory.ts — Drizzle schema:
+
+import { pgTable, uuid, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+
+export const ariMemoryEntries = pgTable("ari_memory_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  topic: text("topic").notNull(), // "antibiotic_stewardship", "pharmacy", "protocols", "clinical_context", "corrections"
+  slug: text("slug").notNull(), // location_slug, drug_slug, protocol_slug, session_date, or "general"
+  contentMarkdown: text("content_markdown").notNull(),
+  metadata: jsonb("metadata").$type<{ capability?: string; locationConfirmed?: string; clinicianId?: string; sourceMessageId?: string }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+Composite index on (topic, slug). Generate the migration with drizzle-kit.
+
+2. server/ari/memory.ts — abstraction layer:
+
+interface AriMemoryStore {
+  isWritable(): boolean;
+  read(topic: string, slug: string): Promise<string | null>;
+  appendOrCreate(topic: string, slug: string, contentMarkdown: string, metadata?: object): Promise<void>;
+  list(topic: string): Promise<Array<{slug, updatedAt}>>;
+}
+
+Export two implementations:
+- NullMemoryStore: isWritable returns false, all methods no-op. This is the default.
+- DrizzleMemoryStore: backed by ariMemoryEntries. appendOrCreate looks for existing row matching (topic, slug); if found and content under 25000 tokens (use a rough char/4 estimate), append with a timestamp separator "\n\n---\n_<ISO timestamp>_\n\n<new content>"; if would exceed limit, create a new row with slug + "-" + date.
+
+3. Feature flag: process.env.ARI_MEMORY_ENABLED === "true" picks DrizzleMemoryStore, otherwise NullMemoryStore. Log "Ari memory: <enabled|disabled (NullMemoryStore)>" at startup.
+
+4. Memory write hook in /api/ari/chat: AFTER the response stream completes successfully, run a post-processing pass:
+   - Skip entirely if mode === "er" (per the system prompt).
+   - Skip entirely if the memory store reports not writable.
+   - Parse the assistant response with parseAriStream. Extract verified claims (claim blocks with verified: true) and citations.
+   - Make a small follow-up call to anthropic.messages.create with a memory-extraction prompt: "From this clinical exchange, identify de-identified facts worth remembering for continuity. Output JSON: { topic, slug, contentMarkdown, shouldStore: boolean, reason }. Only set shouldStore=true if the fact is verified, de-identified, and clinically significant. Topics: antibiotic_stewardship, pharmacy, protocols, clinical_context, corrections." Pass the original query (with location/PHI-looking strings redacted via simple regex) and the assistant response.
+   - If shouldStore, call store.appendOrCreate. Wrap in try/catch — memory failure must never affect the clinician's response.
+
+5. Add GET /api/ari/memory?topic=X (admin only — gate with a role check, stub the role check for now with a TODO) returning the list of entries. Useful for the clinician to audit what Ari has remembered.
+
+6. Patient identifiers: never write names, MRNs, DOBs, addresses, phone numbers, or specific dates of service to memory. Add a redaction pass (regex for SSN-like patterns, MRN-like patterns, common name+number combinations, dates) before any memory write. If redaction strips more than 30% of the content, abort the write entirely — that's a signal it was too PHI-dense to safely persist.
+
+This is a defense-in-depth design. The memory layer is OFF by default. When it's turned on, it stores only what the model itself flags as worth remembering, and only after PHI redaction. If Postgres isn't configured, NullMemoryStore is used and the system prompt's "skip silently" rule is honored.
