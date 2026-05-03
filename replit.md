@@ -1,27 +1,50 @@
-# Workspace
+# ARIbots — Project Overview
 
-## Overview
+ARIbots is a doctor-only clinical AI platform. The project ships:
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+- **`artifacts/aribots-web`** — Vite + React web app (existing, working).
+- **`artifacts/api-server`** — Express + Drizzle Postgres API (existing, working). Auth: passport-local with session cookies. Includes Ari endpoints under `/api/ari/*` (Anthropic-backed, SSE streaming, MCP tools).
+- **`artifacts/aribots-mobile`** — Expo (React Native, iOS + Android) mobile app, brand-matched to web. New in this build.
+- **`artifacts/mockup-sandbox`** — design canvas sandbox (existing).
 
-## Stack
+## Mobile app architecture
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+`artifacts/aribots-mobile` uses Expo Router (file-based routing) with a tab bar plus stack screens.
 
-## Key Commands
+Key directories:
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+- `app/(tabs)/` — Home, Ari (AI chat), Triage (cases), News, More.
+- `app/triage/[id].tsx`, `app/news/[id].tsx`, `app/groups/[id].tsx`, `app/chats/[id].tsx` — detail stack screens.
+- `app/login.tsx`, `app/groups.tsx`, `app/events.tsx`, `app/chats.tsx`, `app/doctors.tsx`, `app/training.tsx`, `app/telemed.tsx`, `app/pre-charting.tsx`, `app/soap.tsx`, `app/visit-summary.tsx`, `app/clinical-chat.tsx` — secondary screens.
+- `components/Brand.tsx` — `BrandMark`, `BrandWordmark`, `ModeGradient` (Ari ↔ ER gradient).
+- `components/SimpleList.tsx` — shared list pattern for groups / events / doctors / training / chats.
+- `lib/api.ts` — fetch helper with persistent cookie jar (AsyncStorage) since RN doesn't have a native cookie jar. Handles `Set-Cookie` from the API server so session-based endpoints work after login.
+- `lib/auth.tsx` — auth context, persists "signed in" flag in AsyncStorage.
+- `constants/colors.ts` — palette synced with the web app's `index.css` (primary `#3b82f6`, light/dark surfaces, Ari/ER gradient stops).
+- `assets/images/` — brand assets copied from web (`aribot-mark-1024.png`, favicons, logo.svg). `icon.png` is the same mark used for the launch icon.
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+The mobile app talks to the existing **`artifacts/api-server`** at `https://${EXPO_PUBLIC_DOMAIN}/api/*`. Both web and mobile share one Postgres database and one set of routes, including Ari (`/api/ari/chat` SSE streaming via `expo/fetch`).
+
+## Auth
+
+The mobile login screen calls `POST /api/auth/login`. The API server's dev passport-local fallback accepts any email/password and resolves to seed user `u1`. Cookies are captured from `Set-Cookie` and replayed on subsequent requests via `lib/api.ts`. Ari endpoints (`requireAriClinician`) also fall back to `u1` when no session exists.
+
+## Ari mobile chat
+
+`app/(tabs)/ari.tsx` streams from `POST /api/ari/chat` using `import { fetch } from 'expo/fetch'` (required for `getReader()` on RN). Supports an Ari ↔ ER mode toggle with a brand gradient. Parses SSE `data:` frames as JSON and concatenates `delta`/`text`/`content`/`token` deltas into the streaming bubble.
+
+## Branding parity
+
+- Logo / favicon / mark: copied directly from web.
+- Primary blue: `#3b82f6` (matches web HSL `217 91% 60%`).
+- Light bg `#ffffff`, dark bg `#0b0e13` (matches web dark surface).
+- Typography: Inter (font-loaded via `@expo-google-fonts/inter`, weights 400/500/600/700) — close to the web's Open Sans/Montserrat in feel and well-suited for clinical UI.
+- Ari gradient: blue → violet (`#60a5fa → #a78bfa`). ER gradient: rose → orange (`#fb7185 → #f97316`).
+
+## Known infrastructure note (mobile preview)
+
+The Replit workflow runner reports the `artifacts/aribots-mobile: expo` workflow as `failed` with "didn't open port 19512", and the Replit Expo proxy (`*.expo.worf.replit.dev`) gates on workflow state — so the in-IDE web preview for the Expo app may show as unreachable. This is a Replit-side port-detection quirk with this Expo SDK; Metro itself binds and serves correctly (a direct `curl http://localhost:19512/status` returns `200`). Mobile testing via Expo Go (scan QR code from the workflow log) and the production publish path via **Expo Launch** are unaffected.
+
+## Out of scope (per requirements)
+
+- Live telemedicine WebRTC video on mobile. The `app/telemed.tsx` screen shows scheduled visits and notes that live video remains web-only.
