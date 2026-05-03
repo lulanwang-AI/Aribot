@@ -27,6 +27,11 @@ args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
 [services.production.run.env]
 PORT = "8080"
 NODE_ENV = "production"
+# ANTHROPIC_API_KEY is provisioned via Replit Secrets (auto-injected into
+# process.env in both dev and production). It is consumed by
+# artifacts/api-server/src/ari/client.ts to power the Aribot clinical chat
+# endpoint at POST /api/ari/chat. The server logs `configured: true` on
+# boot when the key is present (see src/index.ts startup log).
 
 [services.production.health.startup]
 path = "/api/healthz"

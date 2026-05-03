@@ -9,7 +9,6 @@
   "mcp_servers": [
     { "name": "pubmed", "type": "url", "url": "https://pubmed.mcp.claude.com/mcp" },
     { "name": "biorxiv", "type": "url", "url": "https://hcls.mcp.claude.com/biorxiv/mcp" },
-    { "name": "open-targets", "type": "url", "url": "https://mcp.platform.opentargets.org/mcp" },
     { "name": "clinical-trials", "type": "url", "url": "https://hcls.mcp.claude.com/clinical_trials/mcp" },
     { "name": "chembl", "type": "url", "url": "https://hcls.mcp.claude.com/chembl/mcp" },
     { "name": "cms-coverage", "type": "url", "url": "https://hcls.mcp.claude.com/cms_coverage/mcp" },

@@ -20,6 +20,13 @@ if (Number.isNaN(port) || port <= 0) {
   await seedAllData();
   await initRoutes();
 
+  // Make secret wiring explicit at startup so that operators can verify the
+  // Ari chat path can reach Anthropic without leaking the key value itself.
+  logger.info(
+    { configured: Boolean(process.env.ANTHROPIC_API_KEY) },
+    "ANTHROPIC_API_KEY status (Ari chat)",
+  );
+
   app.listen(port, "0.0.0.0", () => {
     logger.info({ port }, "Server listening");
   });

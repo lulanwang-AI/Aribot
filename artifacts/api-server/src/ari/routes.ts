@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { ZodError } from "zod";
+import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "./client";
 import { ARI_MODEL_ID, ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./config";
 import { AriRequestSchema, type AriAttachment } from "./schema";
@@ -216,19 +217,22 @@ router.post("/chat", requireAriClinician, async (req, res) => {
 
   let assistantText = "";
   try {
-    const stream = await anthropic.beta.messages.create(
-      {
-        model: ARI_MODEL_ID,
-        max_tokens: 4096,
-        system: systemPrompt,
-        mcp_servers: MCP_SERVERS,
-        messages: [{ role: "user", content: userContent as any }],
-        stream: true,
-      },
-      {
-        headers: { "anthropic-beta": betaHeaders },
-      }
-    );
+    // ER mode is documented as "no tool calls" in the system prompt, so avoid
+    // attaching MCP servers there — Anthropic still lists tools at request
+    // time and a flaky/rate-limited MCP would otherwise fail the whole turn.
+    const requestBody: Anthropic.Beta.Messages.MessageCreateParamsStreaming = {
+      model: ARI_MODEL_ID,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: userContent as Anthropic.Beta.BetaContentBlockParam[] },
+      ],
+      stream: true,
+      ...(mode !== "er" ? { mcp_servers: MCP_SERVERS } : {}),
+    };
+    const stream = await anthropic.beta.messages.create(requestBody, {
+      headers: { "anthropic-beta": betaHeaders },
+    });
 
     for await (const event of stream) {
       if (clientGone) break;
