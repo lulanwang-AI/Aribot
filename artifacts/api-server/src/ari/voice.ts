@@ -233,7 +233,7 @@ ariVoiceRouter.post(
     // replay it for the second attempt.
     const buildForm = () => {
       const form = new FormData();
-      const blob = new Blob([file.buffer], { type: file.mimetype });
+      const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
       form.append("file", blob, file.originalname || "speech.webm");
       form.append("model_id", DEFAULT_STT_MODEL);
       return form;

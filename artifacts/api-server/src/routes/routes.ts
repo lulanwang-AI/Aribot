@@ -9,6 +9,10 @@ import fs from "fs";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+interface AIChatResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
 const createPostSchema = z.object({
   title: z.string().min(1),
   content: z.string().min(1),
@@ -47,18 +51,18 @@ export async function registerRoutes(
     const sessionUser = (req as any).user;
     const userId = sessionUser?.id || "u1";
     const user = await storage.getUser(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) { res.status(404).json({ message: "User not found" }); return; }
     const { password: _, ...safe } = user;
     res.json(safe);
   });
 
   app.patch("/api/me", async (req, res) => {
     const parsed = updateUserSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const sessionUser = (req as any).user;
     const userId = sessionUser?.id || "u1";
     const updated = await storage.updateUser(userId, parsed.data);
-    if (!updated) return res.status(404).json({ message: "User not found" });
+    if (!updated) { res.status(404).json({ message: "User not found" }); return; }
     const { password: _, ...safe } = updated;
     res.json(safe);
   });
@@ -70,7 +74,7 @@ export async function registerRoutes(
 
   app.get("/api/users/:id", async (req, res) => {
     const user = await storage.getUser(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) { res.status(404).json({ message: "User not found" }); return; }
     const { password: _, ...safe } = user;
     const posts = await storage.getTriagePosts();
     const groups = await storage.getGroups();
@@ -133,7 +137,7 @@ export async function registerRoutes(
 
   app.get("/api/triage/:id", async (req, res) => {
     const post = await storage.getTriagePost(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) { res.status(404).json({ message: "Post not found" }); return; }
     const comments = await storage.getComments(req.params.id);
     const users = await storage.getAllUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
@@ -151,7 +155,7 @@ export async function registerRoutes(
 
   app.post("/api/triage", async (req, res) => {
     const parsed = createPostSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const post = await storage.createTriagePost({
       authorId: "u1",
       title: parsed.data.title,
@@ -167,14 +171,14 @@ export async function registerRoutes(
 
   app.post("/api/triage/:id/like", async (req, res) => {
     const post = await storage.likeTriagePost(req.params.id, "u1");
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) { res.status(404).json({ message: "Post not found" }); return; }
     res.json(post);
   });
 
   app.post("/api/triage/:id/flag", async (req, res) => {
     const parsed = flagSchema.safeParse(req.body);
     const post = await storage.flagTriagePost(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) { res.status(404).json({ message: "Post not found" }); return; }
     await storage.createFlaggedItem({
       contentType: "post", contentId: req.params.id, content: post.content.substring(0, 200),
       authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
@@ -185,7 +189,7 @@ export async function registerRoutes(
 
   app.post("/api/triage/:id/comments", async (req, res) => {
     const parsed = createCommentSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const comment = await storage.createComment({
       postId: req.params.id,
       authorId: "u1",
@@ -201,14 +205,14 @@ export async function registerRoutes(
 
   app.post("/api/comments/:id/like", async (req, res) => {
     const comment = await storage.likeComment(req.params.id, "u1");
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (!comment) { res.status(404).json({ message: "Comment not found" }); return; }
     res.json(comment);
   });
 
   app.post("/api/comments/:id/flag", async (req, res) => {
     const parsed = flagSchema.safeParse(req.body);
     const comment = await storage.flagComment(req.params.id);
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (!comment) { res.status(404).json({ message: "Comment not found" }); return; }
     await storage.createFlaggedItem({
       contentType: "comment", contentId: req.params.id, content: comment.content.substring(0, 200),
       authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
@@ -250,7 +254,7 @@ export async function registerRoutes(
 
   app.get("/api/news/:id", async (req, res) => {
     const item = await storage.getNewsItem(req.params.id);
-    if (!item) return res.status(404).json({ message: "News not found" });
+    if (!item) { res.status(404).json({ message: "News not found" }); return; }
     const comments = await storage.getNewsComments(req.params.id);
     const users = await storage.getAllUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
@@ -265,14 +269,14 @@ export async function registerRoutes(
 
   app.post("/api/news/:id/like", async (req, res) => {
     const item = await storage.likeNewsItem(req.params.id, "u1");
-    if (!item) return res.status(404).json({ message: "News not found" });
+    if (!item) { res.status(404).json({ message: "News not found" }); return; }
     res.json(item);
   });
 
   app.post("/api/news/:id/comments", async (req, res) => {
     const schema = z.object({ content: z.string().min(1), parentId: z.string().nullable().default(null) });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const comment = await storage.createNewsComment({
       newsId: req.params.id,
       authorId: "u1",
@@ -286,7 +290,7 @@ export async function registerRoutes(
 
   app.post("/api/news-comments/:id/like", async (req, res) => {
     const comment = await storage.likeNewsComment(req.params.id, "u1");
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (!comment) { res.status(404).json({ message: "Comment not found" }); return; }
     res.json(comment);
   });
 
@@ -307,7 +311,7 @@ export async function registerRoutes(
 
   app.get("/api/groups/:id", async (req, res) => {
     const group = await storage.getGroup(req.params.id);
-    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group) { res.status(404).json({ message: "Group not found" }); return; }
     const users = await storage.getAllUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
     const memberDetails = group.members.map(mId => userMap[mId]).filter(Boolean).map(({ password: _, ...u }) => u);
@@ -316,13 +320,13 @@ export async function registerRoutes(
 
   app.post("/api/groups/:id/join", async (req, res) => {
     const group = await storage.joinGroup(req.params.id, "u1");
-    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group) { res.status(404).json({ message: "Group not found" }); return; }
     res.json(group);
   });
 
   app.post("/api/groups/:id/leave", async (req, res) => {
     const group = await storage.leaveGroup(req.params.id, "u1");
-    if (!group) return res.status(404).json({ message: "Group not found" });
+    if (!group) { res.status(404).json({ message: "Group not found" }); return; }
     res.json(group);
   });
 
@@ -343,13 +347,13 @@ export async function registerRoutes(
 
   app.post("/api/events/:id/rsvp", async (req, res) => {
     const event = await storage.rsvpEvent(req.params.id, "u1");
-    if (!event) return res.status(404).json({ message: "Event not found" });
+    if (!event) { res.status(404).json({ message: "Event not found" }); return; }
     res.json(event);
   });
 
   app.post("/api/events/:id/unrsvp", async (req, res) => {
     const event = await storage.unrsvpEvent(req.params.id, "u1");
-    if (!event) return res.status(404).json({ message: "Event not found" });
+    if (!event) { res.status(404).json({ message: "Event not found" }); return; }
     res.json(event);
   });
 
@@ -360,9 +364,9 @@ export async function registerRoutes(
 
   app.patch("/api/moderation/:id", async (req, res) => {
     const parsed = moderationSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const item = await storage.updateFlaggedItem(req.params.id, parsed.data.status);
-    if (!item) return res.status(404).json({ message: "Item not found" });
+    if (!item) { res.status(404).json({ message: "Item not found" }); return; }
     res.json(item);
   });
 
@@ -379,7 +383,7 @@ export async function registerRoutes(
   app.post("/api/chats/:id/messages", async (req, res) => {
     const schema = z.object({ content: z.string().min(1), attachments: z.array(z.any()).default([]) });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const msg = await storage.createChatMessage({
       threadId: req.params.id,
       senderId: "u1",
@@ -393,7 +397,7 @@ export async function registerRoutes(
   app.post("/api/chats", async (req, res) => {
     const schema = z.object({ name: z.string(), type: z.enum(["direct", "group"]), participants: z.array(z.string()) });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const thread = await storage.createChatThread({
       ...parsed.data,
       lastMessage: "",
@@ -410,7 +414,7 @@ export async function registerRoutes(
 
   app.patch("/api/training/:id/complete", async (req, res) => {
     const mod = await storage.completeTrainingStep(req.params.id, "u1");
-    if (!mod) return res.status(404).json({ message: "Module not found" });
+    if (!mod) { res.status(404).json({ message: "Module not found" }); return; }
     res.json(mod);
   });
 
@@ -461,13 +465,13 @@ export async function registerRoutes(
 
   app.get("/api/telemed/consultations/:id", async (req, res) => {
     const consultation = await storage.getTelemedConsultation(req.params.id);
-    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    if (!consultation) { res.status(404).json({ message: "Consultation not found" }); return; }
     res.json(consultation);
   });
 
   app.post("/api/telemed/consultations/:id/accept", async (req, res) => {
     const consultation = await storage.acceptTelemedConsultation(req.params.id, "u1");
-    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    if (!consultation) { res.status(404).json({ message: "Consultation not found" }); return; }
     res.json(consultation);
   });
 
@@ -478,18 +482,18 @@ export async function registerRoutes(
       prescriptions: z.array(z.string()).default([]),
     });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const consultation = await storage.completeTelemedConsultation(req.params.id, parsed.data);
-    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    if (!consultation) { res.status(404).json({ message: "Consultation not found" }); return; }
     res.json(consultation);
   });
 
   app.patch("/api/telemed/consultations/:id/notes", async (req, res) => {
     const schema = z.object({ notes: z.string().min(1) });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const consultation = await storage.updateTelemedNotes(req.params.id, parsed.data.notes);
-    if (!consultation) return res.status(404).json({ message: "Consultation not found" });
+    if (!consultation) { res.status(404).json({ message: "Consultation not found" }); return; }
     res.json(consultation);
   });
 
@@ -515,16 +519,16 @@ export async function registerRoutes(
 
   app.post("/api/upload-document", upload.single("file"), async (req, res) => {
     try {
-      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
+      if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
       const ext = path.extname(req.file.originalname).toLowerCase();
       let content = "";
       let docType: "pdf" | "text" | "image" = "text";
 
       if (ext === ".pdf") {
         docType = "pdf";
-        const pdfParse = (await import("pdf-parse")).default;
-        const result = await pdfParse(req.file.buffer);
+        const { PDFParse } = await import("pdf-parse");
+        const parser = new PDFParse({ data: new Uint8Array(req.file.buffer) });
+        const result = await parser.getText();
         content = result.text;
       } else if ([".txt", ".csv", ".md", ".rtf"].includes(ext)) {
         docType = "text";
@@ -533,7 +537,8 @@ export async function registerRoutes(
         docType = "image";
         content = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
       } else {
-        return res.status(400).json({ error: "Unsupported file type. Use PDF, TXT, CSV, MD, or image files." });
+        res.status(400).json({ error: "Unsupported file type. Use PDF, TXT, CSV, MD, or image files." });
+        return;
       }
 
       res.json({
@@ -556,7 +561,8 @@ export async function registerRoutes(
       const openaiKey = process.env.OPENAI_API_KEY;
 
       if (!openaiKey) {
-        return res.json({ fields: {}, raw: content });
+        res.json({ fields: {}, raw: content });
+        return;
       }
 
       const prompt = `You are a medical document parser. Extract structured patient data from this clinical document. Return ONLY valid JSON with these optional keys (only include keys that have data):
@@ -590,15 +596,16 @@ ${content.substring(0, 8000)}`;
         }),
       });
 
-      if (!aiRes.ok) return res.json({ fields: {}, raw: content });
-
-      const aiJson = await aiRes.json();
+      if (!aiRes.ok) { res.json({ fields: {}, raw: content }); return; }
+      const aiJson = (await aiRes.json()) as AIChatResponse;
       const aiContent = aiJson.choices?.[0]?.message?.content || "{}";
       try {
         const parsed = JSON.parse(aiContent.replace(/```json\n?/g, "").replace(/```/g, "").trim());
-        return res.json({ fields: parsed, raw: content });
+        res.json({ fields: parsed, raw: content });
+        return;
       } catch {
-        return res.json({ fields: {}, raw: content });
+        res.json({ fields: {}, raw: content });
+        return;
       }
     } catch (err) {
       console.error("Parse document error:", err);
@@ -645,12 +652,14 @@ Recent Results: ${data.recentResults || "None"}`
         if (!aiRes.ok) {
           const errText = await aiRes.text();
           console.error("OpenAI Prechart error:", aiRes.status, errText);
-          return res.status(502).json({ primer: "AI service error generating primer." });
+          res.status(502).json({ primer: "AI service error generating primer." });
+          return;
         }
 
-        const aiJson = await aiRes.json();
+        const aiJson = (await aiRes.json()) as AIChatResponse;
         const primer = aiJson.choices?.[0]?.message?.content || "Unable to generate primer.";
-        return res.json({ primer });
+        res.json({ primer });
+        return;
       }
 
       const primer = `${data.name} is a ${data.sex?.toLowerCase() || ""} patient presenting for a ${data.visitType?.toLowerCase() || "clinic"} visit with a chief complaint of "${data.chiefComplaint || "not specified"}". ${data.medications ? `Current medications include ${data.medications.split("\\n").filter(Boolean).length} active prescriptions.` : "No current medications reported."} ${data.allergies ? `Known allergies: ${data.allergies}.` : "No known drug allergies."} ${data.pmh ? `Relevant medical history includes ${data.pmh.substring(0, 100)}.` : ""} ${data.bp ? `Vitals on intake: BP ${data.bp}, HR ${data.hr || "N/A"}, Temp ${data.temp || "N/A"}.` : "Vitals pending."}`.trim();
@@ -725,7 +734,8 @@ ${patientContext?.uploadedDocuments?.length ? `\nUploaded Documents (treat as ra
         if (!aiRes.ok) {
           const errText = await aiRes.text();
           console.error("OpenAI API error:", aiRes.status, errText);
-          return res.status(502).json({ error: "AI service error" });
+          res.status(502).json({ error: "AI service error" });
+          return;
         }
 
         res.setHeader("Content-Type", "text/plain");
@@ -754,9 +764,11 @@ ${patientContext?.uploadedDocuments?.length ? `\nUploaded Documents (treat as ra
               }
             }
           }
-          return res.end();
+          res.end();
+          return;
         }
-        return res.end();
+        res.end();
+        return;
       }
 
       res.setHeader("Content-Type", "text/plain");
@@ -809,7 +821,8 @@ Current guidelines suggest a stepwise approach to management, beginning with con
       if (!openaiKey) {
         const updated = { ...currentSoap };
         updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
-        return res.json(updated);
+        res.json(updated);
+        return;
       }
 
       const prompt = `You are a physician's clinical documentation assistant. You have an existing SOAP note draft and a new piece of clinical information from an AI consult conversation. Your job is to INTELLIGENTLY INTEGRATE the new information into the appropriate SOAP sections.
@@ -847,10 +860,11 @@ ${snippet}`;
       if (!aiRes.ok) {
         const updated = { ...currentSoap };
         updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
-        return res.json(updated);
+        res.json(updated);
+        return;
       }
 
-      const aiJson = await aiRes.json();
+      const aiJson = (await aiRes.json()) as AIChatResponse;
       const content = aiJson.choices?.[0]?.message?.content || "{}";
       try {
         const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
@@ -876,16 +890,18 @@ ${snippet}`;
           }
           return String(val || "");
         };
-        return res.json({
+        res.json({
           S: normalize(parsed.S),
           O: normalize(parsed.O),
           A: normalize(parsed.A),
           P: normalize(parsed.P),
         });
+        return;
       } catch {
         const updated = { ...currentSoap };
         updated.A = updated.A ? updated.A + "\n\n" + snippet : snippet;
-        return res.json(updated);
+        res.json(updated);
+        return;
       }
     } catch (err) {
       console.error("SOAP integrate error:", err);
@@ -934,10 +950,11 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
         if (!aiRes.ok) {
           const errText = await aiRes.text();
           console.error("OpenAI SOAP error:", aiRes.status, errText);
-          return res.status(502).json({ error: "AI service error" });
+          res.status(502).json({ error: "AI service error" });
+          return;
         }
 
-        const aiJson = await aiRes.json();
+        const aiJson = (await aiRes.json()) as AIChatResponse;
         const content = aiJson.choices?.[0]?.message?.content || "{}";
         try {
           const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
@@ -969,15 +986,17 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
             }
             return String(val || "");
           };
-          return res.json({
+          res.json({
             S: normalize(parsed.S),
             O: normalize(parsed.O),
             A: normalize(parsed.A),
             P: normalize(parsed.P),
             confidence: parsed.confidence || { S: "moderate", O: "moderate", A: "moderate", P: "moderate" },
           });
+          return;
         } catch {
-          return res.json({ S: content, O: "", A: "", P: "", confidence: { S: "low", O: "low", A: "low", P: "low" } });
+          res.json({ S: content, O: "", A: "", P: "", confidence: { S: "low", O: "low", A: "low", P: "low" } });
+          return;
         }
       }
 
@@ -998,10 +1017,11 @@ ${data.regenerateSection ? `Only regenerate the ${data.regenerateSection} sectio
       };
 
       if (data.regenerateSection) {
-        return res.json({
+        res.json({
           [data.regenerateSection]: soap[data.regenerateSection as keyof typeof soap],
           confidence: { [data.regenerateSection]: soap.confidence[data.regenerateSection as keyof typeof soap.confidence] },
         });
+        return;
       }
 
       res.json(soap);
@@ -1050,16 +1070,19 @@ P: ${soapNote.P}`;
         if (!aiRes.ok) {
           const errText = await aiRes.text();
           console.error("OpenAI Summary error:", aiRes.status, errText);
-          return res.status(502).json({ error: "AI service error" });
+          res.status(502).json({ error: "AI service error" });
+          return;
         }
 
-        const aiJson = await aiRes.json();
+        const aiJson = (await aiRes.json()) as AIChatResponse;
         const content = aiJson.choices?.[0]?.message?.content || "{}";
         try {
           const parsed = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, "").trim());
-          return res.json(parsed);
+          res.json(parsed);
+          return;
         } catch {
-          return res.json({ visitReason: content, findings: "", diagnoses: [], medications: [], carePlan: "", warningSigns: [], followUp: "" });
+          res.json({ visitReason: content, findings: "", diagnoses: [], medications: [], carePlan: "", warningSigns: [], followUp: "" });
+          return;
         }
       }
 
@@ -1094,7 +1117,7 @@ P: ${soapNote.P}`;
 
   app.post("/api/demo-requests", async (req, res) => {
     const parsed = insertDemoRequestSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+    if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const demoRequest = await storage.createDemoRequest(parsed.data);
     res.status(201).json(demoRequest);
   });

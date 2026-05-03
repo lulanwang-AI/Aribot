@@ -136,6 +136,7 @@ export interface MedEvent {
   capacity: number;
   rsvps: string[];
   imageUrl: string;
+  rsvpAvatars?: { id: string; name: string; avatarUrl: string }[];
 }
 
 export interface FlaggedItem {
@@ -196,7 +197,16 @@ export interface Team {
   id: string;
   name: string;
   description: string;
-  members: { userId: string; role: "admin" | "member" }[];
+  members: {
+    userId: string;
+    role: "admin" | "member";
+    name?: string;
+    avatarUrl?: string;
+    verified?: boolean;
+    specialty?: string;
+    hospital?: string;
+    rankingScore?: number;
+  }[];
 }
 
 export const insertCommentSchema = z.object({

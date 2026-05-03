@@ -130,6 +130,7 @@ export class MemStorage implements IStorage {
       phiSafeMode: data.phiSafeMode !== undefined ? data.phiSafeMode : true,
       yearsExperience: data.yearsExperience || 0, rankingScore: data.rankingScore || 50,
       badges: data.badges || [], bio: data.bio || "", avatarUrl: data.avatarUrl || "",
+      credential: data.credential || "",
     };
     this.users.set(id, user);
     return user;

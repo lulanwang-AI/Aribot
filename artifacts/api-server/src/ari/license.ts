@@ -56,9 +56,10 @@ export async function requireAriClinician(
   if (!user) {
     // Neither the session user nor the seeded guest is available — only
     // happens in a totally empty store. Surface a clear error.
-    return res.status(500).json({
+    res.status(500).json({
       message: "Ari user context unavailable.",
     });
+    return;
   }
   // Onboarding is currently optional. If the user has completed it we use
   // their declared license type and terms-acceptance timestamp; otherwise we

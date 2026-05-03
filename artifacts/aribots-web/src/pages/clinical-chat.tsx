@@ -201,8 +201,8 @@ export default function ClinicalChat() {
   async function saveToSoap(content: string, msgIndex: number) {
     setIntegrating(msgIndex);
     try {
-      const patientContext = store.patient
-        ? `${store.patient.name}, ${store.patient.sex}, DOB ${store.patient.dob}, Chief Complaint: ${store.patient.chiefComplaint}`
+      const patientContext = store.name
+        ? `${store.name}, ${store.sex}, DOB ${store.dob}, Chief Complaint: ${store.chiefComplaint}`
         : "";
 
       const res = await fetch("/api/soap/integrate", {

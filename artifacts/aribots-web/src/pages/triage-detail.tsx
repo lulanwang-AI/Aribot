@@ -18,9 +18,9 @@ import { ArrowLeft, Heart, Flag, Clock, Send, Reply, UserX, Image as ImageIcon, 
 import { useRole } from "@/lib/role";
 import type { TriagePost, Comment } from "@shared/schema";
 
-type DetailComment = Comment & { author: { name: string; specialty: string; credential?: string } | null };
+type DetailComment = Comment & { author: { name: string; specialty: string; credential?: string; avatarUrl?: string } | null };
 type DetailPost = TriagePost & {
-  author: { name: string; specialty: string; credential?: string } | null;
+  author: { name: string; specialty: string; credential?: string; avatarUrl?: string } | null;
   comments: DetailComment[];
 };
 

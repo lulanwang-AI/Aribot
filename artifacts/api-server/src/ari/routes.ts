@@ -32,7 +32,8 @@ const router = Router();
 router.post("/onboarding", async (req, res) => {
   const r = req as any;
   if (typeof r.isAuthenticated !== "function" || !r.isAuthenticated() || !r.user?.id) {
-    return res.status(401).json({ message: "Sign in required." });
+    res.status(401).json({ message: "Sign in required." });
+    return;
   }
   const parsed = onboardingSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -47,9 +48,10 @@ router.post("/onboarding", async (req, res) => {
     licenseState: parsed.data.licenseState || "",
     acceptedAriTermsAt: Date.now(),
   } as any);
-  if (!updated) return res.status(404).json({ message: "User not found." });
+  if (!updated) { res.status(404).json({ message: "User not found." }); return; }
   const { password: _, ...safe } = updated;
-  return res.json({ user: safe });
+  res.json({ user: safe });
+  return;
 });
 
 // --- Status endpoint for the Ari frontend. Sign-in is currently optional;
@@ -63,14 +65,15 @@ router.get("/me", async (req, res) => {
       : undefined;
   const userId = sessionUserId || ARI_GUEST_USER_ID;
   const user = await storage.getUser(userId);
-  if (!user) return res.status(404).json({ message: "User not found." });
+  if (!user) { res.status(404).json({ message: "User not found." }); return; }
   const { password: _, ...safe } = user;
-  return res.json({
+  res.json({
     user: safe,
     onboarded: Boolean((user as any).licenseType && (user as any).acceptedAriTermsAt),
     sessionStartedAt: Date.now(),
     guest: !sessionUserId,
   });
+  return;
 });
 
 // --- Admin memory list. Locked behind ARI_MEMORY_ADMIN_USERS allowlist
@@ -83,9 +86,10 @@ router.get("/memory", requireAriClinician, async (req, res) => {
     .filter(Boolean);
   const userId = (req as any).ariClinician?.userId;
   if (allowlist.length === 0 || !userId || !allowlist.includes(userId)) {
-    return res
+    res
       .status(403)
       .json({ message: "Memory inspection requires an admin allowlist entry." });
+    return;
   }
   const topic = typeof req.query.topic === "string" ? req.query.topic : undefined;
   const store = getMemoryStore();
@@ -111,16 +115,18 @@ router.post("/chat", requireAriClinician, async (req, res) => {
   const rawCapability = (req.body as any)?.capability;
   if (typeof rawCapability === "string" && !isActiveCapability(rawCapability)) {
     auditFail({ userId, licenseType, mode: "ari", capability: rawCapability, query: "", attachmentCount: 0, startedAt, errorCode: "capability_rejected" });
-    return res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE });
+    res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE });
+    return;
   }
 
   const parsed = AriRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     auditFail({ userId, licenseType, mode: "ari", capability: rawCapability || "unknown", query: "", attachmentCount: 0, startedAt, errorCode: "schema_invalid" });
-    return res.status(400).json({
+    res.status(400).json({
       message: "Invalid Ari request body",
       issues: (parsed.error as ZodError).flatten(),
     });
+    return;
   }
   const { mode, capability: rawCap, query, attachments } = parsed.data;
   // Capability is optional — when absent, Ari auto-infers from the query per
@@ -132,10 +138,11 @@ router.post("/chat", requireAriClinician, async (req, res) => {
   const phi = detectPhi(query);
   if (!phi.ok) {
     auditFail({ userId, licenseType, mode, capability: auditCapability, query, attachmentCount: attachments?.length || 0, startedAt, errorCode: "phi_blocked" });
-    return res.status(422).json({
+    res.status(422).json({
       message: PHI_REJECTION_MESSAGE,
       matchedPatterns: phi.matchedPatterns,
     });
+    return;
   }
 
   const payloadBlock = {

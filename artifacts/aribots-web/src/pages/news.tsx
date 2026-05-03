@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -481,7 +481,7 @@ function NewsCard({ item, onOpenComments, onOpenFullArticle }: { item: NewsItemW
   );
 }
 
-function renderMarkdownLight(text: string): JSX.Element[] {
+function renderMarkdownLight(text: string): React.JSX.Element[] {
   if (!text) return [];
   return text.split("\n").map((line, i) => {
     const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
