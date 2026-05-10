@@ -1,248 +1,264 @@
 import React from "react";
 import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  RefreshControl,
+  Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import { api } from "@/lib/api";
-import { BrandWordmark, ModeGradient } from "@/components/Brand";
+import { useAuth } from "@/lib/auth";
+import { apiGet } from "@/lib/api";
 
-type Me = { id: string; name: string; specialty?: string; avatarUrl?: string };
-type Notif = { news: number; triage: number; events: number; chats: number };
-type TriagePost = {
-  id: string;
-  title: string;
-  tags: string[];
-  commentCount: number;
-  author?: { name: string; specialty: string; avatarUrl: string } | null;
-};
-type Event = { id: string; title: string; date: string; location?: string };
+interface DashboardStats {
+  triagePosts: number;
+  upcomingEvents: number;
+  newMessages: number;
+}
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const { user } = useAuth();
+  const isWeb = Platform.OS === "web";
 
-  const me = useQuery<Me>({ queryKey: ["me"], queryFn: () => api("/api/me") });
-  const notif = useQuery<Notif>({ queryKey: ["notif"], queryFn: () => api("/api/notifications") });
-  const trending = useQuery<TriagePost[]>({
-    queryKey: ["triage", "trending"],
-    queryFn: () => api("/api/triage/trending"),
+  const { data: triage, isLoading: triageLoading, refetch } = useQuery({
+    queryKey: ["home-triage"],
+    queryFn: () => apiGet<any[]>("/api/mobile/triage?sort=trending"),
+    staleTime: 60000,
   });
-  const events = useQuery<Event[]>({ queryKey: ["events"], queryFn: () => api("/api/events") });
 
-  const refreshing =
-    me.isFetching || notif.isFetching || trending.isFetching || events.isFetching;
+  const { data: events } = useQuery({
+    queryKey: ["home-events"],
+    queryFn: () => apiGet<any[]>("/api/mobile/events"),
+    staleTime: 60000,
+  });
 
-  function refetch() {
-    me.refetch(); notif.refetch(); trending.refetch(); events.refetch();
-  }
+  const styles = createStyles(colors, insets, isWeb);
 
-  const upcoming = (events.data || [])
-    .filter((e) => new Date(e.date).getTime() > Date.now())
-    .slice(0, 3);
+  const quickActions = [
+    { icon: "cpu", label: "Ari AI", route: "/(tabs)/ari", color: colors.primary },
+    { icon: "alert-circle", label: "Triage", route: "/(tabs)/triage", color: "#F59E0B" },
+    { icon: "newspaper", label: "News", route: "/(tabs)/community", color: "#10B981" },
+    { icon: "users", label: "Groups", route: "/(tabs)/community", color: "#8B5CF6" },
+    { icon: "calendar", label: "Events", route: "/(tabs)/community", color: "#EF4444" },
+    { icon: "message-square", label: "Messages", route: "/(tabs)/more", color: "#3B82F6" },
+  ];
 
   return (
     <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} />}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={triageLoading} onRefresh={refetch} />}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <BrandWordmark size={28} />
-        <Pressable onPress={() => router.push("/(tabs)/more")} hitSlop={10}>
-          {me.data?.avatarUrl ? (
-            <Image source={{ uri: me.data.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-              <Feather name="user" size={18} color={colors.mutedForeground} />
-            </View>
-          )}
-        </Pressable>
-      </View>
-
-      <View style={{ paddingHorizontal: 16, marginTop: 6 }}>
-        <Text style={[styles.greeting, { color: colors.foreground }]}>
-          {me.data ? `Welcome, ${me.data.name?.split(" ")[0] || "Doctor"}` : "Welcome"}
-        </Text>
-        {me.data?.specialty ? (
-          <Text style={[styles.subgreeting, { color: colors.mutedForeground }]}>
-            {me.data.specialty}
+        <View>
+          <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+            Good {getTimeOfDay()},
           </Text>
-        ) : null}
+          <Text style={[styles.userName, { color: colors.foreground }]}>
+            {user?.name || "Doctor"}
+          </Text>
+          {user?.specialty ? (
+            <Text style={[styles.specialty, { color: colors.primary }]}>{user.specialty}</Text>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={[styles.avatarCircle, { backgroundColor: colors.accent }]}
+          onPress={() => router.push("/(tabs)/more")}
+        >
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <Feather name="user" size={22} color={colors.primary} />
+          )}
+        </TouchableOpacity>
       </View>
 
-      <Pressable onPress={() => router.push("/(tabs)/ari")} style={{ paddingHorizontal: 16, marginTop: 16 }}>
-        <ModeGradient mode="ari" style={styles.aiCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.aiTitle}>Ask Ari</Text>
-            <Text style={styles.aiSub}>Clinical AI for doctors — evidence-grounded answers, drug checks, and consults.</Text>
+      <View style={[styles.ariCard, { backgroundColor: colors.primary }]}>
+        <View style={styles.ariCardContent}>
+          <View style={styles.ariCardLeft}>
+            <Text style={styles.ariCardLabel}>Ari AI</Text>
+            <Text style={styles.ariCardTitle}>Clinical Assistant</Text>
+            <Text style={styles.ariCardDesc}>Evidence-based decision support</Text>
           </View>
-          <Feather name="arrow-right" size={22} color="#fff" />
-        </ModeGradient>
-      </Pressable>
-
-      <View style={styles.statsRow}>
-        <Stat label="News" value={notif.data?.news ?? 0} icon="book-open" color={colors.primary} onPress={() => router.push("/(tabs)/news")} />
-        <Stat label="Triage" value={notif.data?.triage ?? 0} icon="activity" color={colors.primary} onPress={() => router.push("/(tabs)/triage")} />
-        <Stat label="Events" value={notif.data?.events ?? 0} icon="calendar" color={colors.primary} onPress={() => router.push("/events")} />
-        <Stat label="Chats" value={notif.data?.chats ?? 0} icon="message-square" color={colors.primary} onPress={() => router.push("/chats")} />
+          <Image
+            source={require("@/assets/images/aribot-mark.png")}
+            style={styles.ariCardImage}
+            resizeMode="contain"
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.ariCardButton}
+          onPress={() => router.push("/(tabs)/ari")}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.ariCardButtonText}>Start Consultation</Text>
+          <Feather name="arrow-right" size={16} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
-      <SectionHeader title="Trending Cases" onSeeAll={() => router.push("/(tabs)/triage")} />
-      {trending.isLoading ? (
-        <ActivityIndicator style={{ marginTop: 12 }} color={colors.primary} />
-      ) : (
-        <View style={{ paddingHorizontal: 16, gap: 10 }}>
-          {(trending.data || []).slice(0, 4).map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => router.push(`/triage/${p.id}`)}
-              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+      <View style={styles.quickActionsGrid}>
+        {quickActions.map((action, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[styles.quickAction, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push(action.route as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: action.color + "18" }]}>
+              <Feather name={action.icon as any} size={20} color={action.color} />
+            </View>
+            <Text style={[styles.quickActionLabel, { color: colors.foreground }]}>{action.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {triage && triage.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Trending Cases</Text>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/triage")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          {triage.slice(0, 3).map((post: any) => (
+            <TouchableOpacity
+              key={post.id}
+              style={[styles.triageCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push(`/triage/${post.id}` as any)}
+              activeOpacity={0.8}
             >
-              <Text numberOfLines={2} style={[styles.cardTitle, { color: colors.foreground }]}>
-                {p.title}
-              </Text>
-              <View style={styles.cardMetaRow}>
-                <Text style={[styles.cardMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
-                  {p.author?.name || "Anonymous"}
-                  {p.author?.specialty ? ` • ${p.author.specialty}` : ""}
-                </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Feather name="message-circle" size={14} color={colors.mutedForeground} />
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{p.commentCount}</Text>
-                </View>
+              <View style={styles.tagRow}>
+                {post.tags?.slice(0, 2).map((tag: string) => (
+                  <View key={tag} style={[styles.tag, { backgroundColor: colors.accent }]}>
+                    <Text style={[styles.tagText, { color: colors.accentForeground }]}>{tag}</Text>
+                  </View>
+                ))}
               </View>
-            </Pressable>
+              <Text style={[styles.triageTitle, { color: colors.foreground }]} numberOfLines={2}>
+                {post.title}
+              </Text>
+              <View style={styles.triageMeta}>
+                <Feather name="heart" size={13} color={colors.mutedForeground} />
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{post.likes}</Text>
+                <Feather name="message-circle" size={13} color={colors.mutedForeground} />
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{post.commentCount}</Text>
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+                  {formatRelativeTime(post.createdAt)}
+                </Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
 
-      <SectionHeader title="Upcoming Events" onSeeAll={() => router.push("/events")} />
-      <View style={{ paddingHorizontal: 16, gap: 10 }}>
-        {upcoming.length === 0 ? (
-          <Text style={{ color: colors.mutedForeground, paddingHorizontal: 4 }}>No upcoming events.</Text>
-        ) : (
-          upcoming.map((e) => (
-            <View key={e.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-              <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>
-                {e.title}
-              </Text>
-              <Text style={[styles.cardMeta, { color: colors.mutedForeground, marginTop: 4 }]}>
-                {new Date(e.date).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                })}{e.location ? ` • ${e.location}` : ""}
-              </Text>
-            </View>
-          ))
-        )}
-      </View>
+      {events && events.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Upcoming Events</Text>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/community")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          {events.slice(0, 2).map((event: any) => (
+            <TouchableOpacity
+              key={event.id}
+              style={[styles.eventCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.eventDateBadge, { backgroundColor: colors.primary + "15" }]}>
+                <Text style={[styles.eventDateDay, { color: colors.primary }]}>
+                  {new Date(event.date).getDate()}
+                </Text>
+                <Text style={[styles.eventDateMonth, { color: colors.primary }]}>
+                  {new Date(event.date).toLocaleString("default", { month: "short" })}
+                </Text>
+              </View>
+              <View style={styles.eventInfo}>
+                <Text style={[styles.eventTitle, { color: colors.foreground }]} numberOfLines={1}>
+                  {event.title}
+                </Text>
+                <Text style={[styles.eventLocation, { color: colors.mutedForeground }]}>
+                  {event.location} • {event.cmeCredits > 0 ? `${event.cmeCredits} CME` : event.type}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
 
-function Stat({
-  label,
-  value,
-  icon,
-  color,
-  onPress,
-}: {
-  label: string;
-  value: number;
-  icon: any;
-  color: string;
-  onPress: () => void;
-}) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.stat, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-    >
-      <Feather name={icon} size={18} color={color} />
-      <Text style={[styles.statValue, { color: colors.foreground }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</Text>
-    </Pressable>
-  );
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 12) return "morning";
+  if (h < 17) return "afternoon";
+  return "evening";
 }
 
-function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
-  const colors = useColors();
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
-      {onSeeAll ? (
-        <Pressable onPress={onSeeAll} hitSlop={8}>
-          <Text style={{ color: colors.primary, fontFamily: "Inter_500Medium" }}>See all</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
+function formatRelativeTime(ts: number) {
+  const diff = Date.now() - ts;
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  avatar: { width: 36, height: 36, borderRadius: 18 },
-  greeting: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.4 },
-  subgreeting: { fontSize: 14, marginTop: 2, fontFamily: "Inter_500Medium" },
-  aiCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 18,
-    borderRadius: 18,
-    gap: 12,
-  },
-  aiTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
-  aiSub: { color: "rgba(255,255,255,0.92)", fontSize: 13, marginTop: 4, fontFamily: "Inter_400Regular" },
-  statsRow: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-    flexDirection: "row",
-    gap: 8,
-  },
-  stat: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    gap: 4,
-  },
-  statValue: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", letterSpacing: -0.2 },
-  card: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-  },
-  cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
-  cardMetaRow: { marginTop: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardMeta: { fontSize: 12, fontFamily: "Inter_400Regular" },
-});
+function createStyles(colors: any, insets: any, isWeb: boolean) {
+  return StyleSheet.create({
+    container: { flex: 1 },
+    content: {
+      padding: 16,
+      paddingTop: isWeb ? 67 : insets.top + 12,
+      paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84,
+    },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
+    greeting: { fontSize: 14, fontFamily: "Inter_400Regular" },
+    userName: { fontSize: 24, fontWeight: "700" as const, fontFamily: "Inter_700Bold", marginTop: 2 },
+    specialty: { fontSize: 13, fontFamily: "Inter_500Medium", marginTop: 2 },
+    avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+    avatar: { width: 44, height: 44 },
+    ariCard: { borderRadius: 16, padding: 20, marginBottom: 20 },
+    ariCardContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    ariCardLeft: { flex: 1 },
+    ariCardLabel: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_500Medium", letterSpacing: 0.5, textTransform: "uppercase" as const },
+    ariCardTitle: { color: "#fff", fontSize: 20, fontWeight: "700" as const, fontFamily: "Inter_700Bold", marginTop: 4 },
+    ariCardDesc: { color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 4, fontFamily: "Inter_400Regular" },
+    ariCardImage: { width: 64, height: 64, opacity: 0.9 },
+    ariCardButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignSelf: "flex-start" as const, marginTop: 16, gap: 6 },
+    ariCardButtonText: { color: "#3B82F6", fontSize: 14, fontWeight: "600" as const, fontFamily: "Inter_600SemiBold" },
+    quickActionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+    quickAction: { flex: 1, minWidth: "30%", maxWidth: "32%", alignItems: "center", padding: 14, borderRadius: 12, borderWidth: 1, gap: 8 },
+    quickActionIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    quickActionLabel: { fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center" as const },
+    section: { marginBottom: 24 },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+    sectionTitle: { fontSize: 18, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
+    seeAll: { fontSize: 14, fontFamily: "Inter_500Medium" },
+    triageCard: { borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, gap: 8 },
+    tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    tagText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+    triageTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 21 },
+    triageMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
+    metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+    eventCard: { flexDirection: "row", alignItems: "center", borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, gap: 14 },
+    eventDateBadge: { width: 50, height: 50, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+    eventDateDay: { fontSize: 20, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
+    eventDateMonth: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const },
+    eventInfo: { flex: 1 },
+    eventTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+    eventLocation: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 3 },
+  });
+}

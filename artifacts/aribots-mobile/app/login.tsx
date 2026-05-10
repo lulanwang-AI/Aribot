@@ -1,138 +1,193 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
+  View,
   Text,
   TextInput,
-  View,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/lib/auth";
-import { ModeGradient } from "@/components/Brand";
+import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState("doctor@aribots.dev");
-  const [password, setPassword] = useState("aribots");
-  const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("demo@aribots.com");
+  const [password, setPassword] = useState("demo");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function onSubmit() {
+  const styles = createStyles(colors, insets);
+
+  async function handleLogin() {
     if (!email || !password) {
-      Alert.alert("Missing info", "Please enter your email and password.");
+      setError("Please enter your credentials");
       return;
     }
-    setBusy(true);
+    setLoading(true);
+    setError("");
     try {
       await signIn(email, password);
-      router.replace("/");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(tabs)/");
     } catch (e: any) {
-      Alert.alert("Sign in failed", e?.message || "Please try again.");
+      setError(e.message || "Login failed. Please try again.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}
-    >
-      <View style={styles.heroWrap}>
-        <ModeGradient mode="ari" style={styles.hero}>
-          <Image
-            source={require("@/assets/images/aribot-mark-1024.png")}
-            style={styles.heroLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.heroTitle}>ARIbots</Text>
-          <Text style={styles.heroSub}>Doctor-only clinical AI community</Text>
-        </ModeGradient>
-      </View>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.heroSection}>
+          <View style={[styles.logoContainer, { backgroundColor: colors.primary + "15" }]}>
+            <Image
+              source={require("@/assets/images/aribot-mark.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={[styles.brandName, { color: colors.foreground }]}>ARIbots</Text>
+          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Clinical AI for Physicians</Text>
+        </View>
 
-      <View style={styles.form}>
-        <Text style={[styles.label, { color: colors.mutedForeground }]}>Email</Text>
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          style={[styles.input, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
-          placeholder="you@hospital.org"
-          placeholderTextColor={colors.mutedForeground}
-        />
-        <Text style={[styles.label, { color: colors.mutedForeground, marginTop: 14 }]}>Password</Text>
-        <TextInput
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={[styles.input, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
-          placeholder="••••••••"
-          placeholderTextColor={colors.mutedForeground}
-        />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Sign In</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>Doctor-only access</Text>
 
-        <Pressable
-          onPress={onSubmit}
-          disabled={busy}
-          style={({ pressed }) => [
-            styles.cta,
-            { backgroundColor: colors.primary, opacity: busy ? 0.7 : pressed ? 0.85 : 1 },
-          ]}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.primaryForeground} />
-          ) : (
-            <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>Sign in</Text>
-          )}
-        </Pressable>
+          {error ? (
+            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "40" }]}>
+              <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+            </View>
+          ) : null}
 
-        <Text style={[styles.footnote, { color: colors.mutedForeground }]}>
-          For verified clinicians only. By signing in you agree to ARIbots' clinical use terms.
-        </Text>
-      </View>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Email</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="doctor@hospital.com"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Password</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter password"
+              placeholderTextColor={colors.mutedForeground}
+              secureTextEntry
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: colors.primary }, loading && { opacity: 0.7 }]}
+            onPress={handleLogin}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={[styles.demoNote, { color: colors.mutedForeground }]}>
+            Demo: Any email + any password
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
+            For licensed physicians & healthcare professionals only
+          </Text>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  heroWrap: { paddingHorizontal: 16, paddingTop: 12 },
-  hero: {
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    borderRadius: 20,
-  },
-  heroLogo: { width: 64, height: 64, marginBottom: 12 },
-  heroTitle: { color: "#fff", fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
-  heroSub: { color: "rgba(255,255,255,0.9)", fontSize: 14, marginTop: 4, fontFamily: "Inter_500Medium" },
-  form: { paddingHorizontal: 20, paddingTop: 24, gap: 4 },
-  label: { fontSize: 12, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontFamily: "Inter_400Regular",
-  },
-  cta: {
-    marginTop: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  ctaText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  footnote: { fontSize: 12, marginTop: 16, textAlign: "center", fontFamily: "Inter_400Regular" },
-});
+function createStyles(colors: any, insets: any) {
+  const isWeb = Platform.OS === "web";
+  return StyleSheet.create({
+    container: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      paddingTop: isWeb ? 67 + insets.top : insets.top + 20,
+      paddingBottom: isWeb ? 34 : insets.bottom + 20,
+    },
+    heroSection: { alignItems: "center", paddingVertical: 40 },
+    logoContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
+    logo: { width: 52, height: 52 },
+    brandName: {
+      fontSize: 28,
+      fontWeight: "700" as const,
+      fontFamily: "Inter_700Bold",
+      letterSpacing: -0.5,
+    },
+    tagline: { fontSize: 15, marginTop: 4, fontFamily: "Inter_400Regular" },
+    card: {
+      borderRadius: 16,
+      padding: 24,
+      borderWidth: 1,
+      gap: 16,
+    },
+    cardTitle: { fontSize: 22, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
+    cardSubtitle: { fontSize: 14, marginTop: -10, fontFamily: "Inter_400Regular" },
+    errorBanner: { padding: 12, borderRadius: 8, borderWidth: 1 },
+    errorText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+    inputGroup: { gap: 6 },
+    inputLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+    input: {
+      height: 48,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      fontSize: 15,
+      borderWidth: 1,
+      fontFamily: "Inter_400Regular",
+    },
+    loginButton: {
+      height: 50,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 4,
+    },
+    loginButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600" as const,
+      fontFamily: "Inter_600SemiBold",
+    },
+    demoNote: { textAlign: "center", fontSize: 12, fontFamily: "Inter_400Regular" },
+    footer: { alignItems: "center", paddingTop: 24 },
+    footerText: { fontSize: 12, textAlign: "center", fontFamily: "Inter_400Regular" },
+  });
+}

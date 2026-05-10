@@ -1,102 +1,128 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN;
-export const API_BASE = DOMAIN ? `https://${DOMAIN}` : "";
+const TOKEN_KEY = "aribots_jwt_token";
+const BASE_URL_KEY = "aribots_base_url";
 
-const COOKIE_KEY = "aribots_cookie";
+let cachedToken: string | null = null;
+let cachedBaseUrl: string | null = null;
 
-export async function getCookie(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(COOKIE_KEY);
-  } catch {
-    return null;
-  }
+export async function getToken(): Promise<string | null> {
+  if (cachedToken) return cachedToken;
+  cachedToken = await AsyncStorage.getItem(TOKEN_KEY);
+  return cachedToken;
 }
 
-async function setCookie(value: string | null) {
-  if (!value) {
-    await AsyncStorage.removeItem(COOKIE_KEY);
-  } else {
-    await AsyncStorage.setItem(COOKIE_KEY, value);
-  }
+export async function setToken(token: string) {
+  cachedToken = token;
+  await AsyncStorage.setItem(TOKEN_KEY, token);
 }
 
-function captureCookieFromHeaders(headers: Headers) {
-  const setCookieHeader =
-    (headers as any).get?.("set-cookie") ||
-    (headers as any).get?.("Set-Cookie");
-  if (setCookieHeader) {
-    const match = /connect\.sid=[^;]+/.exec(setCookieHeader);
-    if (match) {
-      void setCookie(match[0]);
-    }
-  }
+export async function clearToken() {
+  cachedToken = null;
+  await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
-export async function api<T = any>(
-  path: string,
-  init: RequestInit = {}
-): Promise<T> {
-  const cookie = await getCookie();
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    ...((init.headers as Record<string, string>) || {}),
-  };
-  if (init.body && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
+function getBaseUrl(): string {
+  if (cachedBaseUrl) return cachedBaseUrl;
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) {
+    cachedBaseUrl = `https://${domain}`;
+    return cachedBaseUrl;
   }
-  if (cookie) headers["Cookie"] = cookie;
+  return "";
+}
 
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    ...init,
-    headers,
-    credentials: "include",
-  });
-  captureCookieFromHeaders(res.headers);
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
+export async function apiGet<T>(path: string): Promise<T> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${getBaseUrl()}${path}`, { headers });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status}: ${text || res.statusText}`);
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
   }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    return (await res.json()) as T;
-  }
-  return (await res.text()) as unknown as T;
-}
-
-export async function login(email: string, password: string) {
-  const cookie = await getCookie();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-  if (cookie) headers["Cookie"] = cookie;
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ email, password }),
-    credentials: "include",
-  });
-  captureCookieFromHeaders(res.headers);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || "Login failed");
-  }
-  await AsyncStorage.setItem("aribots_authed", "1");
   return res.json();
 }
 
-export async function logout() {
-  try {
-    await api("/api/auth/logout", { method: "POST" });
-  } catch {}
-  await AsyncStorage.removeItem("aribots_authed");
-  await setCookie(null);
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${getBaseUrl()}${path}`, {
+    method: "POST",
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
-export async function isAuthed(): Promise<boolean> {
-  const v = await AsyncStorage.getItem("aribots_authed");
-  return v === "1";
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${getBaseUrl()}${path}`, {
+    method: "PATCH",
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function streamAriChat(
+  query: string,
+  mode: "ari" | "er",
+  capability: string | null,
+  onDelta: (text: string) => void,
+  onDone: () => void,
+  onError: (msg: string) => void
+): Promise<void> {
+  const { fetch: expoFetch } = await import("expo/fetch");
+  const headers = await getAuthHeaders();
+  const baseUrl = getBaseUrl();
+
+  const res = await expoFetch(`${baseUrl}/api/mobile/ari/chat`, {
+    method: "POST",
+    headers: { ...headers, Accept: "text/event-stream" },
+    body: JSON.stringify({ query, mode, capability }),
+  });
+
+  if (!res.ok) {
+    onError("Failed to connect to Ari");
+    return;
+  }
+
+  const reader = (res.body as any).getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6);
+        if (data.trim()) onDelta(data);
+      } else if (line.startsWith("event: done")) {
+        onDone();
+        return;
+      } else if (line.startsWith("event: error")) {
+        onError("Ari encountered an error");
+        return;
+      }
+    }
+  }
+  onDone();
 }

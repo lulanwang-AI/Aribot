@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -14,24 +14,48 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+    },
+  },
 });
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.replace("/login");
+      }
+    }
+  }, [user, loading]);
+
+  return <>{children}</>;
+}
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false, presentation: "modal" }} />
-      <Stack.Screen name="triage/[id]" options={{ title: "Case" }} />
-      <Stack.Screen name="news/[id]" options={{ title: "Article" }} />
-      <Stack.Screen name="groups/[id]" options={{ title: "Group" }} />
-      <Stack.Screen name="chats/[id]" options={{ title: "Chat" }} />
-    </Stack>
+    <AuthGate>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" options={{ headerShown: false, animation: "fade" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="triage/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="doctors" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="training" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="messaging" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="telemed" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="clinical" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="account" options={{ headerShown: false, animation: "slide_from_right" }} />
+      </Stack>
+    </AuthGate>
   );
 }
 
@@ -55,13 +79,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <KeyboardProvider>
+              <AuthProvider>
                 <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </AuthProvider>
+              </AuthProvider>
+            </KeyboardProvider>
+          </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

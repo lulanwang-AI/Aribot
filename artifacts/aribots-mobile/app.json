@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ARIbots",
+    "name": "ARIbots Mobile",
     "slug": "aribots-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,18 +14,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.aribots.mobile"
     },
     "android": {
-      "package": "com.aribots.mobile",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.aribots.mobile"
     },
     "web": {
-      "favicon": "./assets/images/aribot-favicon-64.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [

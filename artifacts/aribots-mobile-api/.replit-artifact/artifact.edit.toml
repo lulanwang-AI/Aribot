@@ -1,0 +1,30 @@
+kind = "api"
+previewPath = "/api/mobile"
+title = "ARIbots Mobile API"
+version = "1.0.0"
+
+[[services]]
+localPort = 8081
+name = "Mobile API"
+paths = ["/api/mobile"]
+
+[services.development]
+run = "pnpm --filter @workspace/aribots-mobile-api run dev"
+
+[services.production]
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/aribots-mobile-api", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+
+[services.production.run]
+args = ["node", "--enable-source-maps", "artifacts/aribots-mobile-api/dist/index.mjs"]
+
+[services.production.run.env]
+PORT = "8081"
+NODE_ENV = "production"
+
+[services.production.health.startup]
+path = "/api/mobile/healthz"

@@ -1,0 +1,35 @@
+{
+  "name": "@workspace/aribots-mobile-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "build": "node ./build.mjs",
+    "start": "node --enable-source-maps ./dist/index.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@replit/connectors-sdk": "^0.4.0",
+    "@workspace/db": "workspace:*",
+    "cors": "^2",
+    "express": "^5",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "pino": "^9",
+    "pino-http": "^10",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^2.1.0",
+    "@types/node": "catalog:",
+    "esbuild": "^0.27.3",
+    "esbuild-plugin-pino": "^2.3.3",
+    "pino-pretty": "^13",
+    "thread-stream": "3.1.0"
+  }
+}

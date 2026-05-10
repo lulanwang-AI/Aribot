@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "1ghsocrCkqH7v3rer0Xn1"
+uri = "file://artifacts/aribots-mobile/assets/images/icon.png"
+type = "image"
+title = "aribots mobile icon"
