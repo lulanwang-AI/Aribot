@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "1ghsocrCkqH7v3rer0Xn1"
 uri = "file://artifacts/aribots-mobile/assets/images/icon.png"
 type = "image"
 title = "aribots mobile icon"
+
+[[outputs]]
+id = "I955Oe7imG2dWZLUDkJhz"
+uri = "file://dist/ARIbots.zip"
+type = "unspecified"
+title = "ARIbots — Full Project Source"
