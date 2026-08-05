@@ -30,40 +30,78 @@ export function TopBar(_props: TopBarProps) {
 
   return (
     <>
+      {/* Liquid-glass header bar */}
       <div
-        className="relative flex flex-row items-center justify-between gap-2 border-b border-border bg-background/70 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-6 sm:py-3"
+        className="relative flex flex-row items-center justify-between gap-2 border-b px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-6 sm:py-3"
+        style={{
+          backgroundColor: isDark ? "rgba(8,26,44,0.72)" : "rgba(255,255,255,0.55)",
+          borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.72)",
+        }}
         data-testid="topbar-ari"
       >
-        {/* Thin Ari accent line */}
+        {/* Liquid glass top sheen line */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,rgba(56,189,248,0)_0%,rgba(99,102,241,0.55)_50%,rgba(167,139,250,0)_100%)]"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{
+            background: isDark
+              ? "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)"
+              : "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
+          }}
         />
+        {/* Ari accent gradient line at bottom */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+          style={{
+            background: "linear-gradient(90deg, transparent 0%, rgba(42,123,255,0.45) 40%, rgba(18,181,201,0.45) 60%, transparent 100%)",
+          }}
+        />
+
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <img
-            src={aribotLogoPath}
-            alt="Aribot"
-            className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9"
-            data-testid="img-ari-logo"
-          />
+          {/* Glass logo chip */}
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-sm"
+            style={{
+              backgroundColor: isDark ? "rgba(28,44,64,0.62)" : "rgba(255,255,255,0.72)",
+              borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.9)",
+            }}
+          >
+            <img
+              src={aribotLogoPath}
+              alt="Aribot"
+              className="h-6 w-6 object-contain"
+              data-testid="img-ari-logo"
+            />
+          </div>
           <div className="min-w-0">
             <h1
               className="flex items-center gap-2 text-base font-semibold leading-tight"
               data-testid="text-ari-title"
+              style={{ color: isDark ? "#eaf2fc" : "#0c1c2c" }}
             >
               Ari
               <span
-                className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+                style={{
+                  backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)",
+                  borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)",
+                  color: isDark ? "#9db0c2" : "#5a6c7d",
+                }}
                 data-testid="badge-ari-version"
               >
                 V4.0
               </span>
             </h1>
-            <p className="hidden text-xs text-muted-foreground md:block">
+            <p
+              className="hidden text-xs md:block"
+              style={{ color: isDark ? "#9db0c2" : "#5a6c7d" }}
+            >
               Clinical assistant — primary-source citations, fail-closed gating
             </p>
           </div>
         </div>
+
         <div className="flex items-center justify-end gap-1.5 sm:gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -73,6 +111,12 @@ export function TopBar(_props: TopBarProps) {
                 data-testid="button-ari-menu"
                 aria-label="Open menu"
                 title="Menu"
+                className="border backdrop-blur-sm"
+                style={{
+                  backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)",
+                  borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)",
+                  color: isDark ? "#eaf2fc" : "#0c1c2c",
+                }}
               >
                 <Menu className="h-4 w-4 sm:mr-1.5" />
                 <span className="hidden sm:inline">Menu</span>

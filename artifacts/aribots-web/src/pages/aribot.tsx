@@ -190,24 +190,21 @@ export default function Aribot() {
       data-testid="page-aribot"
       data-mode={mode}
     >
-      {/* Mode-aware animated gradient backdrops. Two layers crossfade
-          when the user toggles between Ari and ER so the whole surface
-          gently shifts color rather than snapping. */}
-      <motion.div
+      {/* Liquid Glass background — soft radial blue-sky gradient */}
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-50/60 via-background to-indigo-50/40 dark:from-sky-950/30 dark:via-background dark:to-indigo-950/20"
-        initial={false}
-        animate={{ opacity: isEr ? 0 : 1 }}
-        transition={{ duration: 0.6, ease: "easeInOut" }}
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background: "radial-gradient(90% 55% at 12% 0%, #d8e8ff 0%, rgba(216,232,255,0) 60%), radial-gradient(80% 48% at 96% 7%, #cdf7ee 0%, rgba(205,247,238,0) 55%), radial-gradient(130% 70% at 50% 106%, #dbeafe 0%, rgba(219,234,254,0) 60%), linear-gradient(180deg, #f4f9ff, #edfaff)",
+        }}
         data-testid="bg-ari-gradient"
       />
-      <motion.div
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-rose-100/70 via-orange-50/40 to-amber-100/50 dark:from-rose-950/40 dark:via-background dark:to-orange-950/25"
-        initial={false}
-        animate={{ opacity: isEr ? 1 : 0 }}
-        transition={{ duration: 0.6, ease: "easeInOut" }}
-        data-testid="bg-er-gradient"
+        className="pointer-events-none absolute inset-0 -z-10 hidden dark:block"
+        style={{
+          background: "radial-gradient(90% 55% at 12% 0%, #123a5a 0%, rgba(18,58,90,0) 62%), radial-gradient(80% 48% at 96% 7%, #0b4948 0%, rgba(11,73,72,0) 55%), radial-gradient(130% 70% at 50% 106%, #0b2e4d 0%, rgba(11,46,77,0) 60%), linear-gradient(180deg, #081a2c, #03101d)",
+        }}
       />
       <TopBar onClear={handleClearScratch} />
       <div className="flex min-h-0 flex-1 flex-col">

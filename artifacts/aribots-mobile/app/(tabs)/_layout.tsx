@@ -4,7 +4,6 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
-
 import { useColors } from "@/hooks/useColors";
 
 export default function TabLayout() {
@@ -18,16 +17,17 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarInactiveTintColor: isDark ? "rgba(157,176,194,0.55)" : "rgba(90,108,125,0.55)",
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0.5,
-          borderTopColor: colors.border,
+          backgroundColor: isIOS ? "transparent" : isDark ? "rgba(8,26,44,0.9)" : "rgba(244,249,255,0.9)",
+          borderTopWidth: 0,
           elevation: 0,
-          height: isWeb ? 84 : 80,
-          paddingBottom: isWeb ? 24 : 16,
+          height: isWeb ? 84 : 82,
+          paddingBottom: isWeb ? 24 : 18,
+          // Glass border top
+          borderTopColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.70)",
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -37,18 +37,28 @@ export default function TabLayout() {
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={100}
+              intensity={80}
               tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  borderTopWidth: 1,
+                  borderTopColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.70)",
+                },
+              ]}
             />
-          ) : isWeb ? (
+          ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
+                {
+                  backgroundColor: isDark ? "rgba(8,26,44,0.92)" : "rgba(244,249,255,0.92)",
+                  borderTopWidth: 1,
+                  borderTopColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.70)",
+                },
               ]}
             />
-          ) : null,
+          ),
       }}
     >
       <Tabs.Screen
