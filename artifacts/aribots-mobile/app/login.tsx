@@ -94,29 +94,13 @@ export default function LoginScreen() {
           <View style={styles.hero}>
             {/* Floating glass logo */}
             <View style={styles.logoWrap}>
-              {isIOS ? (
-                <BlurView
-                  intensity={60}
-                  tint={isDark ? "dark" : "light"}
-                  style={styles.logoBlur}
-                >
-                  <Image
-                    source={require("@/assets/images/aribot-mark.png")}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </BlurView>
-              ) : (
-                <View style={[styles.logoBlur, {
-                  backgroundColor: isDark ? "rgba(28,44,64,0.62)" : "rgba(255,255,255,0.62)"
-                }]}>
-                  <Image
-                    source={require("@/assets/images/aribot-mark.png")}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
-              )}
+              <View style={[styles.logoBlur, { backgroundColor: "#ffffff" }]}>
+                <Image
+                  source={require("@/assets/images/aribot-mark.png")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
             <Text style={[styles.brandName, { color: isDark ? "#eaf2fc" : "#0c1c2c" }]}>
               ARIbots

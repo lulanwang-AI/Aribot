@@ -63,8 +63,8 @@ export function TopBar(_props: TopBarProps) {
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-sm"
             style={{
-              backgroundColor: isDark ? "rgba(28,44,64,0.62)" : "rgba(255,255,255,0.72)",
-              borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.9)",
+              backgroundColor: "#ffffff",
+              borderColor: isDark ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.9)",
             }}
           >
             <img
