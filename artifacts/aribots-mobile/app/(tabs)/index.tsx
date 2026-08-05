@@ -31,13 +31,7 @@ export default function HomeScreen() {
   const isWeb = Platform.OS === "web";
 
 
-  const { data: triage, isLoading: triageLoading, refetch } = useQuery({
-    queryKey: ["home-triage"],
-    queryFn: () => apiGet<any[]>("/api/mobile/triage?sort=trending"),
-    staleTime: 60000,
-  });
-
-  const { data: events } = useQuery({
+  const { data: events, isFetching: eventsFetching, refetch } = useQuery({
     queryKey: ["home-events"],
     queryFn: () => apiGet<any[]>("/api/mobile/events"),
     staleTime: 60000,
@@ -55,7 +49,7 @@ export default function HomeScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={triageLoading} onRefresh={refetch} />}
+      refreshControl={<RefreshControl refreshing={eventsFetching} onRefresh={refetch} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
@@ -126,45 +120,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
-      {triage && triage.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Trending Cases</Text>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/triage")}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          {triage.slice(0, 3).map((post: any) => (
-            <TouchableOpacity
-              key={post.id}
-              style={[styles.triageCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(`/triage/${post.id}` as any)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.tagRow}>
-                {post.tags?.slice(0, 2).map((tag: string) => (
-                  <View key={tag} style={[styles.tag, { backgroundColor: colors.accent }]}>
-                    <Text style={[styles.tagText, { color: colors.accentForeground }]}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={[styles.triageTitle, { color: colors.foreground }]} numberOfLines={2}>
-                {post.title}
-              </Text>
-              <View style={styles.triageMeta}>
-                <Feather name="heart" size={13} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{post.likes}</Text>
-                <Feather name="message-circle" size={13} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{post.commentCount}</Text>
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                  {formatRelativeTime(post.createdAt)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
       {events && events.length > 0 && (
         <View style={styles.section}>

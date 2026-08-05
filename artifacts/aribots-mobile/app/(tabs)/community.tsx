@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -32,103 +31,6 @@ export default function CommunityScreen() {
       </View>
       {activeTab === "events" && <EventsTab colors={colors} insets={insets} isWeb={isWeb} />}
     </View>
-  );
-}
-
-function NewsTab({ colors, insets, isWeb }: any) {
-  const { data: news, isLoading, refetch } = useQuery({
-    queryKey: ["news"],
-    queryFn: () => apiGet<any[]>("/api/mobile/news"),
-    staleTime: 60000,
-  });
-
-  return (
-    <FlatList
-      data={news || []}
-      keyExtractor={item => item.id}
-      renderItem={({ item }) => (
-        <View style={[styles.newsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.newsHeader}>
-            <View style={[styles.sourceBadge, { backgroundColor: colors.primary + "18" }]}>
-              <Text style={[styles.sourceBadgeText, { color: colors.primary }]}>{item.source}</Text>
-            </View>
-            <Text style={[styles.newsDate, { color: colors.mutedForeground }]}>
-              {formatTime(item.publishedAt)}
-            </Text>
-          </View>
-          <Text style={[styles.newsTitle, { color: colors.foreground }]}>{item.title}</Text>
-          <Text style={[styles.newsSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.summary}</Text>
-          <View style={styles.newsMeta}>
-            <View style={[styles.specialtyTag, { backgroundColor: colors.muted }]}>
-              <Text style={[styles.specialtyTagText, { color: colors.mutedForeground }]}>{item.specialty}</Text>
-            </View>
-            <Feather name="heart" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.likes}</Text>
-          </View>
-        </View>
-      )}
-      contentContainerStyle={[styles.list, { paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 }]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-      scrollEnabled={!!news?.length}
-      ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> : (
-        <View style={styles.emptyState}>
-          <Feather name="book-open" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No news yet</Text>
-        </View>
-      )}
-    />
-  );
-}
-
-function GroupsTab({ colors, insets, isWeb }: any) {
-  const { data: groups, isLoading, refetch } = useQuery({
-    queryKey: ["groups"],
-    queryFn: () => apiGet<any[]>("/api/mobile/groups"),
-    staleTime: 60000,
-  });
-
-  async function handleJoin(groupId: string) {
-    try {
-      await apiPost(`/api/mobile/groups/${groupId}/join`, {});
-      refetch();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {}
-  }
-
-  return (
-    <FlatList
-      data={groups || []}
-      keyExtractor={item => item.id}
-      renderItem={({ item }) => (
-        <View style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.groupIcon, { backgroundColor: colors.primary + "18" }]}>
-            <Feather name="users" size={22} color={colors.primary} />
-          </View>
-          <View style={styles.groupInfo}>
-            <Text style={[styles.groupName, { color: colors.foreground }]}>{item.name}</Text>
-            <Text style={[styles.groupDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{item.description}</Text>
-            <Text style={[styles.groupMeta, { color: colors.mutedForeground }]}>{item.memberCount} members</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.joinBtn, { borderColor: colors.primary }]}
-            onPress={() => handleJoin(item.id)}
-          >
-            <Text style={[styles.joinBtnText, { color: colors.primary }]}>Join</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      contentContainerStyle={[styles.list, { paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 }]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-      scrollEnabled={!!groups?.length}
-      ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> : (
-        <View style={styles.emptyState}>
-          <Feather name="users" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No groups yet</Text>
-        </View>
-      )}
-    />
   );
 }
 
@@ -193,40 +95,11 @@ function EventsTab({ colors, insets, isWeb }: any) {
   );
 }
 
-function formatTime(ts: number) {
-  const diff = Date.now() - ts;
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
   headerTitle: { fontSize: 24, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
-  tabBar: { flexDirection: "row", borderBottomWidth: 1 },
-  tab: { flex: 1, paddingVertical: 12, alignItems: "center" },
-  tabText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   list: { padding: 16, gap: 12 },
-  newsCard: { borderRadius: 14, padding: 14, borderWidth: 1, gap: 8 },
-  newsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sourceBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  sourceBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  newsDate: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  newsTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 22 },
-  newsSummary: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  newsMeta: { flexDirection: "row", alignItems: "center", gap: 8 },
-  specialtyTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  specialtyTagText: { fontSize: 11, fontFamily: "Inter_500Medium" },
-  metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  groupCard: { flexDirection: "row", borderRadius: 14, padding: 14, borderWidth: 1, gap: 12, alignItems: "center" },
-  groupIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  groupInfo: { flex: 1, gap: 3 },
-  groupName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  groupDesc: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  groupMeta: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  joinBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
-  joinBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   eventCard: { flexDirection: "row", borderRadius: 14, padding: 14, borderWidth: 1, gap: 12, alignItems: "center" },
   eventDate: { width: 52, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   eventDateDay: { color: "#fff", fontSize: 20, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },

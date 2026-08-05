@@ -87,10 +87,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="triage"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
         name="community"
         options={{
           title: "Events",
@@ -101,10 +97,6 @@ export default function TabLayout() {
               <Feather name="calendar" size={22} color={color} />
             ),
         }}
-      />
-      <Tabs.Screen
-        name="news"
-        options={{ href: null }}
       />
       <Tabs.Screen
         name="more"

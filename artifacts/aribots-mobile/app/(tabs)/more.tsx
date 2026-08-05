@@ -40,7 +40,6 @@ const MENU_SECTIONS: MenuSection[] = [
     title: "Community",
     items: [
       { icon: "message-square", label: "Messaging", description: "Direct & group chats", route: "/messaging", color: "#8B5CF6" },
-      { icon: "user-check", label: "Doctors Directory", description: "Find physicians by specialty", route: "/doctors", color: "#F59E0B" },
       { icon: "book-open", label: "Training", description: "CME modules & certification", route: "/training", color: "#EF4444" },
     ],
   },
