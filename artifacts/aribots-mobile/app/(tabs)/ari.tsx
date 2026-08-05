@@ -132,14 +132,19 @@ function AriMessageContent({ text, isDark, isStreaming }: { text: string; isDark
   const mutedBorder = isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)";
   const mutedTxt = isDark ? "#9db0c2" : "#5a6c7d";
 
-  const blocks = parseAriBlocks(text);
-  if (isStreaming && blocks.length === 1 && blocks[0].type === "text") {
+  const { blocks, trailing } = parseAriBlocks(text, isStreaming);
+  if (blocks.length === 0 && trailing.trim()) {
     return (
       <View>
-        <Text style={[s.msgText, { color: txt }]}>{text}</Text>
-        <ActivityIndicator size="small" color={primary} style={{ alignSelf: "flex-start", marginTop: 4 }} />
+        <Text style={[s.msgText, { color: txt }]}>{trailing}</Text>
+        {isStreaming && <ActivityIndicator size="small" color={primary} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
       </View>
     );
+  }
+  if (blocks.length === 0 && !trailing.trim()) {
+    return isStreaming
+      ? <ActivityIndicator size="small" color={primary} style={{ alignSelf: "flex-start" }} />
+      : null;
   }
   return (
     <View style={{ gap: 8 }}>
@@ -159,7 +164,7 @@ function AriMessageContent({ text, isDark, isStreaming }: { text: string; isDark
         if (block.type === "step") return (
           <View key={i} style={s.stepBlock}>
             <LinearGradient colors={["#2a7bff","#12b5c9"]} style={s.stepDot}>
-              <Text style={s.stepNum}>{i + 1}</Text>
+              <Text style={s.stepNum}>{block.stepNumber ?? i + 1}</Text>
             </LinearGradient>
             <Text style={[s.stepText, { color: txt }]}>{block.content}</Text>
           </View>
@@ -169,12 +174,13 @@ function AriMessageContent({ text, isDark, isStreaming }: { text: string; isDark
             <Feather name="book-open" size={14} color={primary} />
             <View style={{ flex: 1 }}>
               {block.source ? <Text style={[s.citationSource, { color: primary }]}>{block.source}</Text> : null}
-              <Text style={[s.citationText, { color: mutedTxt }]}>{block.content}</Text>
+              {block.content ? <Text style={[s.citationText, { color: mutedTxt }]}>{block.content}</Text> : null}
             </View>
           </View>
         );
         return <Text key={i} style={[s.msgText, { color: txt }]}>{block.content}</Text>;
       })}
+      {trailing.trim() ? <Text style={[s.msgText, { color: txt }]}>{trailing}</Text> : null}
       {isStreaming && <ActivityIndicator size="small" color={primary} style={{ alignSelf: "flex-start" }} />}
     </View>
   );
@@ -518,25 +524,50 @@ export default function AriScreen() {
       <View style={[s.radialTL, { backgroundColor: isDark ? "rgba(18,58,90,0.45)" : "rgba(216,232,255,0.6)" }]} />
       <View style={[s.radialBR, { backgroundColor: isDark ? "rgba(11,73,72,0.25)" : "rgba(205,247,238,0.4)" }]} />
 
-      {/* Header */}
-      <View style={[s.header, { paddingTop: isWeb ? 67 : insets.top + 8 }]}>
-        {isIOS ? (
-          <BlurView intensity={60} tint={isDark ? "dark" : "light"} style={[s.headerBlur, { borderBottomColor: glassBorder }]}>
-            <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
-              onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
-          </BlurView>
-        ) : (
-          <View style={[s.headerBlur, { backgroundColor: isDark ? "rgba(8,26,44,0.85)" : "rgba(244,249,255,0.85)", borderBottomColor: glassBorder }]}>
-            <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
-              onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
+      {/* Header — collapses to a slim action row once a conversation starts
+          so messages get the full screen */}
+      {messages.length === 0 ? (
+        <Animated.View style={[s.header, { paddingTop: isWeb ? 67 : insets.top + 8 }]}>
+          {isIOS ? (
+            <BlurView intensity={60} tint={isDark ? "dark" : "light"} style={[s.headerBlur, { borderBottomColor: glassBorder }]}>
+              <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
+                onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
+            </BlurView>
+          ) : (
+            <View style={[s.headerBlur, { backgroundColor: isDark ? "rgba(8,26,44,0.85)" : "rgba(244,249,255,0.85)", borderBottomColor: glassBorder }]}>
+              <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
+                onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
+            </View>
+          )}
+        </Animated.View>
+      ) : (
+        <Animated.View entering={FadeIn.duration(250)} style={{ paddingTop: isWeb ? 67 : insets.top + 4 }}>
+          <View style={s.slimHeader}>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity onPress={() => setShowCapabilities(true)} style={s.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="What can Ari do">
+              <Feather name="help-circle" size={19} color={txt2} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowHistory(true)} style={s.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Chat history">
+              <Feather name="clock" size={19} color={txt2} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={toggleTheme} style={s.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Toggle light or dark mode">
+              <Feather name={isDark ? "sun" : "moon"} size={19} color={txt2} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={clearChat} style={s.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="New chat">
+              <Feather name="trash-2" size={18} color={txt2} />
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
+        </Animated.View>
+      )}
 
+      {/* KeyboardAvoidingView wraps BOTH the messages and the composer so the
+          list shrinks when the keyboard opens instead of the composer floating
+          up over the conversation */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0}>
       {/* Messages / empty state — both live in the same flex:1 region so the
           composer below never changes position between states */}
       {messages.length === 0 ? (
-        <Animated.View entering={FadeIn.duration(350)} style={[s.emptyState, { paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 }]}>
+        <Animated.View entering={FadeIn.duration(350)} style={s.emptyState}>
           {/* Glass logo chip with a gentle breathing pulse */}
           <PulsingLogo glassBg={glassBg} glassBorder={glassBorder} />
           <Animated.Text entering={FadeInDown.delay(80).duration(400)} style={[s.emptyTitle, { color: txt }]}>Ask Ari</Animated.Text>
@@ -573,30 +604,27 @@ export default function AriScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           inverted
-          contentContainerStyle={[s.messageList, {
-            paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84,
-            paddingTop: 12,
-          }]}
+          contentContainerStyle={[s.messageList, { paddingTop: 8 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
       )}
 
-      {/* Input bar */}
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0}>
-        {isIOS ? (
-          <BlurView intensity={70} tint={isDark ? "dark" : "light"} style={[s.inputBar, { borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
-            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
-              attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
-              onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
-          </BlurView>
-        ) : (
-          <View style={[s.inputBar, { backgroundColor: isDark ? "rgba(8,26,44,0.92)" : "rgba(244,249,255,0.92)", borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
-            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
-              attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
-              onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
-          </View>
-        )}
+      {/* Input bar — sits just above the tab bar (82pt, which already
+          includes the home-indicator inset), with a small visual gap */}
+      {isIOS ? (
+        <BlurView intensity={70} tint={isDark ? "dark" : "light"} style={[s.inputBar, { borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 6 : 82 + 6 }]}>
+          <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
+            attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+            onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
+        </BlurView>
+      ) : (
+        <View style={[s.inputBar, { backgroundColor: isDark ? "rgba(8,26,44,0.92)" : "rgba(244,249,255,0.92)", borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 6 : 82 + 6 }]}>
+          <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
+            attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+            onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
+        </View>
+      )}
       </KeyboardAvoidingView>
 
       {/* What can Ari do */}
@@ -806,6 +834,7 @@ const s = StyleSheet.create({
   radialTL: { position: "absolute", width: 320, height: 320, top: -60, left: -80, borderRadius: 999 },
   radialBR: { position: "absolute", width: 260, height: 260, bottom: 80, right: -60, borderRadius: 999 },
   header: { zIndex: 10 },
+  slimHeader: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 16, paddingBottom: 4, gap: 4 },
   headerBlur: { borderBottomWidth: 1 },
   headerInner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 14, paddingTop: 8, gap: 12 },
   headerTitle: { fontSize: 22, fontWeight: "700", fontFamily: "Inter_700Bold", letterSpacing: -0.3 },

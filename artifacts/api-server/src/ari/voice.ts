@@ -125,45 +125,33 @@ export function stripAriMarkup(text: string): string {
     .replace(/\s*\n\s*/g, "\n")
     .trim();
 }
+
+// POST /api/ari/voice/tts → audio/mpeg
+// Accepts { text, voiceId? }. ari_* markup is stripped before synthesis so
+// Ari's structured blocks read naturally.
+ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
   const { text, voiceId } = (req.body ?? {}) as {
     text?: unknown;
     voiceId?: unknown;
   };
-
+  if (typeof text !== "string" || !text.trim()) {
+    return res.status(400).json({ message: "Missing text." });
+  }
+  const clean = stripAriMarkup(text);
+  if (clean.length > MAX_TTS_CHARS) {
+    return res
+      .status(413)
+      .json({ message: "Text is too long for speech synthesis." });
+  }
   const result = await synthesizeSpeech(
-    text,
+    clean,
     typeof voiceId === "string" ? voiceId : undefined,
   );
-    const elevenResp = await proxyWithRetry(
-      "elevenlabs",
-      "/v1/speech-to-text",
-      () => ({
-        method: "POST",
-        body: buildForm(),
-      }),
-    );
-
-    if (!elevenResp.ok) {
-      // Pull a short error hint from upstream so the user can actually see
-      // what went wrong (rate limit, unauthorized, bad audio, etc.). We
-      // sanitize and bound it so we never echo audio metadata back.
-      const raw = await elevenResp.text().catch(() => "");
-      const hint = extractErrorHint(raw);
-      console.error(
-        "[ari/voice/stt] ElevenLabs error status:",
-        elevenResp.status,
-        hint || "(no body)"
-      );
-    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
-      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
-      : "Voice provider is temporarily unavailable. Please try again.";
-    const msg = err?.message || "unknown error";
-    console.error("[ari/voice/stt] failure:", msg);
-    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
-      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
-      : "Voice provider is temporarily unavailable. Please try again.";
-    return res.status(502).json({ message: friendly });
-  }
+  if (!result.ok) return res.status(result.status).json({ message: result.message });
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Content-Length", result.audio.length.toString());
+  res.setHeader("Cache-Control", "no-store");
+  return res.send(result.audio);
 });
 
 // Shared ElevenLabs Scribe transcription used by the web STT route below and

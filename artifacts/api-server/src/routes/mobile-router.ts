@@ -470,8 +470,8 @@ mobile.post("/groups/:id/join", requireMobileAuth, (req: any, res) => {
   const g = store.groups.get(req.params.id);
   if (!g) return res.status(404).json({ message: "Not found" });
   const uid = req.mobileUser.userId;
-  if (!m.completedBy.includes(uid)) {
-    const updated = { ...m, completedBy: [...m.completedBy, uid] };
+  if (!g.members.includes(uid)) {
+    const updated = { ...g, members: [...g.members, uid], memberCount: g.memberCount + 1 };
     store.groups.set(g.id, updated);
     return res.json(updated);
   }
@@ -486,11 +486,9 @@ mobile.post("/events/:id/rsvp", requireMobileAuth, (req: any, res) => {
   if (!e) return res.status(404).json({ message: "Not found" });
   const uid = req.mobileUser.userId;
   const rsvped = e.rsvps.includes(uid);
-    const updated = { ...m, completedBy: [...m.completedBy, uid] };
-    store.training.set(m.id, updated);
-    return res.json(updated);
-  }
-  res.json(m);
+  const updated = { ...e, rsvps: rsvped ? e.rsvps.filter((id: string) => id !== uid) : [...e.rsvps, uid] };
+  store.events.set(e.id, updated);
+  res.json(updated);
 });
 
 // Telemed
@@ -584,9 +582,25 @@ mobile.post("/ari/voice/stt", requireMobileAuth, (req, res, next) => {
   if (!file.mimetype.startsWith("audio/") && file.mimetype !== "video/webm") {
     return res.status(415).json({ message: `Unsupported media type: ${file.mimetype}` });
   }
-  const result = await synthesizeSpeech(clean, typeof voiceId === "string" ? voiceId : undefined);
+  const result = await transcribeAudioFile(file);
+  if (!result.ok) return res.status(result.status).json({ message: result.message });
+  res.json({ text: result.text });
+});
 
+// Ari voice — text-to-speech (read-aloud) via ElevenLabs, same provider as web
 const MOBILE_MAX_TTS_CHARS = 4000;
+
+mobile.post("/ari/voice/tts", requireMobileAuth, async (req: any, res) => {
+  const { text, voiceId } = (req.body ?? {}) as { text?: unknown; voiceId?: unknown };
+  if (typeof text !== "string" || !text.trim()) {
+    return res.status(400).json({ message: "Missing text." });
+  }
+  // Strip ari_* markup so structured blocks read naturally aloud.
+  const clean = stripAriMarkup(text);
+  if (clean.length > MOBILE_MAX_TTS_CHARS) {
+    return res.status(413).json({ message: "Message is too long to read aloud." });
+  }
+  const result = await synthesizeSpeech(clean, typeof voiceId === "string" ? voiceId : undefined);
   if (!result.ok) return res.status(result.status).json({ message: result.message });
   res.setHeader("Content-Type", "audio/mpeg");
   res.setHeader("Content-Length", result.audio.length.toString());
@@ -702,7 +716,3 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
 });
 
 export default mobile;
-
-  const clean = stripAriMarkup(text);
-
-  const { text, voiceId } = (req.body ?? {}) as { text?: unknown; voiceId?: unknown };
