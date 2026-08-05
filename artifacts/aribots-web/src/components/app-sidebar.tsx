@@ -16,19 +16,12 @@ import {
 import {
   Bot,
   Stethoscope,
-  Newspaper,
-  Users,
   CalendarDays,
   Settings,
   Shield,
   MessageCircle,
-  BookOpen,
   Home,
   ChevronDown,
-  Clock,
-  FolderOpen,
-  UserSearch,
-  Video,
   BarChart2,
   ShieldCheck,
   Users2,
@@ -57,12 +50,7 @@ interface Notifications {
 }
 
 const mainNavItems = [
-  { title: "News AI", url: "/news", icon: Newspaper, notifKey: "news" as const },
-  { title: "Triage", url: "/triage", icon: Stethoscope, notifKey: "triage" as const },
-  { title: "Groups", url: "/groups", icon: Users, notifKey: null },
   { title: "Events", url: "/events", icon: CalendarDays, notifKey: "events" as const },
-  { title: "Doctors", url: "/doctors", icon: UserSearch, notifKey: null },
-  { title: "Telemedicine", url: "/telemed", icon: Video, notifKey: null },
 ];
 
 const secondaryItems = [
@@ -87,7 +75,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
 };
 
-const MED_STUDENT_RESTRICTED = new Set(["/triage", "/telemed"]);
+const MED_STUDENT_RESTRICTED = new Set<string>([]);
 
 export function AppSidebar() {
   const [location] = useLocation();

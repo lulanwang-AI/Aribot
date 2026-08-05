@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import {
   Sheet,
   SheetContent,
@@ -9,16 +8,11 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Stethoscope,
   Building2,
-  BookOpen,
-  MessageSquare,
-  Users,
   BadgeCheck,
-  ExternalLink,
   Briefcase,
 } from "lucide-react";
 
@@ -69,8 +63,6 @@ export function ProfileSheetProvider({ children }: { children: React.ReactNode }
 }
 
 function DoctorProfileSheet({ userId, open, onOpenChange }: { userId: string | null; open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [, setLocation] = useLocation();
-
   const { data: profile, isLoading } = useQuery<DoctorProfile>({
     queryKey: ["/api/users", userId],
     queryFn: async () => {
@@ -178,83 +170,6 @@ function DoctorProfileSheet({ userId, open, onOpenChange }: { userId: string | n
 
             <Separator />
 
-            {profile.memberGroups.length > 0 && (
-              <>
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                    <Users className="h-3 w-3" />
-                    Groups
-                  </h3>
-                  <div className="space-y-1.5">
-                    {profile.memberGroups.map((group) => (
-                      <div
-                        key={group.id}
-                        className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
-                        onClick={() => {
-                          onOpenChange(false);
-                          setLocation("/groups");
-                        }}
-                        data-testid={`profile-group-${group.id}`}
-                      >
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {group.topic}
-                        </Badge>
-                        <span className="text-sm truncate">{group.name}</span>
-                        <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground shrink-0" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {profile.recentCases.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                  <BookOpen className="h-3 w-3" />
-                  Recent Cases
-                </h3>
-                <div className="space-y-1.5">
-                  {profile.recentCases.map((c) => (
-                    <div
-                      key={c.id}
-                      className="p-2 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
-                      onClick={() => {
-                        onOpenChange(false);
-                        setLocation(`/triage/${c.id}`);
-                      }}
-                      data-testid={`profile-case-${c.id}`}
-                    >
-                      <p className="text-sm font-medium leading-snug">{c.title}</p>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        {c.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  onOpenChange(false);
-                  setLocation("/triage");
-                }}
-                data-testid="button-view-all-cases"
-              >
-                <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                View All Discussions
-              </Button>
-            </div>
           </div>
         )}
       </SheetContent>

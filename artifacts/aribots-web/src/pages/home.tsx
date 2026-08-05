@@ -4,11 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClickableDoctor } from "@/components/doctor-profile-sheet";
 import {
-  Stethoscope,
-  Newspaper,
-  Users,
   CalendarDays,
   Bot,
   ArrowRight,
@@ -16,7 +12,6 @@ import {
   MessageSquare,
   Clock,
   MapPin,
-  Building,
   CheckCircle,
   Plus,
   ClipboardList,
@@ -24,9 +19,8 @@ import {
   Upload,
   Sparkles,
   Search,
-  Image,
 } from "lucide-react";
-import type { User, TriagePost, NewsItem, MedEvent } from "@shared/schema";
+import type { User, MedEvent } from "@shared/schema";
 import { seedAnalytics, recordEvent } from "@/lib/analytics";
 import { useEffect, useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -34,8 +28,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Home() {
   const { data: user, isLoading: userLoading } = useQuery<User>({ queryKey: ["/api/me"] });
-  const { data: posts } = useQuery<(TriagePost & { author: { name: string; specialty: string } | null; commentCount: number })[]>({ queryKey: ["/api/triage"] });
-  const { data: news } = useQuery<NewsItem[]>({ queryKey: ["/api/news"] });
   const { data: events } = useQuery<MedEvent[]>({ queryKey: ["/api/events"] });
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -93,9 +85,6 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={Stethoscope} label="Active Cases" value={posts?.length || 0} href="/triage" color="text-blue-500" />
-        <StatCard icon={Newspaper} label="News Articles" value={news?.length || 0} href="/news" color="text-emerald-500" />
-        <StatCard icon={Users} label="Your Groups" value={5} href="/groups" color="text-violet-500" />
         <StatCard icon={CalendarDays} label="Upcoming Events" value={upcomingEvents.length} href="/events" color="text-amber-500" />
       </div>
 

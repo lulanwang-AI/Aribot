@@ -14,18 +14,11 @@ import Home from "@/pages/home";
 import Aribot from "@/pages/aribot";
 import AribotOnboarding from "@/pages/aribot-onboarding";
 import AribotDevBlocks from "@/pages/aribot-dev-blocks";
-import Triage from "@/pages/triage";
-import TriageDetail from "@/pages/triage-detail";
-import News from "@/pages/news";
-import Groups from "@/pages/groups";
-import GroupDetail from "@/pages/group-detail";
 import Events from "@/pages/events";
 import Account from "@/pages/account";
 import Team from "@/pages/team";
 import Chats from "@/pages/chats";
 import Training from "@/pages/training";
-import Doctors from "@/pages/doctors";
-import Telemed from "@/pages/telemed";
 import Admin from "@/pages/admin";
 import PreCharting from "@/pages/pre-charting";
 import ClinicalChat from "@/pages/clinical-chat";
@@ -60,22 +53,11 @@ function AppRouter() {
       <Route path="/aribot/dev/blocks" component={AribotDevBlocks} />
       <Route path="/aribot" component={Aribot} />
       <Route path="/home" component={Home} />
-      <Route path="/triage" component={Triage} />
-      <Route path="/triage/:id">
-        {(params) => <TriageDetail id={params.id} />}
-      </Route>
-      <Route path="/news" component={News} />
-      <Route path="/groups" component={Groups} />
-      <Route path="/groups/:id">
-        {(params) => <GroupDetail id={params.id} />}
-      </Route>
       <Route path="/events" component={Events} />
       <Route path="/chats" component={Chats} />
       <Route path="/training" component={Training} />
-      <Route path="/doctors" component={Doctors} />
       <Route path="/account" component={Account} />
       <Route path="/team" component={Team} />
-      <Route path="/telemed" component={Telemed} />
       <Route path="/admin" component={Admin} />
       <Route path="/pre-charting" component={PreCharting} />
       <Route path="/clinical-chat" component={ClinicalChat} />
