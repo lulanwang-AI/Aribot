@@ -6,7 +6,9 @@
  */
 import { Router } from "express";
 import jwt from "jsonwebtoken";
+import multer, { MulterError } from "multer";
 import { randomUUID } from "crypto";
+import { transcribeAudioFile } from "../ari/voice";
 import type {
   User, TriagePost, Comment, NewsItem, Group, MedEvent,
   ChatThread, ChatMessage, TrainingModule, TelemedConsultation,
@@ -550,10 +552,75 @@ mobile.get("/telemed/:id", requireMobileAuth, (req, res) => {
   res.json(c);
 });
 
-// Ari streaming
+// Ari voice — speech-to-text via ElevenLabs Scribe (same provider as web)
+const mobileSttUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+}).single("audio");
+
+mobile.post("/ari/voice/stt", requireMobileAuth, (req, res, next) => {
+  mobileSttUpload(req, res, (err: any) => {
+    if (!err) return next();
+    if (err instanceof MulterError) {
+      const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+      return res.status(status).json({ message: `Upload error: ${err.message}` });
+    }
+    return res.status(400).json({ message: "Failed to read audio upload." });
+  });
+}, async (req: any, res) => {
+  const file = req.file as { buffer: Buffer; mimetype: string; originalname: string } | undefined;
+  if (!file) return res.status(400).json({ message: "Missing audio file." });
+  if (!file.mimetype.startsWith("audio/") && file.mimetype !== "video/webm") {
+    return res.status(415).json({ message: `Unsupported media type: ${file.mimetype}` });
+  }
+  const result = await transcribeAudioFile(file);
+  if (!result.ok) return res.status(result.status).json({ message: result.message });
+  return res.json({ text: result.text });
+});
+
+// Ari streaming (optionally with base64 image attachments for vision)
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_IMAGES = 3;
+// Per-image cap of ~1.9MB binary (~2.5M base64 chars). 3 images stay well
+// under the app-wide express.json({ limit: "10mb" }) body limit.
+const MAX_IMAGE_B64_CHARS = 2.5 * 1024 * 1024;
+const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+function sniffImageType(buf: Buffer): string | null {
+  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf.length > 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf.length > 6 && buf.subarray(0, 4).toString("ascii") === "GIF8") return "image/gif";
+  if (buf.length > 12 && buf.subarray(0, 4).toString("ascii") === "RIFF" && buf.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  return null;
+}
+
 mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
-  const { query, mode = "ari", capability } = req.body;
-  if (!query) return res.status(400).json({ message: "Query is required" });
+  const { query, mode = "ari", capability, images } = req.body;
+  const hasImages = Array.isArray(images) && images.length > 0;
+  if (!query && !hasImages) return res.status(400).json({ message: "Query is required" });
+
+  let imageBlocks: any[] = [];
+  if (hasImages) {
+    if (images.length > MAX_IMAGES) {
+      return res.status(400).json({ message: `At most ${MAX_IMAGES} images per message.` });
+    }
+    for (const img of images) {
+      const mediaType = img?.mediaType;
+      const data = img?.data;
+      if (typeof mediaType !== "string" || !ALLOWED_IMAGE_TYPES.has(mediaType) ||
+          typeof data !== "string" || !data || data.length > MAX_IMAGE_B64_CHARS ||
+          !BASE64_RE.test(data)) {
+        return res.status(400).json({ message: "Invalid image attachment." });
+      }
+      // Decode and verify magic bytes so the payload really is the image
+      // type it claims to be before we forward it to the model.
+      const buf = Buffer.from(data, "base64");
+      if (sniffImageType(buf) !== mediaType) {
+        return res.status(400).json({ message: "Invalid image attachment." });
+      }
+      imageBlocks.push({ type: "image", source: { type: "base64", media_type: mediaType, data } });
+    }
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -572,13 +639,18 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const anthropic = new Anthropic({ apiKey: key });
-    const ARI_SYSTEM = `You are Ari, a clinical AI assistant for ARIbots — a doctor-only medical platform. Assist licensed physicians with clinical decision support, differential diagnoses, evidence-based guidelines, and medical literature review.\n\nCRITICAL RULES:\n1. Only assist licensed healthcare professionals\n2. Never provide definitive diagnoses — recommend clinical judgment\n3. Flag patient safety concerns immediately\n4. Use structured format:\n<ari_section title="Assessment">Assessment here</ari_section>\n<ari_claim>Key clinical recommendation</ari_claim>\n<ari_step>Step in workup</ari_step>\n<ari_citation source="NEJM 2024">Citation</ari_citation>\n\nER Mode: When mode is "er", prioritize rapid stabilization and life-threatening diagnoses first.`;
+    const ARI_SYSTEM = `You are Ari, a clinical AI assistant for ARIbots — a doctor-only medical platform. Assist licensed physicians with clinical decision support, differential diagnoses, evidence-based guidelines, and medical literature review.\n\nCRITICAL RULES:\n1. Only assist licensed healthcare professionals\n2. Never provide definitive diagnoses — recommend clinical judgment\n3. Flag patient safety concerns immediately\n4. Use structured format:\n<ari_section title="Assessment">Assessment here</ari_section>\n<ari_claim>Key clinical recommendation</ari_claim>\n<ari_step>Step in workup</ari_step>\n<ari_citation source="NEJM 2024">Citation</ari_citation>\n\nER Mode: When mode is "er", prioritize rapid stabilization and life-threatening diagnoses first.\n\nImages: Messages may include attached clinical images as image content blocks. When image blocks are present, they ARE the uploaded images — analyze them directly; never claim no image was attached.`;
 
     const stream = await anthropic.messages.create({
       model: "claude-opus-4-5",
       max_tokens: 2048,
       system: ARI_SYSTEM,
-      messages: [{ role: "user", content: JSON.stringify({ mode, capability, query }) }],
+      messages: [{
+        role: "user",
+        content: imageBlocks.length > 0
+          ? [...imageBlocks, { type: "text", text: JSON.stringify({ mode, capability, query: query || "The image(s) are included in this message, directly above this text. Describe and assess them in a clinical context." }) }]
+          : JSON.stringify({ mode, capability, query }),
+      }],
       stream: true,
     });
 
@@ -590,7 +662,8 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
     }
     res.write(`event: done\ndata: {}\n\n`);
     res.end();
-  } catch {
+  } catch (err: any) {
+    console.error("[mobile/ari/chat] failure:", err?.message || err);
     res.write(`event: error\ndata: ${JSON.stringify({ message: "Ari is temporarily unavailable." })}\n\n`);
     res.end();
   }

@@ -195,6 +195,50 @@ ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
   }
 });
 
+// Shared ElevenLabs Scribe transcription used by the web STT route below and
+// the mobile router's /api/mobile/ari/voice/stt endpoint.
+export async function transcribeAudioFile(file: {
+  buffer: Buffer;
+  mimetype: string;
+  originalname?: string;
+}): Promise<{ ok: true; text: string } | { ok: false; status: number; message: string }> {
+  try {
+    const buildForm = () => {
+      const form = new FormData();
+      const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
+      form.append("file", blob, file.originalname || "speech.webm");
+      form.append("model_id", DEFAULT_STT_MODEL);
+      return form;
+    };
+    const elevenResp = await proxyWithRetry("elevenlabs", "/v1/speech-to-text", () => ({
+      method: "POST",
+      body: buildForm(),
+    }));
+    if (!elevenResp.ok) {
+      const raw = await elevenResp.text().catch(() => "");
+      console.error("[ari/voice/stt] ElevenLabs error status:", elevenResp.status, extractErrorHint(raw) || "(no body)");
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : elevenResp.status === 413
+              ? "Recording is too long for the transcription provider."
+              : "Voice provider is temporarily unavailable. Please try again.";
+      return { ok: false, status: 502, message: friendly };
+    }
+    const data = (await elevenResp.json()) as { text?: string };
+    return { ok: true, text: (data.text || "").trim() };
+  } catch (err: any) {
+    const msg = err?.message || "unknown error";
+    console.error("[ari/voice/stt] failure:", msg);
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
+    return { ok: false, status: 502, message: friendly };
+  }
+}
+
 // POST /api/ari/voice/stt → { text }
 // Accepts a single audio file under the field name "audio". Forwarded to
 // ElevenLabs Scribe with model_id=scribe_v1.

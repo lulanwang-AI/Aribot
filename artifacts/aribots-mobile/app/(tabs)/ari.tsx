@@ -17,8 +17,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync } from "expo-audio";
+import Animated, { FadeInDown, FadeIn, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
-import { streamAriChat } from "@/lib/api";
+import { streamAriChat, transcribeAriAudio, AriImageAttachment } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { ARI_CAPABILITIES } from "@/constants/ariCapabilities";
@@ -32,6 +35,7 @@ interface Message {
   role: MessageRole;
   content: string;
   streaming?: boolean;
+  imageUris?: string[]; // data URIs shown in the user's bubble
 }
 
 interface AriBlock {
@@ -146,6 +150,10 @@ export default function AriScreen() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const streamingIdRef = useRef<string | null>(null);
+  const [attachments, setAttachments] = useState<Array<AriImageAttachment & { uri: string }>>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const { user } = useAuth();
   const userId = user?.id || "anonymous";
   const [showCapabilities, setShowCapabilities] = useState(false);
@@ -181,11 +189,85 @@ export default function AriScreen() {
   const inputBg = isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.88)";
   const primary = isDark ? "#4a90ff" : "#1e6bff";
 
+  const MAX_ATTACHMENTS = 3;
+  const MAX_IMAGE_B64_CHARS = 2.5 * 1024 * 1024; // keep in sync with the API's per-image cap
+
+  async function pickImage() {
+    if (attachments.length >= MAX_ATTACHMENTS) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      base64: true,
+      quality: 0.6,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset?.base64) return;
+    if (asset.base64.length > MAX_IMAGE_B64_CHARS) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), role: "assistant",
+        content: "That image is too large to send (max ~2 MB). Please pick a smaller one.",
+      }]);
+      return;
+    }
+    const mediaType = asset.mimeType && ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(asset.mimeType)
+      ? asset.mimeType
+      : "image/jpeg";
+    setAttachments(prev => [...prev, {
+      mediaType,
+      data: asset.base64!,
+      // Use the picker's own URI for display (file:// on native, blob/data on
+      // web) so we don't keep a second multi-MB base64 copy in chat state.
+      uri: asset.uri,
+    }]);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  async function toggleRecording() {
+    if (isTranscribing) return;
+    if (isRecording) {
+      setIsRecording(false);
+      setIsTranscribing(true);
+      try {
+        await recorder.stop();
+        const uri = recorder.uri;
+        if (uri) {
+          const mime = Platform.OS === "web" ? "audio/webm" : "audio/m4a";
+          const text = await transcribeAriAudio(uri, mime);
+          if (text) setInput(prev => (prev ? prev + " " : "") + text);
+        }
+      } catch (e: any) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), role: "assistant",
+          content: e?.message || "Voice transcription failed. Please try again.",
+        }]);
+      } finally {
+        setIsTranscribing(false);
+      }
+      return;
+    }
+    try {
+      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      if (!perm.granted) return;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setIsRecording(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {
+      setIsRecording(false);
+    }
+  }
+
   async function sendMessage(text?: string) {
     const q = (text ?? input).trim();
-    if (!q || isStreaming) return;
-    const userMsg: Message = { id: Date.now().toString(), role: "user", content: q };
-    if (!text) setInput("");
+    if ((!q && attachments.length === 0) || isStreaming) return;
+    const imgs = text ? [] : attachments;
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: q || "(image)",
+      imageUris: imgs.length ? imgs.map(a => a.uri) : undefined,
+    };
+    if (!text) { setInput(""); setAttachments([]); }
     setMessages(prev => [...prev, userMsg]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -227,7 +309,8 @@ export default function AriScreen() {
       (err) => {
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: err, streaming: false } : m));
         setIsStreaming(false);
-      }
+      },
+      imgs.length ? imgs.map(({ mediaType, data }) => ({ mediaType, data })) : undefined
     );
   }
 
@@ -240,7 +323,7 @@ export default function AriScreen() {
   const renderMessage = useCallback(({ item }: { item: Message }) => {
     const isUser = item.role === "user";
     return (
-      <View style={[s.msgRow, isUser ? s.msgRowUser : s.msgRowAssistant]}>
+      <Animated.View entering={FadeInDown.duration(280).springify().damping(18)} style={[s.msgRow, isUser ? s.msgRowUser : s.msgRowAssistant]}>
         {!isUser && (
           <LinearGradient
             colors={["#2a7bff", "#12b5c9"]}
@@ -255,14 +338,23 @@ export default function AriScreen() {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={[s.msgBubble, s.msgBubbleUser]}
           >
-            <Text style={s.msgTextUser}>{item.content}</Text>
+            {item.imageUris?.length ? (
+              <View style={s.msgImageRow}>
+                {item.imageUris.map((uri, i) => (
+                  <Image key={i} source={{ uri }} style={s.msgImage} resizeMode="cover" />
+                ))}
+              </View>
+            ) : null}
+            {item.content !== "(image)" || !item.imageUris?.length ? (
+              <Text style={s.msgTextUser}>{item.content}</Text>
+            ) : null}
           </LinearGradient>
         ) : (
           <View style={[s.msgBubble, s.msgBubbleAssistant, { backgroundColor: glassBg, borderColor: glassBorder }]}>
             <AriMessageContent text={item.content} isDark={isDark} isStreaming={!!item.streaming} />
           </View>
         )}
-      </View>
+      </Animated.View>
     );
   }, [isDark, glassBg, glassBorder]);
 
@@ -293,23 +385,20 @@ export default function AriScreen() {
         )}
       </View>
 
-      {/* Messages / empty state */}
+      {/* Messages / empty state — both live in the same flex:1 region so the
+          composer below never changes position between states */}
       {messages.length === 0 ? (
-        <View style={[s.emptyState, { paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 }]}>
-          {/* Glass logo chip */}
-          <View style={[s.emptyIcon, { backgroundColor: glassBg, borderColor: glassBorder }]}>
-            <LinearGradient colors={["#2a7bff","#12b5c9"]} style={s.emptyGrad}>
-              <Image source={require("@/assets/images/aribot-mark.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
-            </LinearGradient>
-          </View>
-          <Text style={[s.emptyTitle, { color: txt }]}>Ask Ari</Text>
-          <Text style={[s.emptyDesc, { color: txt2 }]}>
+        <Animated.View entering={FadeIn.duration(350)} style={[s.emptyState, { paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 }]}>
+          {/* Glass logo chip with a gentle breathing pulse */}
+          <PulsingLogo glassBg={glassBg} glassBorder={glassBorder} />
+          <Animated.Text entering={FadeInDown.delay(80).duration(400)} style={[s.emptyTitle, { color: txt }]}>Ask Ari</Animated.Text>
+          <Animated.Text entering={FadeInDown.delay(160).duration(400)} style={[s.emptyDesc, { color: txt2 }]}>
             Evidence-based clinical decision support. Cited, fail-closed, multi-language.
-          </Text>
+          </Animated.Text>
           <View style={s.suggestionsGrid}>
             {SUGGESTIONS.map((sg, i) => (
+              <Animated.View key={i} entering={FadeInDown.delay(240 + i * 90).duration(400)}>
               <TouchableOpacity
-                key={i}
                 onPress={() => sendMessage(sg)}
                 activeOpacity={0.75}
               >
@@ -325,11 +414,13 @@ export default function AriScreen() {
                   </View>
                 )}
               </TouchableOpacity>
+              </Animated.View>
             ))}
           </View>
-        </View>
+        </Animated.View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={[...messages].reverse()}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
@@ -347,11 +438,15 @@ export default function AriScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0}>
         {isIOS ? (
           <BlurView intensity={70} tint={isDark ? "dark" : "light"} style={[s.inputBar, { borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
-            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2} />
+            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
+              attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+              onPickImage={pickImage} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
           </BlurView>
         ) : (
           <View style={[s.inputBar, { backgroundColor: isDark ? "rgba(8,26,44,0.92)" : "rgba(244,249,255,0.92)", borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
-            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2} />
+            <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
+              attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+              onPickImage={pickImage} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
           </View>
         )}
       </KeyboardAvoidingView>
@@ -433,6 +528,39 @@ export default function AriScreen() {
   );
 }
 
+function PulsingLogo({ glassBg, glassBorder }: { glassBg: string; glassBorder: string }) {
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.06, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1
+    );
+  }, [scale]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View style={[s.emptyIcon, { backgroundColor: glassBg, borderColor: glassBorder }, style]}>
+      <LinearGradient colors={["#2a7bff","#12b5c9"]} style={s.emptyGrad}>
+        <Image source={require("@/assets/images/aribot-mark.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
+      </LinearGradient>
+    </Animated.View>
+  );
+}
+
+function RecordingDot() {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(withTiming(0.25, { duration: 500 }), withTiming(1, { duration: 500 })),
+      -1
+    );
+  }, [opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[s.recDot, style]} />;
+}
+
 function HeaderContent({ txt, txt2, isDark, messages, clearChat, onShowCapabilities, onShowHistory, onToggleTheme }: any) {
   const hit = { top: 8, bottom: 8, left: 8, right: 8 };
   return (
@@ -459,35 +587,65 @@ function HeaderContent({ txt, txt2, isDark, messages, clearChat, onShowCapabilit
   );
 }
 
-function InputRow({ input, setInput, isStreaming, onSend, isDark, glassBorder, inputBg, txt, txt2 }: any) {
+function InputRow({ input, setInput, isStreaming, onSend, isDark, glassBorder, inputBg, txt, txt2,
+  attachments, onRemoveAttachment, onPickImage, onToggleRecording, isRecording, isTranscribing }: any) {
+  const canSend = !isStreaming && (input.trim() || attachments?.length);
   return (
-    <View style={s.inputRow}>
-      <TextInput
-        style={[s.inputField, { backgroundColor: inputBg, color: txt, borderColor: glassBorder }]}
-        value={input}
-        onChangeText={setInput}
-        placeholder="Ask a clinical question..."
-        placeholderTextColor={isDark ? "#68798c" : "#93a2b1"}
-        multiline
-        maxLength={2000}
-        returnKeyType="default"
-      />
-      <TouchableOpacity
-        onPress={onSend}
-        disabled={isStreaming || !input.trim()}
-        activeOpacity={0.8}
-        style={[(isStreaming || !input.trim()) && { opacity: 0.45 }]}
-      >
-        <LinearGradient
-          colors={["#2a7bff","#12b5c9"]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={s.sendBtn}
+    <View>
+      {attachments?.length ? (
+        <View style={s.attachRow}>
+          {attachments.map((a: any, i: number) => (
+            <Animated.View key={i} entering={FadeIn.duration(200)} style={s.attachChip}>
+              <Image source={{ uri: a.uri }} style={s.attachThumb} resizeMode="cover" />
+              <TouchableOpacity style={s.attachRemove} onPress={() => onRemoveAttachment(i)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <Feather name="x" size={11} color="#fff" />
+              </TouchableOpacity>
+            </Animated.View>
+          ))}
+        </View>
+      ) : null}
+      {isRecording ? (
+        <View style={s.recBanner}>
+          <RecordingDot />
+          <Text style={{ color: txt2, fontSize: 12, fontFamily: "Inter_500Medium" }}>Listening... tap the mic to finish</Text>
+        </View>
+      ) : null}
+      <View style={s.inputRow}>
+        <TouchableOpacity onPress={onPickImage} disabled={isStreaming} style={s.utilBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel="Attach image">
+          <Feather name="image" size={20} color={txt2} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onToggleRecording} disabled={isStreaming} style={s.utilBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel="Voice input">
+          {isTranscribing
+            ? <ActivityIndicator size="small" color={txt2} />
+            : <Feather name="mic" size={20} color={isRecording ? "#e5484d" : txt2} />}
+        </TouchableOpacity>
+        <TextInput
+          style={[s.inputField, { backgroundColor: inputBg, color: txt, borderColor: isRecording ? "#e5484d" : glassBorder }]}
+          value={input}
+          onChangeText={setInput}
+          placeholder={isRecording ? "Listening..." : "Ask a clinical question..."}
+          placeholderTextColor={isDark ? "#68798c" : "#93a2b1"}
+          multiline
+          maxLength={2000}
+          returnKeyType="default"
+        />
+        <TouchableOpacity
+          onPress={onSend}
+          disabled={!canSend}
+          activeOpacity={0.8}
+          style={[!canSend && { opacity: 0.45 }]}
         >
-          {isStreaming
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <Feather name="send" size={18} color="#fff" />}
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={["#2a7bff","#12b5c9"]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={s.sendBtn}
+          >
+            {isStreaming
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Feather name="send" size={18} color="#fff" />}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -548,6 +706,15 @@ const s = StyleSheet.create({
   capExample: { flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1 },
   capExampleText: { flex: 1, fontSize: 12.5, fontFamily: "Inter_400Regular", lineHeight: 17 },
   historyRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, padding: 14, gap: 12 },
+  msgImageRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 6 },
+  msgImage: { width: 120, height: 120, borderRadius: 12 },
+  attachRow: { flexDirection: "row", gap: 8, paddingHorizontal: 14, paddingTop: 10 },
+  attachChip: { width: 54, height: 54, borderRadius: 12, overflow: "hidden" },
+  attachThumb: { width: "100%", height: "100%" },
+  attachRemove: { position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, backgroundColor: "rgba(0,0,0,0.65)", alignItems: "center", justifyContent: "center" },
+  recBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 18, paddingTop: 10 },
+  recDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#e5484d" },
+  utilBtn: { width: 38, height: 46, alignItems: "center", justifyContent: "center", alignSelf: "flex-end" },
   historyTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   historyMeta: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   sendBtn: { width: 46, height: 46, borderRadius: 16, alignItems: "center", justifyContent: "center", alignSelf: "flex-end", shadowColor: "rgba(30,90,200,0.4)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 1, shadowRadius: 16, elevation: 6 },
