@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -69,15 +70,17 @@ export default function HomeScreen() {
             <Text style={[styles.specialty, { color: colors.primary }]}>{user.specialty}</Text>
           ) : null}
         </View>
-        <TouchableOpacity
-          style={[styles.avatarCircle, { backgroundColor: colors.accent }]}
-          onPress={() => router.push("/(tabs)/more")}
-        >
-          {user?.avatarUrl ? (
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <Feather name="user" size={22} color={colors.primary} />
-          )}
+        <TouchableOpacity onPress={() => router.push("/(tabs)/more")} activeOpacity={0.8}>
+          <LinearGradient colors={["#2a7bff", "#12b5c9"]} style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>
+              {(user?.name || "Dr")
+                .split(" ")
+                .filter((w: string) => w.match(/^[A-Z]/))
+                .slice(0, 2)
+                .map((w: string) => w[0])
+                .join("")}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -230,7 +233,7 @@ function createStyles(colors: any, insets: any, isWeb: boolean) {
     userName: { fontSize: 24, fontWeight: "700" as const, fontFamily: "Inter_700Bold", marginTop: 2 },
     specialty: { fontSize: 13, fontFamily: "Inter_500Medium", marginTop: 2 },
     avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-    avatar: { width: 44, height: 44 },
+    avatarInitials: { color: "#fff", fontSize: 16, fontWeight: "700", fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
     ariCard: { borderRadius: 16, padding: 20, marginBottom: 20 },
     ariCardContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     ariCardLeft: { flex: 1 },
