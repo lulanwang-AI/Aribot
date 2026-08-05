@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,8 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Animated,
-  Easing,
   RefreshControl,
   Platform,
 } from "react-native";
@@ -31,24 +29,6 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const isWeb = Platform.OS === "web";
 
-  // Floating logo animation
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: -10, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    ).start();
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotateAnim, { toValue: 1, duration: 3200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(rotateAnim, { toValue: 0, duration: 3200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-  const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ["-4deg", "4deg"] });
 
   const { data: triage, isLoading: triageLoading, refetch } = useQuery({
     queryKey: ["home-triage"],
@@ -108,9 +88,9 @@ export default function HomeScreen() {
             <Text style={styles.ariCardTitle}>Clinical Assistant</Text>
             <Text style={styles.ariCardDesc}>Evidence-based decision support</Text>
           </View>
-          <Animated.Image
+          <Image
             source={require("@/assets/images/aribot-mark.png")}
-            style={[styles.ariCardImage, { transform: [{ translateY: floatAnim }, { rotate }] }]}
+            style={styles.ariCardImage}
             resizeMode="contain"
           />
         </View>

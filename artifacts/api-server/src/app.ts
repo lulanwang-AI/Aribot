@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { fileURLToPath } from "url";
 import { logger } from "./lib/logger";
 import { setupAuth, registerAuthRoutes } from "./auth-setup";
 import { registerRoutes } from "./routes/routes";
@@ -33,6 +35,10 @@ app.use(
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static assets (e.g. generated avatars)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/api/assets", express.static(path.join(__dirname, "../public")));
 
 setupAuth(app);
 registerAuthRoutes(app);

@@ -752,7 +752,7 @@ export function seedAllData() {
     rankingScore: 91,
     badges: ["Top Contributor","Research Leader","Grand Rounds Speaker"],
     bio: "Board-certified Infectious Disease specialist in Kentfield, CA with 21 years of clinical experience. Graduate of Ross University School of Medicine. Expertise in HIV/AIDS, antimicrobial stewardship, and travel medicine. Also fluent in Khmer.",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ChetChea&mouth[]=smile&eyes[]=happy&eyebrows[]=defaultNatural&top[]=shortHairShortFlat&clothing[]=blazerAndShirt&skinColor[]=d08b5b&backgroundColor=b6e3f4",
+    avatarUrl: "/api/assets/avatars/avatar-chet-chea.jpg",
     credential: "MD",
   };
 
