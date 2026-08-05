@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -76,13 +76,16 @@ export default function MoreScreen() {
         onPress={() => router.push("/account")}
         activeOpacity={0.8}
       >
-        <View style={[styles.avatarWrap, { backgroundColor: colors.accent }]}>
-          {user?.avatarUrl ? (
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <Feather name="user" size={26} color={colors.primary} />
-          )}
-        </View>
+        <LinearGradient colors={["#2a7bff", "#12b5c9"]} style={styles.avatarWrap}>
+          <Text style={styles.avatarInitials}>
+            {(user?.name || "Dr")
+              .split(" ")
+              .filter(w => w.match(/^[A-Z]/))
+              .slice(0, 2)
+              .map(w => w[0])
+              .join("")}
+          </Text>
+        </LinearGradient>
         <View style={styles.profileInfo}>
           <Text style={[styles.profileName, { color: colors.foreground }]}>{user?.name || "Doctor"}</Text>
           <Text style={[styles.profileSpecialty, { color: colors.mutedForeground }]}>
@@ -143,7 +146,7 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: 24, fontWeight: "700" as const, fontFamily: "Inter_700Bold", marginBottom: 4 },
   profileCard: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 16, borderWidth: 1, gap: 14 },
   avatarWrap: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  avatar: { width: 56, height: 56 },
+  avatarInitials: { color: "#fff", fontSize: 20, fontWeight: "700", fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
   profileInfo: { flex: 1, gap: 2 },
   profileName: { fontSize: 17, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
   profileSpecialty: { fontSize: 13, fontFamily: "Inter_500Medium" },

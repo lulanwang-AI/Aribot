@@ -10,6 +10,7 @@ import {
   Platform,
   useColorScheme,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -246,7 +247,7 @@ export default function AriScreen() {
           {/* Glass logo chip */}
           <View style={[s.emptyIcon, { backgroundColor: glassBg, borderColor: glassBorder }]}>
             <LinearGradient colors={["#2a7bff","#12b5c9"]} style={s.emptyGrad}>
-              <Feather name="cpu" size={30} color="#fff" />
+              <Image source={require("@/assets/images/aribot-mark.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
             </LinearGradient>
           </View>
           <Text style={[s.emptyTitle, { color: txt }]}>Ask Ari</Text>
