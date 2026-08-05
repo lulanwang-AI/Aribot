@@ -14,21 +14,39 @@ export default function Login({ onLogin, onNavigateToLanding }: { onLogin: () =>
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  async function signIn(loginEmail: string, loginPassword: string) {
+    await apiRequest("POST", "/api/auth/login", {
+      email: loginEmail,
+      password: loginPassword,
+    });
+    localStorage.setItem("aribot_authenticated", "true");
+    onLogin();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
     setLoading(true);
     try {
-      await apiRequest("POST", "/api/auth/login", {
-        email: email || "doctor@aribots.local",
-        password: password || "demo",
-      });
-      localStorage.setItem("aribot_authenticated", "true");
-      onLogin();
+      await signIn(email || "doctor@aribots.local", password || "demo");
     } catch (err: any) {
       setErrorMsg(err?.message?.replace(/^\d+:\s*/, "") || "Sign-in failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDemo() {
+    setErrorMsg(null);
+    setDemoLoading(true);
+    try {
+      await signIn("doctor@aribots.local", "demo");
+    } catch (err: any) {
+      setErrorMsg(err?.message?.replace(/^\d+:\s*/, "") || "Demo sign-in failed.");
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -83,6 +101,21 @@ export default function Login({ onLogin, onNavigateToLanding }: { onLogin: () =>
               </div>
               <Button type="submit" className="w-full bg-white text-[#5f6360] hover:bg-white/90 font-semibold" disabled={loading} data-testid="button-login">
                 {loading ? "Signing in..." : "Sign In"}
+              </Button>
+              <div className="relative flex items-center gap-2 py-1">
+                <div className="flex-1 h-px bg-white/20" />
+                <span className="text-[10px] uppercase tracking-wide text-white/50">or</span>
+                <div className="flex-1 h-px bg-white/20" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDemo}
+                className="w-full bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white font-semibold"
+                disabled={demoLoading || loading}
+                data-testid="button-demo"
+              >
+                {demoLoading ? "Entering demo..." : "Try the Demo"}
               </Button>
               {errorMsg && (
                 <p className="text-[11px] text-red-200 text-center" data-testid="text-login-error">
