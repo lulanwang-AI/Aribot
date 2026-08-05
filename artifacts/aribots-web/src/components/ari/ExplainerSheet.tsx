@@ -120,26 +120,36 @@ const SECTIONS: Section[] = [
 
 interface ExplainerSheetProps {
   trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ExplainerSheet({ trigger }: ExplainerSheetProps) {
-  const [open, setOpen] = useState(false);
+export function ExplainerSheet({ trigger, open: controlledOpen, onOpenChange }: ExplainerSheetProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {trigger ?? (
-          <Button
-            variant="outline"
-            size="sm"
-            data-testid="button-ari-explainer"
-            aria-label="What can Ari do?"
-            title="What can Ari do?"
-          >
-            <Info className="h-4 w-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">What Ari can do</span>
-          </Button>
-        )}
-      </SheetTrigger>
+      {!isControlled && (
+        <SheetTrigger asChild>
+          {trigger ?? (
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="button-ari-explainer"
+              aria-label="What can Ari do?"
+              title="What can Ari do?"
+            >
+              <Info className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">What Ari can do</span>
+            </Button>
+          )}
+        </SheetTrigger>
+      )}
       <SheetContent
         side="right"
         className="w-full overflow-y-auto sm:max-w-lg"

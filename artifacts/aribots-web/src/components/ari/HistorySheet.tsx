@@ -33,7 +33,12 @@ import { cn } from "@/lib/utils";
 import { useAriStore, type AriTab } from "@/stores/ariStore";
 import { getCapability } from "@shared/ari/capabilities";
 
-export function HistorySheet() {
+interface HistorySheetProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function HistorySheet({ open: controlledOpen, onOpenChange }: HistorySheetProps) {
   const tabs = useAriStore((s) => s.tabs);
   const activeTabId = useAriStore((s) => s.activeTabId);
   const switchTab = useAriStore((s) => s.switchTab);
@@ -42,7 +47,13 @@ export function HistorySheet() {
   const renameTab = useAriStore((s) => s.renameTab);
   const clearHistory = useAriStore((s) => s.clearHistory);
 
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
 
@@ -78,26 +89,28 @@ export function HistorySheet() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          data-testid="button-ari-history"
-          aria-label="Open chat history"
-          title="Chat history"
-        >
-          <HistoryIcon className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">History</span>
-          {sorted.length > 0 && (
-            <span
-              className="ml-1 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground sm:ml-1.5"
-              data-testid="badge-history-count"
-            >
-              {sorted.length}
-            </span>
-          )}
-        </Button>
-      </SheetTrigger>
+      {!isControlled && (
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="button-ari-history"
+            aria-label="Open chat history"
+            title="Chat history"
+          >
+            <HistoryIcon className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">History</span>
+            {sorted.length > 0 && (
+              <span
+                className="ml-1 rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground sm:ml-1.5"
+                data-testid="badge-history-count"
+              >
+                {sorted.length}
+              </span>
+            )}
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 p-0 sm:max-w-md"

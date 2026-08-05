@@ -488,7 +488,7 @@ export const useAriStore = create<AriState>()(
       // v3 → capability is now optional.
       // v4 → chat history persists across browser sessions (localStorage)
       //      and each tab gains an `updatedAt` field for History sorting.
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => localStorage),
       // Persist tabs (minus heavy attachment blobs). Cap at MAX_HISTORY_TABS
       // to keep localStorage from ballooning indefinitely. Mirror fields
@@ -528,6 +528,13 @@ export const useAriStore = create<AriState>()(
             ...t,
             updatedAt: t.updatedAt ?? t.sessionStartedAt ?? Date.now(),
           }));
+        }
+        if (fromVersion < 5) {
+          // ER mode was removed from the product — coerce any persisted
+          // ER tabs back to standard Ari mode.
+          tabs = tabs.map((t: any) =>
+            t.mode === "er" ? { ...t, mode: "ari" } : t
+          );
         }
         return { ...p, tabs } as any;
       },
