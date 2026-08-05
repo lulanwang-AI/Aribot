@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Image, Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 export default function TabLayout() {
@@ -77,25 +77,18 @@ export default function TabLayout() {
         name="ari"
         options={{
           title: "Ari",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="cpu" tintColor={color} size={24} />
-            ) : (
-              <Feather name="cpu" size={22} color={color} />
-            ),
+          tabBarIcon: () => (
+            <Image
+              source={require("@/assets/images/aribot-mark.png")}
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="triage"
-        options={{
-          title: "Triage",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="cross.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="alert-circle" size={22} color={color} />
-            ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="community"

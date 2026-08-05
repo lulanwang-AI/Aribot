@@ -145,7 +145,7 @@ export default function AriScreen() {
   const txt2 = isDark ? "#9db0c2" : "#5a6c7d";
   const glassBg = isDark ? "rgba(28,44,64,0.55)" : "rgba(255,255,255,0.52)";
   const glassBorder = isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)";
-  const inputBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)";
+  const inputBg = isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.88)";
   const primary = isDark ? "#4a90ff" : "#1e6bff";
 
   async function sendMessage(text?: string) {
