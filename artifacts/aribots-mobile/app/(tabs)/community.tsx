@@ -17,34 +17,19 @@ import { useColors } from "@/hooks/useColors";
 import { apiGet, apiPost } from "@/lib/api";
 import * as Haptics from "expo-haptics";
 
-type Tab = "news" | "groups" | "events";
+type Tab = "events";
 
 export default function CommunityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const [activeTab, setActiveTab] = useState<Tab>("news");
+  const [activeTab] = useState<Tab>("events");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: isWeb ? 67 : insets.top + 4, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Community</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Events</Text>
       </View>
-      <View style={[styles.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {(["news","groups","events"] as Tab[]).map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
-            onPress={() => { setActiveTab(tab); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <Text style={[styles.tabText, { color: activeTab === tab ? colors.primary : colors.mutedForeground }]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {activeTab === "news" && <NewsTab colors={colors} insets={insets} isWeb={isWeb} />}
-      {activeTab === "groups" && <GroupsTab colors={colors} insets={insets} isWeb={isWeb} />}
       {activeTab === "events" && <EventsTab colors={colors} insets={insets} isWeb={isWeb} />}
     </View>
   );

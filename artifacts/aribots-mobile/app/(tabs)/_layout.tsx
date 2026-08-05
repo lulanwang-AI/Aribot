@@ -100,14 +100,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: "Community",
+          title: "Events",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={24} />
+              <SymbolView name="calendar" tintColor={color} size={24} />
             ) : (
-              <Feather name="users" size={22} color={color} />
+              <Feather name="calendar" size={22} color={color} />
             ),
         }}
+      />
+      <Tabs.Screen
+        name="news"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="more"
