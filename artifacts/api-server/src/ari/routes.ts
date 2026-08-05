@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ZodError } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "./client";
-import { ARI_MODEL_ID, ARI_SYSTEM_PROMPT, MCP_SERVERS } from "./config";
+import { getAriAgentConfig } from "./agentSync";
 import { AriRequestSchema, type AriAttachment } from "./schema";
 import {
   ARI_GUEST_USER_ID,
@@ -187,7 +187,8 @@ router.post("/chat", requireAriClinician, async (req, res) => {
 
   const userContent = [...attachmentBlocks, payloadBlock];
 
-  const systemPrompt = ARI_SYSTEM_PROMPT + buildClinicianPromptAddendum(licenseType as any);
+  const agentConfig = await getAriAgentConfig();
+  const systemPrompt = agentConfig.system + buildClinicianPromptAddendum(licenseType as any);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -228,14 +229,14 @@ router.post("/chat", requireAriClinician, async (req, res) => {
     // attaching MCP servers there — Anthropic still lists tools at request
     // time and a flaky/rate-limited MCP would otherwise fail the whole turn.
     const requestBody: Anthropic.Beta.Messages.MessageCreateParamsStreaming = {
-      model: ARI_MODEL_ID,
+      model: agentConfig.model,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
         { role: "user", content: userContent as Anthropic.Beta.BetaContentBlockParam[] },
       ],
       stream: true,
-      ...(mode !== "er" ? { mcp_servers: MCP_SERVERS } : {}),
+      ...(mode !== "er" ? { mcp_servers: agentConfig.mcpServers } : {}),
     };
     const stream = await anthropic.beta.messages.create(requestBody, {
       headers: { "anthropic-beta": betaHeaders },
