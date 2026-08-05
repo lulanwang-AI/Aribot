@@ -116,37 +116,75 @@ function extractErrorHint(raw: string): string {
   return String(txt).replace(/\s+/g, " ").trim().slice(0, 140);
 }
 
+/** Strip Ari structured-block markup so text reads naturally aloud. */
 export function stripAriMarkup(text: string): string {
   return text
-    .replace(/<ari_section title="([^"]*)">/g, "$1. ")
-    .replace(/<ari_citation source="([^"]*)"[^>]*>/g, "$1: ")
-    .replace(/<\/?ari_[a-z_]+[^>]*>/g, " ")
+    .replace(/\{"ari_section"[^}]*\}/g, "")
+    .replace(/\{"ari_claim"[^}]*\}/g, "")
+    .replace(/\{"ari_citation"[^}]*\}/g, "")
+    .replace(/\{"ari_step"[^}]*\}/g, "")
     .replace(/[ \t]+/g, " ")
     .replace(/\s*\n\s*/g, "\n")
     .trim();
 }
 
+/** Shared TTS helper used by both the web and mobile voice routes. */
+export async function synthesizeSpeech(
+  text: string,
+  voiceId?: string,
+): Promise<{ ok: true; audio: Buffer } | { ok: false; status: number; message: string }> {
+  const voice =
+    typeof voiceId === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(voiceId)
+      ? voiceId
+      : DEFAULT_VOICE_ID;
+  try {
+    const elevenResp = await proxyWithRetry(
+      "elevenlabs",
+      `/v1/text-to-speech/${voice}`,
+      () => ({
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "audio/mpeg" },
+        body: JSON.stringify({
+          text,
+          model_id: DEFAULT_TTS_MODEL,
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        }),
+      }),
+    );
+    if (!elevenResp.ok) {
+      const raw = await elevenResp.text().catch(() => "");
+      console.error("[ari/voice/tts] ElevenLabs error:", elevenResp.status, extractErrorHint(raw) || "(no body)");
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : "Voice provider is temporarily unavailable. Please try again.";
+      return { ok: false, status: 502, message: friendly };
+    }
+    const audio = Buffer.from(await elevenResp.arrayBuffer());
+    return { ok: true, audio };
+  } catch (err: any) {
+    const msg = err?.message || "unknown error";
+    console.error("[ari/voice/tts] failure:", msg);
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
+    return { ok: false, status: 502, message: friendly };
+  }
+}
+
 // POST /api/ari/voice/tts → audio/mpeg
-// Accepts { text, voiceId? }. ari_* markup is stripped before synthesis so
-// Ari's structured blocks read naturally.
 ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
-  const { text, voiceId } = (req.body ?? {}) as {
-    text?: unknown;
-    voiceId?: unknown;
-  };
-  if (typeof text !== "string" || !text.trim()) {
+  const { text, voiceId } = (req.body ?? {}) as { text?: unknown; voiceId?: unknown };
+  if (typeof text !== "string" || text.trim().length === 0) {
     return res.status(400).json({ message: "Missing text." });
   }
-  const clean = stripAriMarkup(text);
-  if (clean.length > MAX_TTS_CHARS) {
-    return res
-      .status(413)
-      .json({ message: "Text is too long for speech synthesis." });
+  if (text.length > MAX_TTS_CHARS) {
+    return res.status(413).json({ message: `Text too long (max ${MAX_TTS_CHARS} chars).` });
   }
-  const result = await synthesizeSpeech(
-    clean,
-    typeof voiceId === "string" ? voiceId : undefined,
-  );
+  const clean = stripAriMarkup(text);
+  const result = await synthesizeSpeech(clean, typeof voiceId === "string" ? voiceId : undefined);
   if (!result.ok) return res.status(result.status).json({ message: result.message });
   res.setHeader("Content-Type", "audio/mpeg");
   res.setHeader("Content-Length", result.audio.length.toString());
@@ -262,9 +300,16 @@ ariVoiceRouter.post(
         elevenResp.status,
         hint || "(no body)"
       );
-    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
-      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
-      : "Voice provider is temporarily unavailable. Please try again.";
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : elevenResp.status === 413
+              ? "Recording is too long for the transcription provider."
+              : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
+                ? "Voice provider is temporarily unavailable. Please try again."
+                : "Speech-to-text provider error.";
       return res.status(502).json({ message: friendly });
     }
 
@@ -285,67 +330,3 @@ ariVoiceRouter.post(
   }
   }
 );
-
-export async function synthesizeSpeech(
-  text: string,
-  voiceId?: string,
-): Promise<{ ok: true; audio: Buffer } | { ok: false; status: number; message: string }> {
-  const voice =
-    typeof voiceId === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(voiceId)
-      ? voiceId
-      : DEFAULT_VOICE_ID;
-
-  try {
-    const elevenResp = await proxyWithRetry(
-      "elevenlabs",
-      `/v1/text-to-speech/${voice}`,
-      () => ({
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({
-          text,
-          model_id: DEFAULT_TTS_MODEL,
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-        }),
-      }),
-    );
-
-    if (!elevenResp.ok) {
-      // Capture body for log diagnosis (rate limits, voice not found, proxy
-      // errors, etc.) but never echo it back to the client.
-      const raw = await elevenResp.text().catch(() => "");
-      const hint = extractErrorHint(raw);
-      console.error(
-        "[ari/voice/tts] ElevenLabs error status:",
-        elevenResp.status,
-        hint || "(no body)"
-      );
-      const friendly =
-        elevenResp.status === 401 || elevenResp.status === 403
-          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
-          : elevenResp.status === 429
-            ? "Voice provider is rate-limited. Wait a moment and try again."
-            : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
-              ? "Voice provider is temporarily unavailable. Please try again."
-              : "Text-to-speech provider error.";
-      return { ok: false, status: 502, message: friendly };
-    }
-
-    const audio = Buffer.from(await elevenResp.arrayBuffer());
-    return { ok: true, audio };
-  } catch (err: any) {
-    // proxyWithRetry rethrows when both attempts threw (network/transport
-    // outage, no Response object). Map that to the same friendly 502 the
-    // upstream-5xx path uses so the client sees a consistent "temporarily
-    // unavailable" message instead of a misleading internal-error code.
-    const msg = err?.message || "unknown error";
-    console.error("[ari/voice/tts] failure:", msg);
-    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
-      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
-      : "Voice provider is temporarily unavailable. Please try again.";
-    return { ok: false, status: 502, message: friendly };
-  }
-}

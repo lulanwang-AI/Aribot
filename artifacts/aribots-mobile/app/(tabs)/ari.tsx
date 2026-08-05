@@ -18,17 +18,15 @@ import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync } from "expo-audio";
+import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync, createAudioPlayer, type AudioPlayer } from "expo-audio";
 import Animated, { FadeInDown, FadeIn, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
-import { streamAriChat, transcribeAriAudio, AriImageAttachment } from "@/lib/api";
+import { streamAriChat, transcribeAriAudio, synthesizeAriSpeech, AriImageAttachment } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { ARI_CAPABILITIES } from "@/constants/ariCapabilities";
 import { AriSession, loadSessions, saveSession, deleteSession } from "@/lib/ariHistory";
 import * as Haptics from "expo-haptics";
-import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync, createAudioPlayer, type AudioPlayer } from "expo-audio";
-import { streamAriChat, transcribeAriAudio, synthesizeAriSpeech, AriImageAttachment } from "@/lib/api";
 
 type MessageRole = "user" | "assistant";
 
