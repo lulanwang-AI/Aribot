@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const TOKEN_KEY = "aribots_jwt_token";
 const BASE_URL_KEY = "aribots_base_url";
@@ -158,4 +159,39 @@ export async function transcribeAriAudio(uri: string, mimeType: string): Promise
   }
   const data = await res.json();
   return (data.text || "").trim();
+}
+
+export async function synthesizeAriSpeech(text: string): Promise<string> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${getBaseUrl()}/api/mobile/ari/voice/tts`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  if (Platform.OS === "web") {
+    return URL.createObjectURL(blob);
+  }
+  // Native: expo-audio can't play blob URIs, so persist the MP3 to the app
+  // cache and hand back a file:// URI.
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = String(reader.result || "");
+      const idx = result.indexOf(",");
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(new Error("Failed to read audio data."));
+    reader.readAsDataURL(blob);
+  });
+  const FileSystem = await import("expo-file-system/legacy");
+  const fileUri = `${FileSystem.cacheDirectory}ari-tts-${Date.now()}.mp3`;
+  await FileSystem.writeAsStringAsync(fileUri, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return fileUri;
 }

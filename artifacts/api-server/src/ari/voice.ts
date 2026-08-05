@@ -116,78 +116,49 @@ function extractErrorHint(raw: string): string {
   return String(txt).replace(/\s+/g, " ").trim().slice(0, 140);
 }
 
-// POST /api/ari/voice/tts → audio/mpeg stream
-ariVoiceRouter.post("/voice/tts", requireAriClinician, async (req, res) => {
+export function stripAriMarkup(text: string): string {
+  return text
+    .replace(/<ari_section title="([^"]*)">/g, "$1. ")
+    .replace(/<ari_citation source="([^"]*)"[^>]*>/g, "$1: ")
+    .replace(/<\/?ari_[a-z_]+[^>]*>/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .trim();
+}
   const { text, voiceId } = (req.body ?? {}) as {
     text?: unknown;
     voiceId?: unknown;
   };
 
-  if (typeof text !== "string" || text.trim().length === 0) {
-    return res.status(400).json({ message: "Missing text." });
-  }
-  if (text.length > MAX_TTS_CHARS) {
-    return res
-      .status(413)
-      .json({ message: `Text too long (max ${MAX_TTS_CHARS} chars).` });
-  }
-
-  const voice =
-    typeof voiceId === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(voiceId)
-      ? voiceId
-      : DEFAULT_VOICE_ID;
-
-  try {
+  const result = await synthesizeSpeech(
+    text,
+    typeof voiceId === "string" ? voiceId : undefined,
+  );
     const elevenResp = await proxyWithRetry(
       "elevenlabs",
-      `/v1/text-to-speech/${voice}`,
+      "/v1/speech-to-text",
       () => ({
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({
-          text,
-          model_id: DEFAULT_TTS_MODEL,
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-        }),
+        body: buildForm(),
       }),
     );
 
     if (!elevenResp.ok) {
-      // Capture body for log diagnosis (rate limits, voice not found, proxy
-      // errors, etc.) but never echo it back to the client.
+      // Pull a short error hint from upstream so the user can actually see
+      // what went wrong (rate limit, unauthorized, bad audio, etc.). We
+      // sanitize and bound it so we never echo audio metadata back.
       const raw = await elevenResp.text().catch(() => "");
       const hint = extractErrorHint(raw);
       console.error(
-        "[ari/voice/tts] ElevenLabs error status:",
+        "[ari/voice/stt] ElevenLabs error status:",
         elevenResp.status,
         hint || "(no body)"
       );
-      const friendly =
-        elevenResp.status === 401 || elevenResp.status === 403
-          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
-          : elevenResp.status === 429
-            ? "Voice provider is rate-limited. Wait a moment and try again."
-            : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
-              ? "Voice provider is temporarily unavailable. Please try again."
-              : "Text-to-speech provider error.";
-      return res.status(502).json({ message: friendly });
-    }
-
-    const buf = Buffer.from(await elevenResp.arrayBuffer());
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Content-Length", buf.length.toString());
-    res.setHeader("Cache-Control", "no-store");
-    return res.send(buf);
-  } catch (err: any) {
-    // proxyWithRetry rethrows when both attempts threw (network/transport
-    // outage, no Response object). Map that to the same friendly 502 the
-    // upstream-5xx path uses so the client sees a consistent "temporarily
-    // unavailable" message instead of a misleading internal-error code.
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
     const msg = err?.message || "unknown error";
-    console.error("[ari/voice/tts] failure:", msg);
+    console.error("[ari/voice/stt] failure:", msg);
     const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
       ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
       : "Voice provider is temporarily unavailable. Please try again.";
@@ -303,16 +274,9 @@ ariVoiceRouter.post(
         elevenResp.status,
         hint || "(no body)"
       );
-      const friendly =
-        elevenResp.status === 401 || elevenResp.status === 403
-          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
-          : elevenResp.status === 429
-            ? "Voice provider is rate-limited. Wait a moment and try again."
-            : elevenResp.status === 413
-              ? "Recording is too long for the transcription provider."
-              : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
-                ? "Voice provider is temporarily unavailable. Please try again."
-                : "Speech-to-text provider error.";
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
       return res.status(502).json({ message: friendly });
     }
 
@@ -333,3 +297,67 @@ ariVoiceRouter.post(
   }
   }
 );
+
+export async function synthesizeSpeech(
+  text: string,
+  voiceId?: string,
+): Promise<{ ok: true; audio: Buffer } | { ok: false; status: number; message: string }> {
+  const voice =
+    typeof voiceId === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(voiceId)
+      ? voiceId
+      : DEFAULT_VOICE_ID;
+
+  try {
+    const elevenResp = await proxyWithRetry(
+      "elevenlabs",
+      `/v1/text-to-speech/${voice}`,
+      () => ({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: DEFAULT_TTS_MODEL,
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        }),
+      }),
+    );
+
+    if (!elevenResp.ok) {
+      // Capture body for log diagnosis (rate limits, voice not found, proxy
+      // errors, etc.) but never echo it back to the client.
+      const raw = await elevenResp.text().catch(() => "");
+      const hint = extractErrorHint(raw);
+      console.error(
+        "[ari/voice/tts] ElevenLabs error status:",
+        elevenResp.status,
+        hint || "(no body)"
+      );
+      const friendly =
+        elevenResp.status === 401 || elevenResp.status === 403
+          ? "Voice provider is not authorized. Re-link the ElevenLabs integration and try again."
+          : elevenResp.status === 429
+            ? "Voice provider is rate-limited. Wait a moment and try again."
+            : elevenResp.status === 502 || elevenResp.status === 503 || elevenResp.status === 504
+              ? "Voice provider is temporarily unavailable. Please try again."
+              : "Text-to-speech provider error.";
+      return { ok: false, status: 502, message: friendly };
+    }
+
+    const audio = Buffer.from(await elevenResp.arrayBuffer());
+    return { ok: true, audio };
+  } catch (err: any) {
+    // proxyWithRetry rethrows when both attempts threw (network/transport
+    // outage, no Response object). Map that to the same friendly 502 the
+    // upstream-5xx path uses so the client sees a consistent "temporarily
+    // unavailable" message instead of a misleading internal-error code.
+    const msg = err?.message || "unknown error";
+    console.error("[ari/voice/tts] failure:", msg);
+    const friendly = /connector|integration|elevenlabs|not connected|unauthor/i.test(msg)
+      ? "ElevenLabs voice provider is not connected. Connect ElevenLabs from the Integrations panel and try again."
+      : "Voice provider is temporarily unavailable. Please try again.";
+    return { ok: false, status: 502, message: friendly };
+  }
+}

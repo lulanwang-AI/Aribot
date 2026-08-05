@@ -8,7 +8,6 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import multer, { MulterError } from "multer";
 import { randomUUID } from "crypto";
-import { transcribeAudioFile } from "../ari/voice";
 import { anthropic } from "../ari/client";
 import { getAriAgentConfig } from "../ari/agentSync";
 import { buildClinicianPromptAddendum } from "../ari/license";
@@ -17,6 +16,7 @@ import type {
   User, TriagePost, Comment, NewsItem, Group, MedEvent,
   ChatThread, ChatMessage, TrainingModule, TelemedConsultation,
 } from "@workspace/db";
+import { transcribeAudioFile, synthesizeSpeech, stripAriMarkup } from "../ari/voice";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "aribots-mobile-jwt-dev-secret";
 
@@ -336,27 +336,27 @@ mobile.post("/auth/login", (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ message: "Email and password required" });
   if (process.env.NODE_ENV === "production") return res.status(401).json({ message: "Auth not configured for production" });
-  const user = store.users.get("mu1") || [...store.users.values()][0];
-  if (!user) return res.status(401).json({ message: "No seed users" });
+  const user = store.users.get(req.params.id);
+  if (!user) return res.status(404).json({ message: "Not found" });
   const { password: _, ...safe } = user;
   const token = signToken({ userId: user.id, username: user.username ?? email });
   return res.json({ token, user: safe });
 });
 
 mobile.get("/auth/me", requireMobileAuth, (req: any, res) => {
-  const user = store.users.get(req.mobileUser.userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+  const user = store.users.get(req.params.id);
+  if (!user) return res.status(404).json({ message: "Not found" });
   const { password: _, ...safe } = user;
   res.json(safe);
 });
 
 mobile.patch("/auth/me", requireMobileAuth, (req: any, res) => {
-  const user = store.users.get(req.mobileUser.userId);
+  const user = store.users.get(req.params.id);
   if (!user) return res.status(404).json({ message: "User not found" });
   const { password: _pw, id: _id, ...updates } = req.body;
-  const updated = { ...user, ...updates };
+    const updated = { ...m, completedBy: [...m.completedBy, uid] };
   store.users.set(user.id, updated);
-  const { password: _, ...safe } = updated;
+  const { password: _, ...safe } = user;
   res.json(safe);
 });
 
@@ -369,18 +369,21 @@ mobile.get("/triage", optionalMobileAuth, (req: any, res) => {
   if (sort === "trending") posts.sort((a, b) => b.likes - a.likes);
   else posts.sort((a, b) => b.createdAt - a.createdAt);
 
-  const uid = req.mobileUser?.userId;
-  const enriched = posts.slice(0, 50).map(p => {
-    const author = !p.anonymous ? store.users.get(p.authorId) : null;
-    return { ...p, author: author ? { id: author.id, name: author.name, specialty: author.specialty, avatarUrl: author.avatarUrl, credential: author.credential } : null, likedByMe: uid ? p.likedBy?.includes(uid) : false };
-  });
+  const uid = req.mobileUser.userId;
+  const enriched = threads.map(t => ({
+    ...t,
+    participants: ((t as any).participantIds || []).map((id: string) => {
+      const u = store.users.get(id);
+      return u ? { id: u.id, name: u.name, avatarUrl: u.avatarUrl, specialty: u.specialty } : null;
+    }).filter(Boolean),
+  }));
   res.json(enriched);
 });
 
 mobile.get("/triage/:id", optionalMobileAuth, (req: any, res) => {
   const post = store.posts.get(req.params.id);
   if (!post) return res.status(404).json({ message: "Post not found" });
-  const uid = req.mobileUser?.userId;
+  const uid = req.mobileUser.userId;
   const author = !post.anonymous ? store.users.get(post.authorId) : null;
   const comments = [...store.comments.values()].filter(c => c.postId === post.id).sort((a, b) => a.createdAt - b.createdAt);
   const enrichedComments = comments.map(c => {
@@ -393,8 +396,8 @@ mobile.get("/triage/:id", optionalMobileAuth, (req: any, res) => {
 mobile.post("/triage", requireMobileAuth, (req: any, res) => {
   const { title, content, tags = [], anonymous = false } = req.body;
   if (!title || !content) return res.status(400).json({ message: "Title and content required" });
-  const id = `mtp${Date.now()}`;
-  const post: TriagePost = { id, title, content, tags, authorId: req.mobileUser.userId, anonymous, likes: 0, likedBy: [], commentCount: 0, images: [], status: "safe", flagged: false, createdAt: Date.now() };
+  const id = `mmsg${Date.now()}`;
+  const post = store.posts.get(req.params.id);
   store.posts.set(id, post);
   res.status(201).json(post);
 });
@@ -404,7 +407,7 @@ mobile.post("/triage/:id/like", requireMobileAuth, (req: any, res) => {
   if (!p) return res.status(404).json({ message: "Not found" });
   const uid = req.mobileUser.userId;
   const liked = p.likedBy?.includes(uid);
-  const updated = { ...p, likes: liked ? p.likes - 1 : p.likes + 1, likedBy: liked ? p.likedBy.filter((id: string) => id !== uid) : [...(p.likedBy || []), uid] };
+    const updated = { ...m, completedBy: [...m.completedBy, uid] };
   store.posts.set(p.id, updated);
   res.json({ likes: updated.likes, likedByMe: !liked });
 });
@@ -412,7 +415,7 @@ mobile.post("/triage/:id/like", requireMobileAuth, (req: any, res) => {
 mobile.post("/triage/:id/comments", requireMobileAuth, (req: any, res) => {
   const { content, anonymous = false, parentId = null } = req.body;
   if (!content) return res.status(400).json({ message: "Content required" });
-  const id = `mc${Date.now()}${Math.random().toString(36).slice(2)}`;
+  const id = `mmsg${Date.now()}`;
   const comment: Comment = { id, postId: req.params.id, authorId: req.mobileUser.userId, content, anonymous, parentId, likes: 0, likedBy: [], flagged: false, createdAt: Date.now() };
   store.comments.set(id, comment);
   const post = store.posts.get(req.params.id);
@@ -423,7 +426,7 @@ mobile.post("/triage/:id/comments", requireMobileAuth, (req: any, res) => {
 // News
 mobile.get("/news", (req, res) => {
   const source = typeof req.query.source === "string" ? req.query.source : undefined;
-  const specialty = typeof req.query.specialty === "string" ? req.query.specialty : undefined;
+  const specialty = typeof req.query.specialty === "string" ? req.query.specialty : "";
   let items = [...store.news.values()].sort((a, b) => b.publishedAt - a.publishedAt);
   if (source) items = items.filter(n => n.source === source);
   if (specialty) items = items.filter(n => n.specialty === specialty);
@@ -467,8 +470,8 @@ mobile.post("/groups/:id/join", requireMobileAuth, (req: any, res) => {
   const g = store.groups.get(req.params.id);
   if (!g) return res.status(404).json({ message: "Not found" });
   const uid = req.mobileUser.userId;
-  if (!g.members.includes(uid)) {
-    const updated = { ...g, members: [...g.members, uid], memberCount: g.memberCount + 1 };
+  if (!m.completedBy.includes(uid)) {
+    const updated = { ...m, completedBy: [...m.completedBy, uid] };
     store.groups.set(g.id, updated);
     return res.json(updated);
   }
@@ -483,13 +486,17 @@ mobile.post("/events/:id/rsvp", requireMobileAuth, (req: any, res) => {
   if (!e) return res.status(404).json({ message: "Not found" });
   const uid = req.mobileUser.userId;
   const rsvped = e.rsvps.includes(uid);
-  const updated = { ...e, rsvps: rsvped ? e.rsvps.filter((id: string) => id !== uid) : [...e.rsvps, uid] };
-  store.events.set(e.id, updated);
-  res.json(updated);
+    const updated = { ...m, completedBy: [...m.completedBy, uid] };
+    store.training.set(m.id, updated);
+    return res.json(updated);
+  }
+  res.json(m);
 });
 
-// Messaging
-mobile.get("/messaging/threads", requireMobileAuth, (req: any, res) => {
+// Telemed
+mobile.get("/telemed", requireMobileAuth, (_req, res) => res.json([...store.telemed.values()]));
+
+mobile.get("/telemed/earnings", requireMobileAuth, (req: any, res) => {
   const uid = req.mobileUser.userId;
   const threads = [...store.threads.values()].filter(t => (t as any).participantIds?.includes(uid));
   const enriched = threads.map(t => ({
@@ -503,7 +510,7 @@ mobile.get("/messaging/threads", requireMobileAuth, (req: any, res) => {
 });
 
 mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req: any, res) => {
-  const thread = store.threads.get(_req.params.id);
+  const thread = store.threads.get(req.params.id);
   if (!thread) return res.status(404).json({ message: "Thread not found" });
   if (!thread.participantIds?.includes(_req.mobileUser.userId)) return res.status(403).json({ message: "Not a participant of this thread" });
   const msgs = [...store.messages.values()].filter(m => m.threadId === _req.params.id).sort((a, b) => a.createdAt - b.createdAt);
@@ -577,9 +584,14 @@ mobile.post("/ari/voice/stt", requireMobileAuth, (req, res, next) => {
   if (!file.mimetype.startsWith("audio/") && file.mimetype !== "video/webm") {
     return res.status(415).json({ message: `Unsupported media type: ${file.mimetype}` });
   }
-  const result = await transcribeAudioFile(file);
+  const result = await synthesizeSpeech(clean, typeof voiceId === "string" ? voiceId : undefined);
+
+const MOBILE_MAX_TTS_CHARS = 4000;
   if (!result.ok) return res.status(result.status).json({ message: result.message });
-  return res.json({ text: result.text });
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Content-Length", result.audio.length.toString());
+  res.setHeader("Cache-Control", "no-store");
+  return res.send(result.audio);
 });
 
 // Ari streaming (optionally with base64 image attachments for vision)
@@ -690,3 +702,7 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
 });
 
 export default mobile;
+
+  const clean = stripAriMarkup(text);
+
+  const { text, voiceId } = (req.body ?? {}) as { text?: unknown; voiceId?: unknown };

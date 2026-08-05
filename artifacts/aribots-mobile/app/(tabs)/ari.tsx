@@ -27,6 +27,8 @@ import { useAuth } from "@/lib/auth";
 import { ARI_CAPABILITIES } from "@/constants/ariCapabilities";
 import { AriSession, loadSessions, saveSession, deleteSession } from "@/lib/ariHistory";
 import * as Haptics from "expo-haptics";
+import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync, createAudioPlayer, type AudioPlayer } from "expo-audio";
+import { streamAriChat, transcribeAriAudio, synthesizeAriSpeech, AriImageAttachment } from "@/lib/api";
 
 type MessageRole = "user" | "assistant";
 
@@ -202,6 +204,9 @@ export default function AriScreen() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const { user } = useAuth();
   const userId = user?.id || "anonymous";
+  const [speech, setSpeech] = useState<{ id: string; status: "loading" | "playing" } | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const speechReqRef = useRef(0);
   const [showCapabilities, setShowCapabilities] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [sessions, setSessions] = useState<AriSession[]>([]);
@@ -389,6 +394,56 @@ export default function AriScreen() {
     );
   }
 
+  const stopSpeech = useCallback(() => {
+    speechReqRef.current += 1;
+    const player = playerRef.current;
+    playerRef.current = null;
+    if (player) {
+      try { player.remove(); } catch {}
+    }
+    setSpeech(null);
+  }, []);
+
+  // Release the audio player when leaving the screen.
+  useEffect(() => stopSpeech, [stopSpeech]);
+
+  const toggleSpeak = useCallback(async (msg: Message) => {
+    if (speech?.id === msg.id) {
+      stopSpeech();
+      return;
+    }
+    stopSpeech();
+    const reqId = speechReqRef.current;
+    setSpeech({ id: msg.id, status: "loading" });
+    try {
+      const uri = await synthesizeAriSpeech(msg.content);
+      if (speechReqRef.current !== reqId) {
+        if (Platform.OS === "web") URL.revokeObjectURL(uri);
+        return; // user cancelled or started another read-aloud meanwhile
+      }
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      const player = createAudioPlayer({ uri });
+      playerRef.current = player;
+      player.addListener("playbackStatusUpdate", (status) => {
+        if (status.didJustFinish && speechReqRef.current === reqId) {
+          if (Platform.OS === "web") URL.revokeObjectURL(uri);
+          stopSpeech();
+        }
+      });
+      player.play();
+      setSpeech({ id: msg.id, status: "playing" });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e: any) {
+      if (speechReqRef.current === reqId) {
+        setSpeech(null);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), role: "assistant",
+          content: e?.message || "Read-aloud failed. Please try again.",
+        }]);
+      }
+    }
+  }, [speech, stopSpeech]);
+
   function clearChat() {
     sessionIdRef.current = Date.now().toString();
     setMessages([]);
@@ -427,11 +482,29 @@ export default function AriScreen() {
         ) : (
           <View style={[s.msgBubble, s.msgBubbleAssistant, { backgroundColor: glassBg, borderColor: glassBorder }]}>
             <AriMessageContent text={item.content} isDark={isDark} isStreaming={!!item.streaming} />
+            {!item.streaming && !!item.content.trim() && (
+              <TouchableOpacity
+                onPress={() => toggleSpeak(item)}
+                style={[s.speakBtn, { borderColor: glassBorder }]}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel={speech?.id === item.id ? "Stop reading aloud" : "Read answer aloud"}
+              >
+                {speech?.id === item.id && speech.status === "loading" ? (
+                  <ActivityIndicator size="small" color={primary} />
+                ) : (
+                  <Feather
+                    name={speech?.id === item.id ? "square" : "volume-2"}
+                    size={15}
+                    color={speech?.id === item.id ? "#e5484d" : primary}
+                  />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </Animated.View>
     );
-  }, [isDark, glassBg, glassBorder]);
+  }, [isDark, glassBg, glassBorder, primary, speech, toggleSpeak]);
 
   const bgColors: [string, string, string] = isDark
     ? ["#0b2e4d", "#081a2c", "#03101d"]
@@ -755,6 +828,7 @@ const s = StyleSheet.create({
   msgBubble: { maxWidth: "82%", borderRadius: 18, padding: 14 },
   msgBubbleUser: { borderBottomRightRadius: 5 },
   msgBubbleAssistant: { borderBottomLeftRadius: 5, borderWidth: 1 },
+  speakBtn: { alignSelf: "flex-start", marginTop: 8, width: 30, height: 30, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   msgText: { fontSize: 15, fontFamily: "Inter_400Regular", lineHeight: 22 },
   msgTextUser: { color: "#fff", fontSize: 15, fontFamily: "Inter_400Regular", lineHeight: 22 },
   sectionBlock: { borderLeftWidth: 3, paddingLeft: 12, paddingVertical: 8, paddingRight: 8, borderRadius: 8, gap: 4 },
