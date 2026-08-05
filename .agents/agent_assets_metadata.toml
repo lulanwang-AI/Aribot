@@ -11,3 +11,10 @@ id = "I955Oe7imG2dWZLUDkJhz"
 uri = "file://dist/ARIbots.zip"
 type = "unspecified"
 title = "ARIbots — Full Project Source"
+
+[[outputs]]
+id = "Uu5Iw_b5PGfTOAZHh98N8"
+uri = "file://screenshots/expo-qr.png"
+type = "image"
+title = "Expo Go QR Code — ARIbots Mobile"
+description = "Scan with Expo Go (Android) or your iPhone Camera app (iOS)"
