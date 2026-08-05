@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const styles = createStyles(colors, insets, isWeb);
 
   const quickActions = [
-    { icon: "cpu", label: "Ari AI", route: "/(tabs)/ari", color: colors.primary },
+    { icon: "cpu", label: "Ari AI", route: "/(tabs)/ari", color: colors.primary, image: require("@/assets/images/aribot-mark.png") },
     { icon: "calendar", label: "Events", route: "/(tabs)/community", color: "#EF4444" },
     { icon: "message-square", label: "Messages", route: "/(tabs)/more", color: "#3B82F6" },
   ];
@@ -112,7 +112,11 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <View style={[styles.quickActionIcon, { backgroundColor: action.color + "18" }]}>
-              <Feather name={action.icon as any} size={20} color={action.color} />
+              {action.image ? (
+                <Image source={action.image} style={{ width: 20, height: 20 }} resizeMode="contain" />
+              ) : (
+                <Feather name={action.icon as any} size={20} color={action.color} />
+              )}
             </View>
             <Text style={[styles.quickActionLabel, { color: colors.foreground }]}>{action.label}</Text>
           </TouchableOpacity>
