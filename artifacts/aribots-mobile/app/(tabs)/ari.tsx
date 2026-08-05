@@ -38,42 +38,88 @@ interface Message {
   imageUris?: string[]; // data URIs shown in the user's bubble
 }
 
+// Parser for Ari's structured block stream — mirrors the web app's parser
+// (artifacts/aribots-web/src/shared/ari/blocks.ts). The managed-agent system
+// prompt instructs the model to interleave JSON blocks (one per line) with
+// Markdown prose:
+//   { "ari_section": "<capability>", "mode": "ari" | "er" }
+//   { "ari_claim": "<text>", "verified": <bool>, "verification_source": "<text>" }
+//   { "ari_citation": "<source>", "doi_or_url": "<url>", "evidence_class": "<class>" }
+//   { "ari_step": <n>, "description": "<text>", "status": "complete|partial|no_result" }
 interface AriBlock {
   type: "section" | "claim" | "step" | "citation" | "text";
   title?: string;
   source?: string;
   content: string;
+  stepNumber?: number;
 }
 
-function parseAriBlocks(text: string): AriBlock[] {
+function tryParseStructuredLine(line: string): AriBlock | null {
+  const t = line.trim();
+  if (!t.startsWith("{") || !t.endsWith("}")) return null;
+  let parsed: any;
+  try {
+    parsed = JSON.parse(t);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+
+  if (typeof parsed.ari_section === "string") {
+    const cap = ARI_CAPABILITIES.find(c => c.id === parsed.ari_section);
+    return { type: "section", title: cap ? cap.displayName : parsed.ari_section, content: "" };
+  }
+  if (typeof parsed.ari_claim === "string") {
+    return { type: "claim", content: parsed.ari_claim, source: typeof parsed.verification_source === "string" ? parsed.verification_source : undefined };
+  }
+  if (typeof parsed.ari_citation === "string") {
+    return { type: "citation", source: parsed.ari_citation, content: typeof parsed.evidence_class === "string" ? parsed.evidence_class : "" };
+  }
+  if (typeof parsed.ari_step === "number") {
+    return { type: "step", stepNumber: parsed.ari_step, content: typeof parsed.description === "string" ? parsed.description : "" };
+  }
+  return null;
+}
+
+function parseCommittedLines(fullText: string, blocks: AriBlock[]): void {
+  const proseBuffer: string[] = [];
+  let proseHadContent = false;
+  const flushProse = () => {
+    while (proseBuffer.length && proseBuffer[proseBuffer.length - 1] === "") proseBuffer.pop();
+    while (proseBuffer.length && proseBuffer[0] === "") proseBuffer.shift();
+    if (proseBuffer.length === 0) { proseBuffer.length = 0; proseHadContent = false; return; }
+    blocks.push({ type: "text", content: proseBuffer.join("\n") });
+    proseBuffer.length = 0;
+    proseHadContent = false;
+  };
+  for (const line of fullText.split("\n")) {
+    const structured = tryParseStructuredLine(line);
+    if (structured) { flushProse(); blocks.push(structured); continue; }
+    if (line.trim().length === 0 && !proseHadContent) continue;
+    proseBuffer.push(line);
+    if (line.trim().length > 0) proseHadContent = true;
+  }
+  flushProse();
+}
+
+/**
+ * Parse an Ari response into ordered blocks. During streaming, only lines
+ * before the last newline are committed to structured parsing — the trailing
+ * fragment is returned raw so a half-arrived JSON line renders as live-typing
+ * text instead of flickering between prose and a block.
+ */
+function parseAriBlocks(text: string, streaming = false): { blocks: AriBlock[]; trailing: string } {
+  if (!streaming) {
+    const blocks: AriBlock[] = [];
+    parseCommittedLines(text, blocks);
+    if (blocks.length === 0 && text.trim()) blocks.push({ type: "text", content: text.trim() });
+    return { blocks, trailing: "" };
+  }
+  const lastNewline = text.lastIndexOf("\n");
+  if (lastNewline === -1) return { blocks: [], trailing: text };
   const blocks: AriBlock[] = [];
-  const patterns = [
-    { type: "section" as const, re: /<ari_section title="([^"]*)">([\s\S]*?)<\/ari_section>/g },
-    { type: "claim" as const, re: /<ari_claim>([\s\S]*?)<\/ari_claim>/g },
-    { type: "step" as const, re: /<ari_step>([\s\S]*?)<\/ari_step>/g },
-    { type: "citation" as const, re: /<ari_citation source="([^"]*)"[^>]*>([\s\S]*?)<\/ari_citation>/g },
-  ];
-  const allMatches: Array<{ index: number; end: number; block: AriBlock }> = [];
-  for (const p of patterns) {
-    const re = new RegExp(p.re.source, "g");
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      if (p.type === "section") allMatches.push({ index: m.index, end: m.index + m[0].length, block: { type: "section", title: m[1], content: m[2].trim() } });
-      else if (p.type === "claim") allMatches.push({ index: m.index, end: m.index + m[0].length, block: { type: "claim", content: m[1].trim() } });
-      else if (p.type === "step") allMatches.push({ index: m.index, end: m.index + m[0].length, block: { type: "step", content: m[1].trim() } });
-      else if (p.type === "citation") allMatches.push({ index: m.index, end: m.index + m[0].length, block: { type: "citation", source: m[1], content: m[2].trim() } });
-    }
-  }
-  allMatches.sort((a, b) => a.index - b.index);
-  let cursor = 0;
-  for (const m of allMatches) {
-    if (m.index > cursor) { const t = text.slice(cursor, m.index).trim(); if (t) blocks.push({ type: "text", content: t }); }
-    blocks.push(m.block);
-    cursor = m.end;
-  }
-  if (cursor < text.length) { const t = text.slice(cursor).trim(); if (t) blocks.push({ type: "text", content: t }); }
-  if (blocks.length === 0 && text.trim()) return [{ type: "text", content: text.trim() }];
-  return blocks;
+  parseCommittedLines(text.slice(0, lastNewline), blocks);
+  return { blocks, trailing: text.slice(lastNewline + 1) };
 }
 
 function AriMessageContent({ text, isDark, isStreaming }: { text: string; isDark: boolean; isStreaming: boolean }) {

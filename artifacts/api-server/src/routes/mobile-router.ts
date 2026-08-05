@@ -9,6 +9,10 @@ import jwt from "jsonwebtoken";
 import multer, { MulterError } from "multer";
 import { randomUUID } from "crypto";
 import { transcribeAudioFile } from "../ari/voice";
+import { anthropic } from "../ari/client";
+import { getAriAgentConfig } from "../ari/agentSync";
+import { buildClinicianPromptAddendum } from "../ari/license";
+import { isActiveCapability, CAPABILITY_REJECTION_MESSAGE } from "../ari/capabilities";
 import type {
   User, TriagePost, Comment, NewsItem, Group, MedEvent,
   ChatThread, ChatMessage, TrainingModule, TelemedConsultation,
@@ -598,6 +602,10 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
   const { query, mode = "ari", capability, images } = req.body;
   const hasImages = Array.isArray(images) && images.length > 0;
   if (!query && !hasImages) return res.status(400).json({ message: "Query is required" });
+  // Same capability gating as the web endpoint so both clients agree.
+  if (typeof capability === "string" && capability && !isActiveCapability(capability)) {
+    return res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE });
+  }
 
   let imageBlocks: any[] = [];
   if (hasImages) {
@@ -637,22 +645,34 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
   }
 
   try {
-    const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const anthropic = new Anthropic({ apiKey: key });
-    const ARI_SYSTEM = `You are Ari, a clinical AI assistant for ARIbots — a doctor-only medical platform. Assist licensed physicians with clinical decision support, differential diagnoses, evidence-based guidelines, and medical literature review.\n\nCRITICAL RULES:\n1. Only assist licensed healthcare professionals\n2. Never provide definitive diagnoses — recommend clinical judgment\n3. Flag patient safety concerns immediately\n4. Use structured format:\n<ari_section title="Assessment">Assessment here</ari_section>\n<ari_claim>Key clinical recommendation</ari_claim>\n<ari_step>Step in workup</ari_step>\n<ari_citation source="NEJM 2024">Citation</ari_citation>\n\nER Mode: When mode is "er", prioritize rapid stabilization and life-threatening diagnoses first.\n\nImages: Messages may include attached clinical images as image content blocks. When image blocks are present, they ARE the uploaded images — analyze them directly; never claim no image was attached.`;
+    // Use the SAME managed-agent configuration as the web Ask Ari pipeline
+    // (system prompt, model, MCP servers) so mobile and web behave alike.
+    // The old mobile-only mini prompt didn't describe the JSON request
+    // envelope or the structured-block output format, which is why mobile
+    // replies came back looking like raw JSON.
+    const agentConfig = await getAriAgentConfig();
+    // Mobile JWT users don't carry a license type yet — default to OTHER,
+    // same fallback the web endpoint uses for unknown clinicians.
+    const systemPrompt = agentConfig.system + buildClinicianPromptAddendum("OTHER" as any);
 
-    const stream = await anthropic.messages.create({
-      model: "claude-opus-4-5",
-      max_tokens: 2048,
-      system: ARI_SYSTEM,
-      messages: [{
-        role: "user",
-        content: imageBlocks.length > 0
-          ? [...imageBlocks, { type: "text", text: JSON.stringify({ mode, capability, query: query || "The image(s) are included in this message, directly above this text. Describe and assess them in a clinical context." }) }]
-          : JSON.stringify({ mode, capability, query }),
-      }],
-      stream: true,
-    });
+    // Same payload envelope the web sends; the system prompt defines it.
+    const payloadBlock = {
+      type: "text" as const,
+      text: JSON.stringify(capability ? { mode, capability, query } : { mode, query }),
+    };
+    const userContent = [...imageBlocks, payloadBlock];
+
+    const stream = await anthropic.beta.messages.create(
+      {
+        model: agentConfig.model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userContent as any }],
+        stream: true,
+        ...(mode !== "er" ? { mcp_servers: agentConfig.mcpServers } : {}),
+      } as any,
+      { headers: { "anthropic-beta": "mcp-client-2025-04-04" } },
+    );
 
     for await (const event of stream) {
       if (event.type === "content_block_delta" && (event as any).delta?.type === "text_delta") {
