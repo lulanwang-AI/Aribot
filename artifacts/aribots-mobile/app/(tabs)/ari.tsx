@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  useColorScheme,
   KeyboardAvoidingView,
   Image,
+  Modal,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -18,6 +19,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { streamAriChat } from "@/lib/api";
+import { useTheme } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
+import { ARI_CAPABILITIES } from "@/constants/ariCapabilities";
+import { AriSession, loadSessions, saveSession, deleteSession } from "@/lib/ariHistory";
 import * as Haptics from "expo-haptics";
 
 type MessageRole = "user" | "assistant";
@@ -131,8 +136,8 @@ const SUGGESTIONS = [
 
 export default function AriScreen() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { scheme, toggle: toggleTheme } = useTheme();
+  const isDark = scheme === "dark";
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
@@ -141,6 +146,33 @@ export default function AriScreen() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const streamingIdRef = useRef<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id || "anonymous";
+  const [showCapabilities, setShowCapabilities] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<AriSession[]>([]);
+  const sessionIdRef = useRef<string>(Date.now().toString());
+
+  useEffect(() => {
+    if (showHistory) loadSessions(userId).then(setSessions);
+  }, [showHistory, userId]);
+
+  function openSession(session: AriSession) {
+    if (isStreaming) return;
+    sessionIdRef.current = session.id;
+    setMessages(session.messages.map(m => ({ ...m })));
+    setShowHistory(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  async function removeSession(id: string) {
+    await deleteSession(userId, id);
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (id === sessionIdRef.current) {
+      sessionIdRef.current = Date.now().toString();
+      setMessages([]);
+    }
+  }
 
   const txt = isDark ? "#eaf2fc" : "#0c1c2c";
   const txt2 = isDark ? "#9db0c2" : "#5a6c7d";
@@ -163,6 +195,11 @@ export default function AriScreen() {
     setMessages(prev => [...prev, assistantMsg]);
     setIsStreaming(true);
 
+    // Snapshot for persistence: capture the session id and message list now so
+    // the save at stream completion is not affected by later navigation.
+    const sessionId = sessionIdRef.current;
+    const baseMsgs = [...messages, userMsg];
+
     let fullText = "";
     await streamAriChat(
       q, "ari", null,
@@ -173,6 +210,18 @@ export default function AriScreen() {
       () => {
         setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, streaming: false } : m));
         setIsStreaming(false);
+        if (fullText.trim()) {
+          const finished = [...baseMsgs, { id: assistantId, role: "assistant" as const, content: fullText }]
+            .filter(m => m.content)
+            .map(({ id, role, content }) => ({ id, role, content }));
+          const firstUser = finished.find(m => m.role === "user");
+          saveSession(userId, {
+            id: sessionId,
+            title: (firstUser?.content || "Conversation").slice(0, 80),
+            updatedAt: Date.now(),
+            messages: finished,
+          }).catch(() => {});
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       },
       (err) => {
@@ -183,6 +232,7 @@ export default function AriScreen() {
   }
 
   function clearChat() {
+    sessionIdRef.current = Date.now().toString();
     setMessages([]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }
@@ -232,11 +282,13 @@ export default function AriScreen() {
       <View style={[s.header, { paddingTop: isWeb ? 67 : insets.top + 8 }]}>
         {isIOS ? (
           <BlurView intensity={60} tint={isDark ? "dark" : "light"} style={[s.headerBlur, { borderBottomColor: glassBorder }]}>
-            <HeaderContent txt={txt} txt2={txt2} glassBg={glassBg} glassBorder={glassBorder} isDark={isDark} messages={messages} clearChat={clearChat} />
+            <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
+              onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
           </BlurView>
         ) : (
           <View style={[s.headerBlur, { backgroundColor: isDark ? "rgba(8,26,44,0.85)" : "rgba(244,249,255,0.85)", borderBottomColor: glassBorder }]}>
-            <HeaderContent txt={txt} txt2={txt2} glassBg={glassBg} glassBorder={glassBorder} isDark={isDark} messages={messages} clearChat={clearChat} />
+            <HeaderContent txt={txt} txt2={txt2} isDark={isDark} messages={messages} clearChat={clearChat}
+              onShowCapabilities={() => setShowCapabilities(true)} onShowHistory={() => setShowHistory(true)} onToggleTheme={toggleTheme} />
           </View>
         )}
       </View>
@@ -303,19 +355,103 @@ export default function AriScreen() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {/* What can Ari do */}
+      <Modal visible={showCapabilities} animationType="slide" transparent onRequestClose={() => setShowCapabilities(false)}>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalSheet, { backgroundColor: isDark ? "#0c2036" : "#f4f9ff", paddingBottom: insets.bottom + 16 }]}>
+            <View style={s.modalHeader}>
+              <Text style={[s.modalTitle, { color: txt }]}>What can Ari do?</Text>
+              <TouchableOpacity onPress={() => setShowCapabilities(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={22} color={txt2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 12 }}>
+              {ARI_CAPABILITIES.map(cap => (
+                <View key={cap.id} style={[s.capCard, { backgroundColor: glassBg, borderColor: glassBorder }]}>
+                  <View style={s.capHeader}>
+                    <LinearGradient colors={["#2a7bff", "#12b5c9"]} style={s.capIcon}>
+                      <Feather name={cap.icon} size={16} color="#fff" />
+                    </LinearGradient>
+                    <Text style={[s.capName, { color: txt }]}>{cap.displayName}</Text>
+                  </View>
+                  <Text style={[s.capDesc, { color: txt2 }]}>{cap.shortDescription}</Text>
+                  {cap.exampleQueries.map((q, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[s.capExample, { borderColor: glassBorder }]}
+                      onPress={() => { setShowCapabilities(false); sendMessage(q); }}
+                      activeOpacity={0.75}
+                    >
+                      <Feather name="arrow-right-circle" size={13} color={primary} style={{ marginRight: 7 }} />
+                      <Text style={[s.capExampleText, { color: txt }]}>{q}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* History */}
+      <Modal visible={showHistory} animationType="slide" transparent onRequestClose={() => setShowHistory(false)}>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalSheet, { backgroundColor: isDark ? "#0c2036" : "#f4f9ff", paddingBottom: insets.bottom + 16 }]}>
+            <View style={s.modalHeader}>
+              <Text style={[s.modalTitle, { color: txt }]}>History</Text>
+              <TouchableOpacity onPress={() => setShowHistory(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={22} color={txt2} />
+              </TouchableOpacity>
+            </View>
+            {sessions.length === 0 ? (
+              <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
+                <Feather name="clock" size={28} color={txt2} />
+                <Text style={{ color: txt2, fontFamily: "Inter_400Regular", fontSize: 14 }}>No past conversations yet</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 12 }}>
+                {sessions.map(session => (
+                  <View key={session.id} style={[s.historyRow, { backgroundColor: glassBg, borderColor: glassBorder }]}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => openSession(session)} activeOpacity={0.75}>
+                      <Text style={[s.historyTitle, { color: txt }]} numberOfLines={1}>{session.title}</Text>
+                      <Text style={[s.historyMeta, { color: txt2 }]}>
+                        {new Date(session.updatedAt).toLocaleDateString()} · {session.messages.length} messages
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => removeSession(session.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Feather name="trash-2" size={16} color={txt2} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-function HeaderContent({ txt, txt2, messages, clearChat }: any) {
+function HeaderContent({ txt, txt2, isDark, messages, clearChat, onShowCapabilities, onShowHistory, onToggleTheme }: any) {
+  const hit = { top: 8, bottom: 8, left: 8, right: 8 };
   return (
     <View style={s.headerInner}>
       <View style={{ flex: 1 }}>
         <Text style={[s.headerTitle, { color: txt }]}>Ask Ari</Text>
         <Text style={[s.headerSub, { color: txt2 }]}>Clinical AI assistant · V4.0</Text>
       </View>
+      <TouchableOpacity onPress={onShowCapabilities} style={s.clearBtn} hitSlop={hit} accessibilityLabel="What can Ari do">
+        <Feather name="help-circle" size={19} color={txt2} />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onShowHistory} style={s.clearBtn} hitSlop={hit} accessibilityLabel="Chat history">
+        <Feather name="clock" size={19} color={txt2} />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onToggleTheme} style={s.clearBtn} hitSlop={hit} accessibilityLabel="Toggle light or dark mode">
+        <Feather name={isDark ? "sun" : "moon"} size={19} color={txt2} />
+      </TouchableOpacity>
       {messages.length > 0 && (
-        <TouchableOpacity onPress={clearChat} style={s.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={clearChat} style={s.clearBtn} hitSlop={hit} accessibilityLabel="New chat">
           <Feather name="trash-2" size={18} color={txt2} />
         </TouchableOpacity>
       )}
@@ -400,5 +536,19 @@ const s = StyleSheet.create({
   inputBar: { borderTopWidth: 1 },
   inputRow: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: 14, paddingTop: 12, gap: 10 },
   inputField: { flex: 1, borderRadius: 18, paddingHorizontal: 16, paddingTop: 13, paddingBottom: 13, fontSize: 15, maxHeight: 120, borderWidth: 1, fontFamily: "Inter_400Regular" },
+  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(3,16,29,0.45)" },
+  modalSheet: { maxHeight: "82%", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 18, paddingTop: 18 },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  modalTitle: { fontSize: 19, fontWeight: "700", fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  capCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 8 },
+  capHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  capIcon: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  capName: { fontSize: 15, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+  capDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  capExample: { flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1 },
+  capExampleText: { flex: 1, fontSize: 12.5, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  historyRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, padding: 14, gap: 12 },
+  historyTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  historyMeta: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   sendBtn: { width: 46, height: 46, borderRadius: 16, alignItems: "center", justifyContent: "center", alignSelf: "flex-end", shadowColor: "rgba(30,90,200,0.4)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 1, shadowRadius: 16, elevation: 6 },
 });

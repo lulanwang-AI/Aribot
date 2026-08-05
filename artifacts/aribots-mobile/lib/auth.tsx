@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, setToken, clearToken, getToken } from "./api";
+import { clearAllAriHistory } from "./ariHistory";
 
 interface User {
   id: string;
@@ -78,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await clearToken();
+    // Clinical conversations must not survive sign-out on a shared device
+    await clearAllAriHistory().catch(() => {});
     setUser(null);
     // Drop all cached queries so the next user never sees stale data
     queryClient.clear();
