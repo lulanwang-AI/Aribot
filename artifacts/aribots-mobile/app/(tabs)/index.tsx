@@ -112,7 +112,7 @@ export default function HomeScreen() {
             onPress={() => router.push(action.route as any)}
             activeOpacity={0.8}
           >
-            <View style={[styles.quickActionIcon, { backgroundColor: action.color + "18" }]}>
+            <View style={[styles.quickActionIcon, { backgroundColor: action.image ? "#ffffff" : action.color + "18" }]}>
               {action.image ? (
                 <Image source={action.image} style={{ width: 20, height: 20 }} resizeMode="contain" />
               ) : (

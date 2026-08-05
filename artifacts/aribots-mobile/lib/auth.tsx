@@ -65,7 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     const res = await apiPost<{ token: string; user: User }>("/api/mobile/auth/login", { email, password });
     await setToken(res.token);
-    setUser(res.user);
+    // Always fetch fresh profile so stale cached data never leaks through
+    try {
+      const me = await apiGet<User>("/api/mobile/auth/me");
+      setUser(me);
+    } catch {
+      setUser(res.user);
+    }
   }
 
   async function signOut() {

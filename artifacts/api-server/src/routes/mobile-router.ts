@@ -78,7 +78,7 @@ const badges = ["Top Contributor","Research Leader","Peer Reviewer","Mentor","Ca
 const interests = ["Heart Failure","Clinical Trials","Diabetes","Sepsis","Trauma","AI in Medicine","Telemedicine","Genomics"];
 
 function makeUsers(): User[] {
-  return Array.from({ length: 40 }, (_, i) => {
+  const users = Array.from({ length: 40 }, (_, i) => {
     const spec = pick(specialties); const hosp = pick(hospitals);
     const fn = pick(firstNames); const ln = pick(lastNames); const yrs = ri(2, 35);
     return {
@@ -99,6 +99,28 @@ function makeUsers(): User[] {
       credential: pick(credentials),
     } as User;
   });
+  // Seed user is always Dr. Chet Chea
+  users[0] = {
+    ...users[0],
+    id: "mu1",
+    username: "cchea",
+    name: "Dr. Chet Chea",
+    specialty: "Infectious Disease",
+    subspecialty: "HIV/AIDS & Travel Medicine",
+    interests: ["HIV/AIDS","Hepatitis B","Antimicrobial Stewardship","Sepsis","Travel Medicine"],
+    hospital: "Marin Health Medical Center",
+    city: "Kentfield",
+    state: "CA",
+    role: "physician",
+    verified: true,
+    yearsExperience: 21,
+    rankingScore: 91,
+    badges: ["Top Contributor","Research Leader","Grand Rounds Speaker"],
+    bio: "Board-certified Infectious Disease specialist in Kentfield, CA with 21 years of clinical experience. Expertise in HIV/AIDS, antimicrobial stewardship, and travel medicine. Also fluent in Khmer.",
+    avatarUrl: "/api/assets/avatars/avatar-chet-chea.jpg",
+    credential: "MD",
+  };
+  return users;
 }
 
 const triageTitles = [
