@@ -45,7 +45,6 @@ export default function HomeScreen() {
 
   const quickActions = [
     { icon: "cpu", label: "Ari AI", route: "/(tabs)/ari", color: colors.primary },
-    { icon: "alert-circle", label: "Triage", route: "/(tabs)/triage", color: "#F59E0B" },
     { icon: "calendar", label: "Events", route: "/(tabs)/community", color: "#EF4444" },
     { icon: "message-square", label: "Messages", route: "/(tabs)/more", color: "#3B82F6" },
   ];
