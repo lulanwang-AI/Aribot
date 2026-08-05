@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, setToken, clearToken, getToken } from "./api";
 
 interface User {
@@ -41,6 +42,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     checkAuth();
@@ -77,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await clearToken();
     setUser(null);
+    // Drop all cached queries so the next user never sees stale data
+    queryClient.clear();
   }
 
   async function refreshUser() {

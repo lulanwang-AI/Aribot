@@ -38,7 +38,7 @@ export default function LoginScreen() {
     try {
       await signIn(email, password);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)/");
+      router.replace("/");
     } catch (e: any) {
       setError(e.message || "Login failed. Please try again.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -50,7 +50,7 @@ export default function LoginScreen() {
     try {
       await signIn("doctor@aribots.local", "demo");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)/");
+      router.replace("/");
     } catch (e: any) {
       setError(e.message || "Demo failed.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

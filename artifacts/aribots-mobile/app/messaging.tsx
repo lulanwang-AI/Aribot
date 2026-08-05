@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
-  ActivityIndicator, Platform, Image,
+  ActivityIndicator, Platform, Image, KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -9,12 +9,15 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { apiGet, apiPost } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import * as Haptics from "expo-haptics";
 
 export default function MessagingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const { user } = useAuth();
+  const myId = user?.id;
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [msgInput, setMsgInput] = useState("");
 
@@ -58,12 +61,12 @@ export default function MessagingScreen() {
           data={messages || []}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <View style={[styles.msgRow, item.senderId === "u1" ? styles.msgRowRight : styles.msgRowLeft]}>
-              <View style={[styles.msgBubble, item.senderId === "u1"
+            <View style={[styles.msgRow, item.senderId === myId ? styles.msgRowRight : styles.msgRowLeft]}>
+              <View style={[styles.msgBubble, item.senderId === myId
                 ? { backgroundColor: colors.primary }
                 : { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }
               ]}>
-                <Text style={[styles.msgText, { color: item.senderId === "u1" ? "#fff" : colors.foreground }]}>
+                <Text style={[styles.msgText, { color: item.senderId === myId ? "#fff" : colors.foreground }]}>
                   {item.content}
                 </Text>
               </View>
@@ -72,19 +75,24 @@ export default function MessagingScreen() {
           contentContainerStyle={[styles.msgList, { paddingBottom: isWeb ? 34 : insets.bottom + 70 }]}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!!messages?.length}
+          keyboardShouldPersistTaps="handled"
         />
-        <View style={[styles.inputBar, { borderTopColor: colors.border, paddingBottom: isWeb ? 34 : insets.bottom + 10 }]}>
-          <TextInput
-            style={[styles.inputField, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
-            value={msgInput}
-            onChangeText={setMsgInput}
-            placeholder="Type a message..."
-            placeholderTextColor={colors.mutedForeground}
-          />
-          <TouchableOpacity style={[styles.sendBtn, { backgroundColor: colors.primary }]} onPress={sendMessage}>
-            <Feather name="send" size={18} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0}>
+          <View style={[styles.inputBar, { borderTopColor: colors.border, paddingBottom: isWeb ? 34 : insets.bottom + 10 }]}>
+            <TextInput
+              style={[styles.inputField, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }]}
+              value={msgInput}
+              onChangeText={setMsgInput}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.mutedForeground}
+              onSubmitEditing={sendMessage}
+              returnKeyType="send"
+            />
+            <TouchableOpacity style={[styles.sendBtn, { backgroundColor: colors.primary }]} onPress={sendMessage}>
+              <Feather name="send" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     );
   }

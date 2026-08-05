@@ -8,20 +8,46 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/lib/auth";
+import { apiPatch } from "@/lib/api";
 import * as Haptics from "expo-haptics";
 
 export default function AccountScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState({
     name: user?.name || "",
     specialty: user?.specialty || "",
     hospital: user?.hospital || "",
     bio: user?.bio || "",
   });
+
+  // Keep form in sync when the profile loads/refreshes while not editing
+  React.useEffect(() => {
+    if (!editing && user) {
+      setForm({ name: user.name || "", specialty: user.specialty || "", hospital: user.hospital || "", bio: user.bio || "" });
+    }
+  }, [user, editing]);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await apiPatch("/api/mobile/auth/me", form);
+      await refreshUser();
+      setEditing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      setSaveError(e?.message || "Could not save changes. Please try again.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function inputStyle() {
     return [styles.input, { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border }];
@@ -147,8 +173,15 @@ export default function AccountScreen() {
                 />
               </View>
             ))}
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.saveBtnText}>Save Changes</Text>
+            {saveError ? (
+              <Text style={{ color: colors.destructive, fontSize: 13, fontFamily: "Inter_500Medium" }}>{saveError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Changes"}</Text>
             </TouchableOpacity>
           </View>
         )}

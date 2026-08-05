@@ -496,7 +496,10 @@ mobile.get("/messaging/threads", requireMobileAuth, (req: any, res) => {
   res.json(enriched);
 });
 
-mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req, res) => {
+mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req: any, res) => {
+  const thread = store.threads.get(_req.params.id);
+  if (!thread) return res.status(404).json({ message: "Thread not found" });
+  if (!thread.participantIds?.includes(_req.mobileUser.userId)) return res.status(403).json({ message: "Not a participant of this thread" });
   const msgs = [...store.messages.values()].filter(m => m.threadId === _req.params.id).sort((a, b) => a.createdAt - b.createdAt);
   res.json(msgs.map(m => {
     const sender = store.users.get(m.senderId);
@@ -507,6 +510,9 @@ mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req, res) => 
 mobile.post("/messaging/threads/:id/messages", requireMobileAuth, (req: any, res) => {
   const { content } = req.body;
   if (!content) return res.status(400).json({ message: "Content required" });
+  const thread = store.threads.get(req.params.id);
+  if (!thread) return res.status(404).json({ message: "Thread not found" });
+  if (!thread.participantIds?.includes(req.mobileUser.userId)) return res.status(403).json({ message: "Not a participant of this thread" });
   const id = `mmsg${Date.now()}`;
   const msg = { id, threadId: req.params.id, senderId: req.mobileUser.userId, content, createdAt: Date.now(), read: false };
   store.messages.set(id, msg as any);
