@@ -48,8 +48,6 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" options={{ headerShown: false, animation: "fade" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="triage/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
-        <Stack.Screen name="doctors" options={{ headerShown: false, animation: "slide_from_right" }} />
         <Stack.Screen name="training" options={{ headerShown: false, animation: "slide_from_right" }} />
         <Stack.Screen name="messaging" options={{ headerShown: false, animation: "slide_from_right" }} />
         <Stack.Screen name="telemed" options={{ headerShown: false, animation: "slide_from_right" }} />
