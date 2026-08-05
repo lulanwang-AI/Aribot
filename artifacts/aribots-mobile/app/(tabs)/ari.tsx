@@ -238,15 +238,8 @@ export default function AriScreen() {
   const MAX_ATTACHMENTS = 3;
   const MAX_IMAGE_B64_CHARS = 2.5 * 1024 * 1024; // keep in sync with the API's per-image cap
 
-  async function pickImage() {
-    if (attachments.length >= MAX_ATTACHMENTS) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      base64: true,
-      quality: 0.6,
-    });
-    const asset = result.assets?.[0];
-    if (result.canceled || !asset?.base64) return;
+  function addImageAsset(asset: ImagePicker.ImagePickerAsset | undefined, canceled: boolean) {
+    if (canceled || !asset?.base64) return;
     if (asset.base64.length > MAX_IMAGE_B64_CHARS) {
       setMessages(prev => [...prev, {
         id: Date.now().toString(), role: "assistant",
@@ -265,6 +258,42 @@ export default function AriScreen() {
       uri: asset.uri,
     }]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  async function pickImage() {
+    if (attachments.length >= MAX_ATTACHMENTS) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), role: "assistant",
+        content: "Photo library access is needed to attach an image. Please enable it in your device settings.",
+      }]);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      base64: true,
+      quality: 0.6,
+    });
+    addImageAsset(result.assets?.[0], result.canceled);
+  }
+
+  async function takePhoto() {
+    if (attachments.length >= MAX_ATTACHMENTS) return;
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), role: "assistant",
+        content: "Camera access is needed to take a photo. Please enable it in your device settings.",
+      }]);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      base64: true,
+      quality: 0.6,
+    });
+    addImageAsset(result.assets?.[0], result.canceled);
   }
 
   async function toggleRecording() {
@@ -486,13 +515,13 @@ export default function AriScreen() {
           <BlurView intensity={70} tint={isDark ? "dark" : "light"} style={[s.inputBar, { borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
             <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
               attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
-              onPickImage={pickImage} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
+              onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
           </BlurView>
         ) : (
           <View style={[s.inputBar, { backgroundColor: isDark ? "rgba(8,26,44,0.92)" : "rgba(244,249,255,0.92)", borderTopColor: glassBorder, paddingBottom: isWeb ? 84 + 12 : insets.bottom + 82 + 8 }]}>
             <InputRow input={input} setInput={setInput} isStreaming={isStreaming} onSend={() => sendMessage()} isDark={isDark} glassBorder={glassBorder} inputBg={inputBg} txt={txt} txt2={txt2}
               attachments={attachments} onRemoveAttachment={(i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
-              onPickImage={pickImage} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
+              onPickImage={pickImage} onTakePhoto={takePhoto} onToggleRecording={toggleRecording} isRecording={isRecording} isTranscribing={isTranscribing} />
           </View>
         )}
       </KeyboardAvoidingView>
@@ -634,7 +663,7 @@ function HeaderContent({ txt, txt2, isDark, messages, clearChat, onShowCapabilit
 }
 
 function InputRow({ input, setInput, isStreaming, onSend, isDark, glassBorder, inputBg, txt, txt2,
-  attachments, onRemoveAttachment, onPickImage, onToggleRecording, isRecording, isTranscribing }: any) {
+  attachments, onRemoveAttachment, onPickImage, onTakePhoto, onToggleRecording, isRecording, isTranscribing }: any) {
   const canSend = !isStreaming && (input.trim() || attachments?.length);
   return (
     <View>
@@ -659,6 +688,9 @@ function InputRow({ input, setInput, isStreaming, onSend, isDark, glassBorder, i
       <View style={s.inputRow}>
         <TouchableOpacity onPress={onPickImage} disabled={isStreaming} style={s.utilBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel="Attach image">
           <Feather name="image" size={20} color={txt2} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onTakePhoto} disabled={isStreaming} style={s.utilBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel="Take photo">
+          <Feather name="camera" size={20} color={txt2} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onToggleRecording} disabled={isStreaming} style={s.utilBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel="Voice input">
           {isTranscribing

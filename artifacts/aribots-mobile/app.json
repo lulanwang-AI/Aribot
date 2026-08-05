@@ -32,7 +32,14 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow ARIbots to use the camera to photograph wounds, rashes, and printed scans to ask Ari about them.",
+          "photosPermission": "Allow ARIbots to access your photos so you can attach images to your questions for Ari."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
