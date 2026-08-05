@@ -83,9 +83,8 @@ function MessageBubble({
           You
         </div>
         <div
-          className={cn(
-            "max-w-[85ch] rounded-lg border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-foreground"
-          )}
+          className="max-w-[85ch] rounded-2xl px-4 py-3 text-sm leading-relaxed text-white"
+          style={{ background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)" }}
         >
           <pre className="whitespace-pre-wrap break-words font-sans">
             {message.content}
@@ -103,10 +102,37 @@ function MessageBubble({
       className="flex w-full flex-col gap-1"
       data-testid={`message-assistant-${message.id}`}
     >
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        Ari
+      {/* Glass avatar row */}
+      <div className="flex items-center gap-2">
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[10px] font-bold text-white"
+          style={{ background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)" }}
+        >
+          Ari
+        </div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Ari
+        </div>
       </div>
-      <div className="w-full text-sm leading-relaxed text-foreground">
+      {/* Glass bubble */}
+      <div
+        className="ml-9 w-full rounded-2xl rounded-tl-sm border p-4 text-sm leading-relaxed backdrop-blur-xl dark:text-[#eaf2fc]"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.52)",
+          borderColor: "rgba(255,255,255,0.72)",
+        }}
+      >
+        <div
+          className="hidden dark:block"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(28,44,64,0.55)",
+            borderRadius: "inherit",
+            pointerEvents: "none",
+          }}
+          aria-hidden
+        />
         <AriMessage
           text={message.content}
           mode={message.mode || mode}
@@ -154,10 +180,15 @@ function EmptyState() {
           {trustBadges.map(({ icon: Icon, label }) => (
             <span
               key={label}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.52)",
+                borderColor: "rgba(255,255,255,0.72)",
+                color: "#0c1c2c",
+              }}
               data-testid={`badge-trust-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
             >
-              <Icon className="h-3.5 w-3.5 text-primary" />
+              <Icon className="h-3.5 w-3.5" style={{ color: "#2a7bff" }} />
               {label}
             </span>
           ))}
@@ -180,10 +211,15 @@ function EmptyState() {
           {inputModes.map(({ icon: Icon, label }, i) => (
             <span key={label} className="inline-flex items-center gap-3">
               <span
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-foreground"
+                className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 backdrop-blur-sm"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.52)",
+                  borderColor: "rgba(255,255,255,0.72)",
+                  color: "#0c1c2c",
+                }}
                 data-testid={`hint-input-${label.toLowerCase()}`}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-3.5 w-3.5" style={{ color: "#2a7bff" }} />
                 {label}
               </span>
               {i < inputModes.length - 1 && (

@@ -232,7 +232,11 @@ export default function Aribot() {
             streaming={streaming}
           />
           <footer
-            className="border-t border-border bg-muted/10 px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-sm sm:px-6"
+            className="border-t px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-xl sm:px-6"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.45)",
+              borderColor: "rgba(255,255,255,0.72)",
+            }}
             data-testid="footer-ari"
           >
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2">
@@ -279,7 +283,11 @@ function CapabilityChips({
   if (ids.length === 0) return null;
   return (
     <div
-      className="border-t border-border bg-muted/30 px-4 py-2 sm:px-6"
+      className="border-t px-4 py-2 backdrop-blur-xl sm:px-6"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.45)",
+        borderColor: "rgba(255,255,255,0.72)",
+      }}
       data-testid="region-ari-capability-chips"
     >
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">

@@ -395,11 +395,15 @@ export function Composer({
   return (
     <div
       className={cn(
-        "border-t bg-background/85 backdrop-blur-sm transition-[background-color,border-color,box-shadow] duration-500",
+        "border-t backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-500",
         mode === "er"
           ? "border-rose-400/70 shadow-[0_-6px_24px_-12px_rgba(244,63,94,0.35)] dark:border-rose-500/50"
-          : "border-border"
+          : ""
       )}
+      style={mode !== "er" ? {
+        backgroundColor: "rgba(255,255,255,0.55)",
+        borderColor: "rgba(255,255,255,0.72)",
+      } : undefined}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -446,13 +450,18 @@ export function Composer({
 
         <div
           className={cn(
-            "rounded-lg border bg-card",
+            "rounded-2xl border backdrop-blur-sm",
             mode === "er"
-              ? "border-red-500"
+              ? "border-red-500 bg-card"
               : gate.ok
-                ? "border-border"
+                ? ""
                 : "border-amber-300 dark:border-amber-700"
           )}
+          style={mode !== "er" && gate.ok ? {
+            backgroundColor: "rgba(255,255,255,0.72)",
+            borderColor: "rgba(255,255,255,0.90)",
+            boxShadow: "0 4px 32px rgba(42,123,255,0.08)",
+          } : undefined}
         >
           <Textarea
             ref={textareaRef}
@@ -493,7 +502,7 @@ export function Composer({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
+          <div className="flex items-center justify-between gap-3 border-t px-3 py-2" style={{ borderColor: "rgba(255,255,255,0.72)" }}>
             <div className="flex items-center gap-1">
               {/* Plus button — opens an inline picker for any capability so
                   users don't need the sidebar to switch context.
@@ -712,17 +721,34 @@ export function Composer({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={onSend}
-                          disabled={!canSend}
-                          variant={mode === "er" ? "destructive" : "default"}
-                          data-testid="button-ari-send"
-                        >
-                          <Send className="mr-1.5 h-4 w-4" />
-                          {mode === "er" ? "Send (ER, unverified)" : "Send"}
-                        </Button>
+                        {mode === "er" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={onSend}
+                            disabled={!canSend}
+                            variant="destructive"
+                            data-testid="button-ari-send"
+                          >
+                            <Send className="mr-1.5 h-4 w-4" />
+                            Send (ER, unverified)
+                          </Button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={onSend}
+                            disabled={!canSend}
+                            data-testid="button-ari-send"
+                            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-medium text-white shadow-md transition-opacity disabled:opacity-40"
+                            style={{
+                              background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)",
+                              boxShadow: "0 4px 16px rgba(42,123,255,0.35)",
+                            }}
+                          >
+                            <Send className="h-4 w-4" />
+                            Send
+                          </button>
+                        )}
                       </span>
                     </TooltipTrigger>
                     {!gate.ok && (
