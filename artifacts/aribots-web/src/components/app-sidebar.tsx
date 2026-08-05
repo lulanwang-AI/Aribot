@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 import {
   Bot,
-  Stethoscope,
   CalendarDays,
   Settings,
   Shield,
@@ -25,8 +24,6 @@ import {
   BarChart2,
   ShieldCheck,
   Users2,
-  GraduationCap,
-  UserCog,
   Lock,
   ClipboardList,
   FileText,
@@ -69,12 +66,6 @@ const adminItems = [
   { title: "Compliance", url: "/admin?tab=compliance", icon: ShieldCheck },
 ];
 
-const ROLE_LABELS: Record<AppRole, string> = {
-  physician: "Physician",
-  medstudent: "Med Student",
-  admin: "Admin",
-};
-
 const MED_STUDENT_RESTRICTED = new Set<string>([]);
 
 export function AppSidebar() {
@@ -84,7 +75,7 @@ export function AppSidebar() {
   const [aribotOpen, setAribotOpen] = useState(true);
   const [clinicalOpen, setClinicalOpen] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [role, setRole] = useRole();
+  const [role] = useRole();
 
   const dismissNotif = useCallback((key: string) => {
     setDismissed(prev => new Set(prev).add(key));
@@ -97,46 +88,25 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded-md object-contain" />
+          <div className="h-9 w-9 shrink-0 rounded-md bg-white p-1 shadow-sm ring-1 ring-white/40">
+            <img src={aribotLogoPath} alt="ARIbots" className="h-full w-full object-contain" />
+          </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold" data-testid="text-app-name">ARIbots</span>
             <span className="text-[10px] text-muted-foreground">built by physicians for physicians</span>
           </div>
         </div>
 
-        <div className="px-2 pb-2">
-          <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg" data-testid="role-toggle">
-            {(["physician", "medstudent", "admin"] as AppRole[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRole(r)}
-                data-testid={`role-btn-${r}`}
-                className={`flex-1 flex items-center justify-center gap-1 text-[10px] font-medium px-1.5 py-1 rounded-md transition-all ${
-                  role === r
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {r === "physician" && <Stethoscope className="h-2.5 w-2.5 shrink-0" />}
-                {r === "medstudent" && <GraduationCap className="h-2.5 w-2.5 shrink-0" />}
-                {r === "admin" && <UserCog className="h-2.5 w-2.5 shrink-0" />}
-                <span className="truncate">
-                  {r === "physician" ? "MD/DO" : r === "medstudent" ? "Student" : "Admin"}
-                </span>
-              </button>
-            ))}
-          </div>
-          {isMedStudent && (
-            <p className="text-[9px] text-amber-600 dark:text-amber-400 text-center mt-1 px-1">
-              Observer mode — some features restricted
-            </p>
-          )}
-          {isAdmin && (
-            <p className="text-[9px] text-primary text-center mt-1 px-1">
-              Admin view — elevated access
-            </p>
-          )}
-        </div>
+        {isMedStudent && (
+          <p className="text-[9px] text-amber-400 text-center px-1 pb-1">
+            Observer mode — some features restricted
+          </p>
+        )}
+        {isAdmin && (
+          <p className="text-[9px] text-sky-300 text-center px-1 pb-1">
+            Admin view — elevated access
+          </p>
+        )}
       </SidebarHeader>
 
       <SidebarContent>

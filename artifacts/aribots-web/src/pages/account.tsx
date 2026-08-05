@@ -24,10 +24,13 @@ import {
   Trophy,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useRole, type AppRole } from "@/lib/role";
+import { UserCog } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function Account() {
   const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
+  const [role, setRole] = useRole();
   const { toast } = useToast();
   const { signOut } = useAuth();
 
@@ -61,6 +64,48 @@ export default function Account() {
           Manage your profile and preferences
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Role
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg max-w-sm" data-testid="role-toggle">
+            {(["physician", "medstudent", "admin"] as AppRole[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRole(r)}
+                data-testid={`role-btn-${r}`}
+                className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-1.5 rounded-md transition-all ${
+                  role === r
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {r === "physician" && <Stethoscope className="h-3.5 w-3.5 shrink-0" />}
+                {r === "medstudent" && <GraduationCap className="h-3.5 w-3.5 shrink-0" />}
+                {r === "admin" && <UserCog className="h-3.5 w-3.5 shrink-0" />}
+                <span className="truncate">
+                  {r === "physician" ? "MD/DO" : r === "medstudent" ? "Student" : "Admin"}
+                </span>
+              </button>
+            ))}
+          </div>
+          {role === "medstudent" && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+              Observer mode — some features restricted
+            </p>
+          )}
+          {role === "admin" && (
+            <p className="text-xs text-primary mt-2">
+              Admin view — elevated access
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
