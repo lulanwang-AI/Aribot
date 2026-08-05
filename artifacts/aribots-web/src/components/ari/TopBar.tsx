@@ -56,7 +56,7 @@ export function TopBar(_props: TopBarProps) {
                 className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
                 data-testid="badge-ari-version"
               >
-                V3.0
+                V4.0
               </span>
             </h1>
             <p className="hidden text-xs text-muted-foreground md:block">
