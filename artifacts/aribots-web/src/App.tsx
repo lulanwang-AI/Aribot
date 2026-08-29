@@ -19,6 +19,7 @@ import Ari from "@/pages/aribot";
 import Account from "@/pages/account";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
+import AriAmr from "@/pages/ari-amr";
 import { AuthContext } from "@/lib/auth";
 import { STANDALONE } from "@/lib/amr";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -100,6 +101,10 @@ function AppContent() {
 
   if (location === "/" || location === "/landing") {
     return <Landing />;
+  }
+
+  if (location === "/ari-amr" || location === "/amr") {
+    return <AriAmr />;
   }
 
   if (!authenticated || location === "/login") {

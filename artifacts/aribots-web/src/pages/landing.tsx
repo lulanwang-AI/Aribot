@@ -274,6 +274,13 @@ function LandingNavbar() {
           >
             Login
           </Link>
+          <Link
+            href="/ari-amr"
+            className="text-sm font-semibold px-5 py-2 border border-[#4A90D9]/50 text-[#7db8f0] rounded-full hover:bg-[#4A90D9]/10 transition-colors"
+            data-testid="link-nav-ari-amr"
+          >
+            Ari AMR
+          </Link>
         </div>
 
         <div className="md:hidden flex items-center gap-3">
@@ -306,6 +313,14 @@ function LandingNavbar() {
               {l.label}
             </button>
           ))}
+          <Link
+            href="/ari-amr"
+            onClick={() => setMobileOpen(false)}
+            className="block py-3 text-[#7db8f0] hover:text-white transition-colors text-sm font-semibold"
+            data-testid="link-mobile-ari-amr"
+          >
+            Ari AMR
+          </Link>
           <a
             href={CONTACT_URL}
             target="_blank"
