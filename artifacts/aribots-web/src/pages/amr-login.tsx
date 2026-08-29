@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { BRAND_NAME, BrandMark } from "@/components/brand-mark";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-access";
 
 export default function Login({
   onLogin,
@@ -18,14 +19,13 @@ export default function Login({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function signIn(nextEmail: string, nextPassword: string) {
     setErrorMessage(null);
     setLoading(true);
     try {
       await apiRequest("POST", "/api/auth/login", {
-        email: email || "clinician@example.org",
-        password: password || "demo",
+        email: nextEmail,
+        password: nextPassword,
       });
       onLogin();
     } catch (err) {
@@ -34,6 +34,17 @@ export default function Login({
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    void signIn(email, password);
+  }
+
+  function enterDemo() {
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    void signIn(DEMO_EMAIL, DEMO_PASSWORD);
   }
 
   return (
@@ -87,6 +98,27 @@ export default function Login({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+          </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3" data-testid="demo-access-card">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Shared demo account</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Explore seeded stewardship cases and reference data.
+                </p>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  <span className="text-foreground/80">Email:</span>{" "}
+                  <code className="text-primary" data-testid="text-demo-email">{DEMO_EMAIL}</code>
+                  <span className="mx-1.5 text-border">•</span>
+                  <span className="text-foreground/80">Password:</span>{" "}
+                  <code className="text-primary" data-testid="text-demo-password">{DEMO_PASSWORD}</code>
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" className="shrink-0" onClick={enterDemo} disabled={loading} data-testid="button-enter-demo">
+                {loading ? "Opening…" : "Enter demo"}
+              </Button>
+            </div>
           </div>
 
           {errorMessage && (

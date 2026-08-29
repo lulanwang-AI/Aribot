@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
@@ -166,6 +166,7 @@ function AuthenticatedAribotsApp({ onSignOut }: { onSignOut: () => void }) {
 
 function AppContent() {
   const [authenticated, setAuthenticated] = useState(true);
+  const [amrAuthState, setAmrAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [location, setLocation] = useLocation();
   const isAmrWorkspace =
     location === "/dashboard" ||
@@ -178,15 +179,35 @@ function AppContent() {
     location === "/cases" ||
     location.startsWith("/cases/");
 
-  async function handleSignOut() {
+  useEffect(() => {
+    if (!isAmrWorkspace || amrAuthState !== "loading") return;
+    let cancelled = false;
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((response) => {
+        if (!cancelled) setAmrAuthState(response.ok ? "authenticated" : "anonymous");
+      })
+      .catch(() => {
+        if (!cancelled) setAmrAuthState("anonymous");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [amrAuthState, isAmrWorkspace]);
+
+  async function handleSignOut(product: "amr" | "aribots") {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch {
       // Logout is best-effort: drop local state either way.
     }
     queryClient.clear();
-    setAuthenticated(false);
-    setLocation("/");
+    if (product === "amr") {
+      setAmrAuthState("anonymous");
+      setLocation("/ari-amr");
+    } else {
+      setAuthenticated(false);
+      setLocation("/");
+    }
   }
 
   if (location === "/" || location === "/landing") {
@@ -217,7 +238,27 @@ function AppContent() {
     return (
       <AmrLogin
         onLogin={() => {
-          setAuthenticated(true);
+            setAmrAuthState("authenticated");
+          setLocation("/dashboard");
+        }}
+        onNavigateToLanding={() => setLocation("/ari-amr")}
+      />
+    );
+  }
+
+  if (isAmrWorkspace && amrAuthState === "loading") {
+    return (
+      <div className="amr-public-theme dark flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Checking demo access…
+      </div>
+    );
+  }
+
+  if (isAmrWorkspace && amrAuthState === "anonymous") {
+    return (
+      <AmrLogin
+        onLogin={() => {
+          setAmrAuthState("authenticated");
           setLocation("/dashboard");
         }}
         onNavigateToLanding={() => setLocation("/ari-amr")}
@@ -226,15 +267,7 @@ function AppContent() {
   }
 
   if (!authenticated) {
-    return isAmrWorkspace ? (
-      <AmrLogin
-        onLogin={() => {
-          setAuthenticated(true);
-          setLocation("/dashboard");
-        }}
-        onNavigateToLanding={() => setLocation("/ari-amr")}
-      />
-    ) : (
+    return (
       <AribotsLogin
         onLogin={() => {
           setAuthenticated(true);
@@ -246,9 +279,9 @@ function AppContent() {
   }
 
   return isAmrWorkspace ? (
-    <AuthenticatedAmrApp onSignOut={handleSignOut} />
+    <AuthenticatedAmrApp onSignOut={() => handleSignOut("amr")} />
   ) : (
-    <AuthenticatedAribotsApp onSignOut={handleSignOut} />
+    <AuthenticatedAribotsApp onSignOut={() => handleSignOut("aribots")} />
   );
 }
 

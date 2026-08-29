@@ -7,6 +7,9 @@ import type { User } from "@workspace/db";
 
 type SafeUser = Omit<User, "password">;
 
+export const DEMO_EMAIL = "demo@aribots.local";
+export const DEMO_PASSWORD = "demo";
+
 declare global {
   namespace Express {
     interface User extends SafeUser {}
@@ -16,11 +19,10 @@ declare global {
 /**
  * Wires express-session + Passport (LocalStrategy) onto the Express app.
  *
- * NOTE: Until a real credential store is added, the LocalStrategy accepts any
- * non-empty email/password and resolves the request to seed user "u1". This
- * preserves the existing mock UX while still creating a real authenticated
- * session that the strict requireAriAuth gate will recognize. Replace the
- * verification logic with bcrypt-checked credentials before production.
+ * The public demo account resolves to seed user "u1" and creates a real
+ * authenticated session that the strict requireAriAuth gate recognizes.
+ * Replace the demo verifier with a real credential store before production
+ * clinician accounts are enabled.
  */
 export function setupAuth(app: Express) {
   const isProd = process.env.NODE_ENV === "production";
@@ -45,7 +47,7 @@ export function setupAuth(app: Express) {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        secure: false,
+        secure: isProd,
         sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       },
@@ -60,17 +62,11 @@ export function setupAuth(app: Express) {
       { usernameField: "email", passwordField: "password" },
       async (email, password, done) => {
         try {
-          // Production guard: refuse to authenticate with the dev-only mock.
-          // Replace this with a real bcrypt-checked verifier before flipping
-          // NODE_ENV=production. Until then, the strategy hard-fails closed.
-          if (isProd) {
-            return done(null, false, {
-              message:
-                "Authentication is not configured for production. Wire a real credential verifier in server/auth-setup.ts.",
-            });
-          }
           if (!email || !password) {
             return done(null, false, { message: "Email and password required." });
+          }
+          if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+            return done(null, false, { message: "Invalid demo credentials." });
           }
           const seed = await storage.getUser("u1");
           if (!seed) return done(null, false, { message: "Default user not found." });
@@ -126,5 +122,12 @@ export function registerAuthRoutes(app: Express) {
         res.json({ ok: true });
       });
     });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Demo sign-in required." });
+    }
+    return res.json({ demo: true, user: req.user });
   });
 }

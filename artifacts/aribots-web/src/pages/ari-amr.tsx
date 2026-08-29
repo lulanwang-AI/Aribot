@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { cn } from "@/lib/utils";
-import { BRAND_NAME, BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
-import { ActionBadge, DecisionSupportNotice, Pill } from "@/components/amr/primitives";
+import { ActionBadge, Pill } from "@/components/amr/primitives";
+import { Footer, LandingNavbar } from "@/pages/landing";
 import type { StewardshipAction } from "@/lib/amr";
 import {
   ArrowRight,
@@ -193,50 +192,26 @@ export default function Landing() {
     document
       .querySelector<HTMLMetaElement>('meta[property="og:description"]')
       ?.setAttribute("content", description);
+
+    const frame = requestAnimationFrame(() => {
+      const hero = document.getElementById("hero");
+      if (hero) {
+        hero.scrollIntoView({ behavior: "auto", block: "start" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return (
     <div className="amr-public-theme dark min-h-screen bg-background text-foreground">
-      {/* ---------------------------------------------------------------- */}
-      {/* Top bar                                                          */}
-      {/* ---------------------------------------------------------------- */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0e1117]/85 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3 lg:px-8">
-          <Link
-            href="/"
-            data-testid="link-home"
-            className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <BrandMark />
-            <span className="flex min-w-0 flex-col">
-              <span className="text-sm font-semibold leading-tight text-foreground">{BRAND_NAME}</span>
-              <span className="text-[11px] leading-tight text-muted-foreground">
-                Antimicrobial decision support
-              </span>
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="hidden text-xs font-medium text-white/55 transition-colors hover:text-white sm:inline-flex"
-              data-testid="link-amr-back-to-hub"
-            >
-              Back to ARIbots
-            </Link>
-            <Button asChild size="sm">
-              <Link href="/ari-amr/login" data-testid="link-header-signin">
-                Sign in
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <LandingNavbar loginHref="/ari-amr/login" />
 
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                             */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-b from-primary/[0.08] via-background to-background">
+      <section id="hero" className="relative scroll-mt-16 overflow-hidden border-b border-border/60 bg-gradient-to-b from-primary/[0.08] via-background to-background">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-32 left-1/2 h-72 w-[46rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
@@ -271,9 +246,17 @@ export default function Landing() {
                   See how it decides
                 </Link>
               </Button>
+              <Button asChild size="lg" variant="ghost">
+                <Link href="/ari-amr/login" data-testid="link-hero-demo">
+                  Try demo access
+                </Link>
+              </Button>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-1.5">
+              <Pill className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" data-testid="badge-amr-sample-data">
+                Demo uses seeded sample data
+              </Pill>
               <Pill className="border-border bg-muted text-muted-foreground">Deterministic</Pill>
               <Pill className="border-border bg-muted text-muted-foreground">Versioned knowledge base</Pill>
               <Pill className="border-border bg-muted text-muted-foreground">Auditable case by case</Pill>
@@ -454,46 +437,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Footer                                                           */}
-      {/* ---------------------------------------------------------------- */}
-      <footer className="border-t border-border bg-sidebar">
-        <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <BrandMark size="sm" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold leading-tight text-foreground">{BRAND_NAME}</p>
-                <p className="text-[11px] leading-tight text-muted-foreground">
-                  Antimicrobial decision support
-                </p>
-              </div>
-            </div>
-
-            <Button asChild variant="outline" size="sm">
-              <Link href="/ari-amr/login" data-testid="link-footer-signin">
-                Sign in
-              </Link>
-            </Button>
-          </div>
-
-          <DecisionSupportNotice
-            className="mt-8"
-            lines={[
-              "Clinical decision support for licensed clinicians. It informs a prescribing decision; it does not make one, and it does not replace clinical judgement, local policy or an infectious diseases opinion. The prescriber remains responsible for what is given.",
-              "Recommendations come from a versioned knowledge base and a regional susceptibility profile. They are not a substitute for culture and susceptibility testing on the individual patient.",
-              "The antibiograms shipped with the app are illustrative default profiles, not surveillance data. A deploying facility replaces them with its own CLSI-interpreted isolate data before the recommendations are used on real patients.",
-              "Not for use by patients, and not a diagnostic device.",
-            ]}
-          />
-
-          <p className="mt-6 text-[11px] leading-relaxed text-muted-foreground">
-            Doses, durations and monitoring follow the guideline cited for each syndrome, and every
-            recommendation names the guideline it followed. Verify against your own formulary and
-            institutional protocol before prescribing.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

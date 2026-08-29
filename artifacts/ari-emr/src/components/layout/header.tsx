@@ -58,7 +58,7 @@ function PatientSearch() {
   );
 }
 
-export default function Header() {
+export default function Header({ onSignOut }: { onSignOut: () => void }) {
   const [navOpen, setNavOpen] = useState(false);
   return (
     <header className="bg-white border-b border-gray-200 h-12">
@@ -375,6 +375,9 @@ export default function Header() {
 
         {/* Right side - search, notifications, profile */}
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
+          <Badge variant="secondary" className="hidden border border-blue-200 bg-blue-50 text-blue-700 sm:inline-flex" data-testid="badge-emr-demo-session">
+            Sample data
+          </Badge>
           {/* Search Bar — Cmd+K to focus, Enter navigates to /patients?search= */}
           <PatientSearch />
 
@@ -425,8 +428,8 @@ export default function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span className="font-medium">Dr. Sarah Johnson</span>
-                  <span className="text-xs text-gray-500">Radiologist</span>
+                  <span className="font-medium">Demo Clinician</span>
+                  <span className="text-xs text-gray-500">Shared evaluation account</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -434,7 +437,7 @@ export default function Header() {
               <DropdownMenuItem>Account Preferences</DropdownMenuItem>
               <DropdownMenuItem>Notification Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className="text-red-600" onClick={onSignOut} data-testid="button-emr-sign-out">
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>

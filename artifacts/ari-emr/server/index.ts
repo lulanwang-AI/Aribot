@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupDemoAuth } from "./demo-auth";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,8 @@ app.use((req, res, next) => {
 app.get("/api/healthz", (_req, res) => {
   res.json({ status: "ok", service: "ari-emr" });
 });
+
+setupDemoAuth(app, process.env.NODE_ENV === "production");
 
 (async () => {
   const server = await registerRoutes(app);

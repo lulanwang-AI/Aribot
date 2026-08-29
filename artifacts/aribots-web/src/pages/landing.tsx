@@ -217,11 +217,16 @@ function AnimatedCounter({ target, label, suffix = "" }: { target: number; label
   );
 }
 
-function LandingNavbar() {
+export function LandingNavbar({ loginHref = "/login" }: { loginHref?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [location, setLocation] = useLocation();
 
   function scrollTo(id: string) {
     setMobileOpen(false);
+    if (location !== "/") {
+      setLocation(`/#${id}`);
+      return;
+    }
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -269,24 +274,17 @@ function LandingNavbar() {
             Contact
           </a>
           <Link
-            href="/login"
+            href={loginHref}
             className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
             data-testid="link-nav-login"
           >
             Login
           </Link>
-          <Link
-            href="/ari-amr"
-            className="text-sm font-semibold px-5 py-2 border border-[#4A90D9]/50 text-[#7db8f0] rounded-full hover:bg-[#4A90D9]/10 transition-colors"
-            data-testid="link-nav-ari-amr"
-          >
-            Ari AMR
-          </Link>
         </div>
 
         <div className="md:hidden flex items-center gap-3">
           <Link
-            href="/login"
+            href={loginHref}
             className="text-xs font-semibold px-4 py-1.5 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
             data-testid="link-mobile-login"
           >
@@ -314,14 +312,6 @@ function LandingNavbar() {
               {l.label}
             </button>
           ))}
-          <Link
-            href="/ari-amr"
-            onClick={() => setMobileOpen(false)}
-            className="block py-3 text-[#7db8f0] hover:text-white transition-colors text-sm font-semibold"
-            data-testid="link-mobile-ari-amr"
-          >
-            Ari AMR
-          </Link>
           <a
             href={CONTACT_URL}
             target="_blank"
@@ -592,7 +582,7 @@ function ApplicationsSection() {
       eyebrow: "Antimicrobial stewardship",
       description:
         "The dedicated antimicrobial resistance workspace for case intake, antibiograms, formulary review, guidance, and clinical decision support.",
-      href: "/ari-amr",
+      href: "/ari-amr#hero",
       cta: "Explore Ari AMR",
       icon: Shield,
     },
@@ -2337,8 +2327,18 @@ function DemoFormSection() {
   );
 }
 
-function Footer() {
+export function Footer() {
   const CONTACT_URL = "https://www.aribots.com/contact-8";
+  const [location, setLocation] = useLocation();
+
+  function navigateToSection(id: string) {
+    if (location === "/") {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      setLocation(`/#${id}`);
+    }
+  }
+
   return (
     <footer className="py-12 bg-[#111] border-t border-white/5">
       <div className="max-w-6xl mx-auto px-4">
@@ -2364,7 +2364,7 @@ function Footer() {
               ].map((item) => (
                 <li key={item.label}>
                   <button
-                    onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
+                     onClick={() => navigateToSection(item.id)}
                     className="text-white/40 hover:text-[#4A90D9] text-sm transition-colors"
                     data-testid={`link-footer-${item.id}`}
                   >
@@ -2433,6 +2433,15 @@ function Footer() {
 }
 
 export default function Landing() {
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="bg-gray-100 min-h-screen">
       <LandingNavbar />
