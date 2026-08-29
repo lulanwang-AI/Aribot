@@ -1,0 +1,1 @@
+- [Aribots and Ari AMR routes](product-route-separation.md) — preserve separate public pages, logins, and authenticated app shells for both products.

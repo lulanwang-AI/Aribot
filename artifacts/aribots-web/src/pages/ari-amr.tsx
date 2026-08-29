@@ -200,7 +200,7 @@ export default function Landing() {
           </Link>
 
           <Button asChild size="sm">
-            <Link href="/login" data-testid="link-header-signin">
+            <Link href="/ari-amr/login" data-testid="link-header-signin">
               Sign in
             </Link>
           </Button>
@@ -235,7 +235,7 @@ export default function Landing() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg">
-                <Link href="/login" data-testid="link-hero-signin">
+                <Link href="/ari-amr/login" data-testid="link-hero-signin">
                   Sign in
                   <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" />
                 </Link>
@@ -414,7 +414,7 @@ export default function Landing() {
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <Button asChild>
-              <Link href="/login" data-testid="link-cta-signin">
+              <Link href="/ari-amr/login" data-testid="link-cta-signin">
                 Sign in
                 <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" />
               </Link>
@@ -445,7 +445,7 @@ export default function Landing() {
             </div>
 
             <Button asChild variant="outline" size="sm">
-              <Link href="/login" data-testid="link-footer-signin">
+              <Link href="/ari-amr/login" data-testid="link-footer-signin">
                 Sign in
               </Link>
             </Button>

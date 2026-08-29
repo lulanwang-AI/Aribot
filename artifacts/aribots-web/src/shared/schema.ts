@@ -7,6 +7,7 @@ export interface User {
   name: string;
   specialty: string;
   subspecialty: string;
+  interests: string[];
   hospital: string;
   /** Ward or unit the clinician covers, shown on the stewardship worklist. */
   ward: string;
@@ -17,6 +18,9 @@ export interface User {
   role: string;
   verified: boolean;
   phiSafeMode: boolean;
+  yearsExperience: number;
+  rankingScore: number;
+  badges: string[];
   bio: string;
   avatarUrl: string;
   credential: string;

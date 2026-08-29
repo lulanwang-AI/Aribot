@@ -6,7 +6,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar as AmrSidebar } from "@/components/app-sidebar";
+import { AppSidebar as AribotsSidebar } from "@/components/aribots-sidebar";
+import { ProfileSheetProvider } from "@/components/doctor-profile-sheet";
+import { FloatingAribot } from "@/components/floating-aribot";
+import { NetworkBackground } from "@/components/network-background";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Cases from "@/pages/cases";
@@ -15,11 +19,35 @@ import Intake from "@/pages/intake";
 import Antibiogram from "@/pages/antibiogram";
 import Formulary from "@/pages/formulary";
 import Guidance from "@/pages/guidance";
-import Ari from "@/pages/aribot";
-import Account from "@/pages/account";
-import Login from "@/pages/login";
+import AmrAri from "@/pages/aribot";
+import AmrAccount from "@/pages/account";
+import AribotsAssistant from "@/pages/aribots-assistant";
+import AribotsAccount from "@/pages/aribots-account";
+import AribotOnboarding from "@/pages/aribot-onboarding";
+import AribotDevBlocks from "@/pages/aribot-dev-blocks";
+import Home from "@/pages/home";
+import Triage from "@/pages/triage";
+import TriageDetail from "@/pages/triage-detail";
+import News from "@/pages/news";
+import Groups from "@/pages/groups";
+import GroupDetail from "@/pages/group-detail";
+import Events from "@/pages/events";
+import Chats from "@/pages/chats";
+import Training from "@/pages/training";
+import Doctors from "@/pages/doctors";
+import Team from "@/pages/team";
+import Telemed from "@/pages/telemed";
+import Admin from "@/pages/admin";
+import PreCharting from "@/pages/pre-charting";
+import ClinicalChat from "@/pages/clinical-chat";
+import SoapNote from "@/pages/soap";
+import VisitSummary from "@/pages/visit-summary";
+import WorkflowHistory from "@/pages/workflow-history";
+import AribotsLogin from "@/pages/login";
+import AmrLogin from "@/pages/amr-login";
 import Landing from "@/pages/landing";
 import AriAmr from "@/pages/ari-amr";
+import Whitepaper from "@/pages/whitepaper";
 import { AuthContext } from "@/lib/auth";
 import { STANDALONE } from "@/lib/amr";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -44,7 +72,7 @@ function SidebarEdgeTrigger() {
   );
 }
 
-function AppRouter() {
+function AmrRouter() {
   return (
     <Switch>
       <Route path="/dashboard" component={Dashboard} />
@@ -54,8 +82,38 @@ function AppRouter() {
       <Route path="/antibiogram" component={Antibiogram} />
       <Route path="/formulary" component={Formulary} />
       <Route path="/guidance" component={Guidance} />
-      <Route path="/ari" component={Ari} />
-      <Route path="/account" component={Account} />
+      <Route path="/ari" component={AmrAri} />
+      <Route path="/ari-amr/account" component={AmrAccount} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function AribotsRouter() {
+  return (
+    <Switch>
+      <Route path="/aribot/onboarding" component={AribotOnboarding} />
+      <Route path="/aribot/dev/blocks" component={AribotDevBlocks} />
+      <Route path="/aribot" component={AribotsAssistant} />
+      <Route path="/home" component={Home} />
+      <Route path="/triage" component={Triage} />
+      <Route path="/triage/:id">{(params) => <TriageDetail id={params.id} />}</Route>
+      <Route path="/news" component={News} />
+      <Route path="/groups" component={Groups} />
+      <Route path="/groups/:id">{(params) => <GroupDetail id={params.id} />}</Route>
+      <Route path="/events" component={Events} />
+      <Route path="/chats" component={Chats} />
+      <Route path="/training" component={Training} />
+      <Route path="/doctors" component={Doctors} />
+      <Route path="/account" component={AribotsAccount} />
+      <Route path="/team" component={Team} />
+      <Route path="/telemed" component={Telemed} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/pre-charting" component={PreCharting} />
+      <Route path="/clinical-chat" component={ClinicalChat} />
+      <Route path="/soap" component={SoapNote} />
+      <Route path="/visit-summary" component={VisitSummary} />
+      <Route path="/workflow-history" component={WorkflowHistory} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -66,15 +124,15 @@ const sidebarStyle = {
   "--sidebar-width-icon": "3rem",
 };
 
-function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
+function AuthenticatedAmrApp({ onSignOut }: { onSignOut: () => void }) {
   return (
     <AuthContext.Provider value={{ signOut: onSignOut }}>
       <SidebarProvider style={sidebarStyle as React.CSSProperties}>
         <div className="flex h-screen w-full">
-          <AppSidebar />
+          <AmrSidebar />
           <div className="relative flex min-w-0 flex-1 flex-col">
             <main className="flex-1 overflow-auto">
-              <AppRouter />
+              <AmrRouter />
             </main>
             <SidebarEdgeTrigger />
           </div>
@@ -84,9 +142,41 @@ function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+function AuthenticatedAribotsApp({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <AuthContext.Provider value={{ signOut: onSignOut }}>
+      <ProfileSheetProvider>
+        <NetworkBackground />
+        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+          <div className="flex h-screen w-full">
+            <AribotsSidebar />
+            <div className="relative flex min-w-0 flex-1 flex-col">
+              <main className="flex-1 overflow-auto">
+                <AribotsRouter />
+              </main>
+              <SidebarEdgeTrigger />
+            </div>
+          </div>
+          <FloatingAribot />
+        </SidebarProvider>
+      </ProfileSheetProvider>
+    </AuthContext.Provider>
+  );
+}
+
 function AppContent() {
   const [authenticated, setAuthenticated] = useState(true);
   const [location, setLocation] = useLocation();
+  const isAmrWorkspace =
+    location === "/dashboard" ||
+    location === "/intake" ||
+    location === "/antibiogram" ||
+    location === "/formulary" ||
+    location === "/guidance" ||
+    location === "/ari" ||
+    location === "/ari-amr/account" ||
+    location === "/cases" ||
+    location.startsWith("/cases/");
 
   async function handleSignOut() {
     try {
@@ -107,19 +197,59 @@ function AppContent() {
     return <AriAmr />;
   }
 
-  if (!authenticated || location === "/login") {
+  if (location === "/whitepaper") {
+    return <Whitepaper />;
+  }
+
+  if (location === "/login") {
     return (
-      <Login
+      <AribotsLogin
         onLogin={() => {
           setAuthenticated(true);
-          setLocation("/dashboard");
+          setLocation("/aribot");
         }}
         onNavigateToLanding={() => setLocation("/")}
       />
     );
   }
 
-  return <AuthenticatedApp onSignOut={handleSignOut} />;
+  if (location === "/ari-amr/login") {
+    return (
+      <AmrLogin
+        onLogin={() => {
+          setAuthenticated(true);
+          setLocation("/dashboard");
+        }}
+        onNavigateToLanding={() => setLocation("/ari-amr")}
+      />
+    );
+  }
+
+  if (!authenticated) {
+    return isAmrWorkspace ? (
+      <AmrLogin
+        onLogin={() => {
+          setAuthenticated(true);
+          setLocation("/dashboard");
+        }}
+        onNavigateToLanding={() => setLocation("/ari-amr")}
+      />
+    ) : (
+      <AribotsLogin
+        onLogin={() => {
+          setAuthenticated(true);
+          setLocation("/aribot");
+        }}
+        onNavigateToLanding={() => setLocation("/")}
+      />
+    );
+  }
+
+  return isAmrWorkspace ? (
+    <AuthenticatedAmrApp onSignOut={handleSignOut} />
+  ) : (
+    <AuthenticatedAribotsApp onSignOut={handleSignOut} />
+  );
 }
 
 function App() {

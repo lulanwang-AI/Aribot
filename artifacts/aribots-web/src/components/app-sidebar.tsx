@@ -53,7 +53,7 @@ const TOOLS = [
 
 const FOOTER = [
   { title: "Guidance", url: "/guidance", icon: BookOpen },
-  { title: "Account", url: "/account", icon: Settings },
+  { title: "Account", url: "/ari-amr/account", icon: Settings },
 ];
 
 export function AppSidebar() {
