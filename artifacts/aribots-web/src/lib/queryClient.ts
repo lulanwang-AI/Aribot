@@ -1,4 +1,19 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { localSupportApi } from "./amrLocal";
+
+/**
+ * In the standalone build there is no server to answer identity and worklist
+ * counter requests, so they are served from the same in-process engine that
+ * backs the rest of the app.
+ */
+const STANDALONE = import.meta.env.VITE_STANDALONE === "1";
+
+function localResponse(url: string): unknown | undefined {
+  if (!STANDALONE) return undefined;
+  if (url === "/api/me") return localSupportApi.me();
+  if (url === "/api/notifications") return localSupportApi.notifications();
+  return undefined;
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,6 +27,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  if (STANDALONE) {
+    // Profile edits and sign-in have no server to reach. Accept them so the
+    // interface stays responsive, and let the caller's optimistic update stand.
+    return new Response(JSON.stringify(localResponse(url) ?? { ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -29,7 +53,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const local = localResponse(url);
+    if (local !== undefined) return local as never;
+
+    const res = await fetch(url, {
       credentials: "include",
     });
 

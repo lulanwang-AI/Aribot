@@ -52,6 +52,37 @@ export default {
           border: "var(--destructive-border)",
         },
         ring: "hsl(var(--ring) / <alpha-value>)",
+        // Antimicrobial resistance domain scales.
+        susceptible: {
+          DEFAULT: "hsl(var(--susceptible) / <alpha-value>)",
+          soft: "hsl(var(--susceptible-soft) / <alpha-value>)",
+        },
+        intermediate: {
+          DEFAULT: "hsl(var(--intermediate) / <alpha-value>)",
+          soft: "hsl(var(--intermediate-soft) / <alpha-value>)",
+        },
+        resistant: {
+          DEFAULT: "hsl(var(--resistant) / <alpha-value>)",
+          soft: "hsl(var(--resistant-soft) / <alpha-value>)",
+        },
+        untested: {
+          DEFAULT: "hsl(var(--untested) / <alpha-value>)",
+          soft: "hsl(var(--untested-soft) / <alpha-value>)",
+        },
+        tier: {
+          narrow: "hsl(var(--tier-narrow) / <alpha-value>)",
+          moderate: "hsl(var(--tier-moderate) / <alpha-value>)",
+          broad: "hsl(var(--tier-broad) / <alpha-value>)",
+          extended: "hsl(var(--tier-extended) / <alpha-value>)",
+          reserve: "hsl(var(--tier-reserve) / <alpha-value>)",
+        },
+        action: {
+          stop: "hsl(var(--action-stop) / <alpha-value>)",
+          narrow: "hsl(var(--action-narrow) / <alpha-value>)",
+          continue: "hsl(var(--action-continue) / <alpha-value>)",
+          escalate: "hsl(var(--action-escalate) / <alpha-value>)",
+          oral: "hsl(var(--action-oral) / <alpha-value>)",
+        },
         chart: {
           "1": "hsl(var(--chart-1) / <alpha-value>)",
           "2": "hsl(var(--chart-2) / <alpha-value>)",

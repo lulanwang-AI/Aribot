@@ -44,8 +44,11 @@ interface AriMessageProps {
   streaming?: boolean;
 }
 
-const ER_DISCLAIMER =
-  "ER MODE ACTIVE — RESPONSE NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE CLINICAL USE.";
+// Must match the sentence the system prompt instructs Ari to emit first in
+// rapid mode. If one changes, the other has to change with it.
+const RAPID_MODE_DISCLAIMER =
+  "RAPID MODE - NOT VERIFIED AGAINST LIVE SOURCES. CONFIRM BEFORE ACTING.";
+const RAPID_MODE_SENTINEL = "RAPID MODE";
 
 export function AriMessage({ text, mode, streaming }: AriMessageProps) {
   const [copied, setCopied] = useState(false);
@@ -123,7 +126,7 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
     return blocks.some(
       (b) =>
         b.kind === "prose" &&
-        b.text.toUpperCase().includes("ER MODE ACTIVE")
+        b.text.toUpperCase().includes(RAPID_MODE_SENTINEL)
     );
   }, [blocks, mode]);
 
@@ -134,7 +137,7 @@ export function AriMessage({ text, mode, streaming }: AriMessageProps) {
     const prose = extractProseOnly(blocks);
     const summary =
       mode === "er"
-        ? `${prose}\n\n— Generated in ER Mode without source verification. Confirm before clinical use.`
+        ? `${prose}\n\n- Generated in rapid mode without source verification. Confirm before clinical use.`
         : prose;
     navigator.clipboard.writeText(summary).then(() => {
       setCopied(true);
@@ -342,7 +345,7 @@ function StepsPanel({
           <Activity className="h-3.5 w-3.5 text-primary" />
           <span className="font-semibold text-foreground">
             {streaming
-              ? `Working through your question — Step ${lastStepNum}`
+              ? `Working through your question - Step ${lastStepNum}`
               : `Reasoning steps · ${steps.length}`}
           </span>
           {streaming && (
@@ -502,7 +505,7 @@ function ClaimRow({
       >
         {verified
           ? `Verified via ${block.verificationSource || "primary source"}`
-          : "UNVERIFIED — confirm independently."}
+          : "UNVERIFIED - confirm independently."}
       </div>
       {followingProse && (
         <div className="mt-2 border-t border-current/10 pt-2 text-sm leading-relaxed opacity-90">
@@ -578,9 +581,9 @@ function CitationGroup({ blocks }: { blocks: AriCitationBlock[] }) {
 
 function ProseBlock({ text, mode }: { text: string; mode: "ari" | "er" }) {
   // ER mode: render the disclaimer line as a yellow callout if it is the
-  // first prose block — and only the first time we see it so we don't repeat.
+  // first prose block - and only the first time we see it so we don't repeat.
   const isErDisclaimer =
-    mode === "er" && text.toUpperCase().startsWith("ER MODE ACTIVE");
+    mode === "er" && text.toUpperCase().startsWith(RAPID_MODE_SENTINEL);
   if (isErDisclaimer) {
     return <ErDisclaimerCallout text={text} />;
   }
@@ -606,7 +609,7 @@ function ErDisclaimerCallout({
     >
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4" />
-        <span>{text || ER_DISCLAIMER}</span>
+        <span>{text || RAPID_MODE_DISCLAIMER}</span>
       </div>
       {clientInjected && import.meta.env.DEV && (
         <div className="mt-1 text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300">

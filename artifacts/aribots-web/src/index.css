@@ -9,52 +9,52 @@
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --background: 0 0% 100%;
-  --foreground: 215 25% 17%;
-  --border: 214 20% 90%;
-  --card: 210 20% 98%;
-  --card-foreground: 215 25% 17%;
-  --card-border: 214 15% 92%;
-  --sidebar: 217 65% 22%;
-  --sidebar-foreground: 214 60% 94%;
-  --sidebar-border: 217 55% 30%;
-  --sidebar-primary: 217 91% 60%;
+  --background: 195 30% 98%;
+  --foreground: 200 30% 14%;
+  --border: 195 20% 88%;
+  --card: 0 0% 100%;
+  --card-foreground: 200 30% 14%;
+  --card-border: 195 18% 90%;
+  --sidebar: 197 32% 96%;
+  --sidebar-foreground: 200 25% 22%;
+  --sidebar-border: 195 20% 86%;
+  --sidebar-primary: 187 84% 28%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 60% 32%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-accent: 187 44% 90%;
+  --sidebar-accent-foreground: 187 84% 24%;
+  --sidebar-ring: 187 84% 32%;
   --popover: 0 0% 100%;
-  --popover-foreground: 215 25% 17%;
-  --popover-border: 214 15% 94%;
-  --primary: 217 91% 60%;
+  --popover-foreground: 200 30% 14%;
+  --popover-border: 195 18% 92%;
+  --primary: 187 84% 28%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 214 15% 92%;
-  --secondary-foreground: 215 25% 22%;
-  --muted: 214 12% 93%;
-  --muted-foreground: 215 15% 47%;
-  --accent: 214 40% 93%;
-  --accent-foreground: 217 91% 55%;
-  --destructive: 0 84% 60%;
+  --secondary: 195 18% 92%;
+  --secondary-foreground: 200 28% 20%;
+  --muted: 195 16% 93%;
+  --muted-foreground: 200 12% 42%;
+  --accent: 187 44% 91%;
+  --accent-foreground: 187 84% 24%;
+  --destructive: 351 74% 44%;
   --destructive-foreground: 0 0% 100%;
-  --input: 214 18% 95%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
-  --chart-2: 199 89% 48%;
-  --chart-3: 43 96% 56%;
-  --chart-4: 160 84% 39%;
-  --chart-5: 340 75% 55%;
+  --input: 195 20% 95%;
+  --ring: 187 84% 32%;
+  --chart-1: 187 84% 32%;
+  --chart-2: 199 80% 45%;
+  --chart-3: 38 92% 45%;
+  --chart-4: 152 55% 36%;
+  --chart-5: 351 68% 50%;
   --font-sans: Open Sans, sans-serif;
   --font-serif: 'Montserrat', sans-serif;
   --font-mono: 'Open Sans', sans-serif;
   --radius: 0.5rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 2px 4px -1px hsl(217 91% 60% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 4px 6px -1px hsl(217 91% 60% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 8px 10px -1px hsl(217 91% 60% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
+  --shadow-2xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 1px 2px -1px hsl(187 84% 28% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 1px 2px -1px hsl(187 84% 28% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 2px 4px -1px hsl(187 84% 28% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 4px 6px -1px hsl(187 84% 28% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 8px 10px -1px hsl(187 84% 28% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -93,48 +93,48 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
-  --background: 220 15% 5%;
-  --foreground: 214 15% 88%;
-  --border: 217 12% 16%;
-  --card: 220 14% 8%;
-  --card-foreground: 214 12% 82%;
-  --card-border: 217 10% 14%;
-  --sidebar: 218 60% 12%;
-  --sidebar-foreground: 214 40% 88%;
-  --sidebar-border: 217 45% 22%;
-  --sidebar-primary: 217 91% 60%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 55% 22%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 217 91% 60%;
-  --popover: 220 15% 5%;
-  --popover-foreground: 214 15% 88%;
-  --popover-border: 217 10% 10%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 214 12% 90%;
-  --secondary-foreground: 215 25% 12%;
-  --muted: 217 10% 12%;
-  --muted-foreground: 214 10% 50%;
-  --accent: 217 50% 12%;
-  --accent-foreground: 217 85% 65%;
-  --destructive: 0 84% 60%;
+  --background: 197 28% 6%;
+  --foreground: 190 14% 88%;
+  --border: 197 14% 17%;
+  --card: 197 22% 9%;
+  --card-foreground: 190 12% 84%;
+  --card-border: 197 14% 16%;
+  --sidebar: 197 24% 8%;
+  --sidebar-foreground: 190 12% 82%;
+  --sidebar-border: 197 16% 18%;
+  --sidebar-primary: 187 72% 46%;
+  --sidebar-primary-foreground: 197 40% 6%;
+  --sidebar-accent: 187 44% 14%;
+  --sidebar-accent-foreground: 187 70% 62%;
+  --sidebar-ring: 187 72% 46%;
+  --popover: 197 26% 7%;
+  --popover-foreground: 190 14% 88%;
+  --popover-border: 197 14% 12%;
+  --primary: 187 72% 46%;
+  --primary-foreground: 197 40% 6%;
+  --secondary: 190 12% 88%;
+  --secondary-foreground: 197 30% 10%;
+  --muted: 197 14% 13%;
+  --muted-foreground: 195 10% 56%;
+  --accent: 187 44% 14%;
+  --accent-foreground: 187 70% 62%;
+  --destructive: 351 70% 55%;
   --destructive-foreground: 0 0% 100%;
-  --input: 217 18% 16%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
-  --chart-2: 199 89% 48%;
-  --chart-3: 43 96% 56%;
-  --chart-4: 160 84% 39%;
-  --chart-5: 340 75% 55%;
-  --shadow-2xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 2px 4px -1px hsl(217 91% 60% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 4px 6px -1px hsl(217 91% 60% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 8px 10px -1px hsl(217 91% 60% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
+  --input: 197 18% 17%;
+  --ring: 187 72% 46%;
+  --chart-1: 187 72% 46%;
+  --chart-2: 199 75% 55%;
+  --chart-3: 38 88% 55%;
+  --chart-4: 152 50% 46%;
+  --chart-5: 351 66% 60%;
+  --shadow-2xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 1px 2px -1px hsl(187 84% 28% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 1px 2px -1px hsl(187 84% 28% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 2px 4px -1px hsl(187 84% 28% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 4px 6px -1px hsl(187 84% 28% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(187 84% 28% / 0.00), 0px 8px 10px -1px hsl(187 84% 28% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
 
 /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
@@ -169,6 +169,78 @@
   --font-sans: Open Sans, sans-serif;
   --font-serif: Georgia, serif;
   --tracking-normal: 0em;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Antimicrobial resistance domain tokens                              */
+/*                                                                     */
+/* Susceptibility and spectrum are the two scales this product lives    */
+/* on, so they are first-class tokens rather than ad-hoc Tailwind       */
+/* colours scattered through pages. Hue alone never carries the         */
+/* meaning: every susceptibility indicator is paired with a number or   */
+/* an S/I/R letter, so the reading survives colour vision deficiency    */
+/* and greyscale printing.                                             */
+/* ------------------------------------------------------------------ */
+:root {
+  --susceptible: 152 55% 32%;
+  --susceptible-soft: 152 45% 92%;
+  --intermediate: 38 92% 38%;
+  --intermediate-soft: 38 90% 92%;
+  --resistant: 351 74% 44%;
+  --resistant-soft: 351 70% 95%;
+  --untested: 200 10% 55%;
+  --untested-soft: 200 14% 94%;
+
+  /* Spectrum tier ramp, narrow to last-line. Deliberately sequential:
+     the visual weight increases with the ecological cost. */
+  --tier-narrow: 152 45% 34%;
+  --tier-moderate: 187 70% 32%;
+  --tier-broad: 38 88% 42%;
+  --tier-extended: 18 82% 46%;
+  --tier-reserve: 331 68% 44%;
+
+  /* Stewardship action colours, used by the 48-72 hour decision panel. */
+  --action-stop: 152 55% 32%;
+  --action-narrow: 187 75% 30%;
+  --action-continue: 200 12% 45%;
+  --action-escalate: 351 74% 44%;
+  --action-oral: 262 55% 48%;
+}
+
+.dark {
+  --susceptible: 152 50% 46%;
+  --susceptible-soft: 152 40% 14%;
+  --intermediate: 38 88% 55%;
+  --intermediate-soft: 38 60% 14%;
+  --resistant: 351 70% 58%;
+  --resistant-soft: 351 50% 15%;
+  --untested: 200 10% 52%;
+  --untested-soft: 200 12% 15%;
+
+  --tier-narrow: 152 45% 48%;
+  --tier-moderate: 187 65% 46%;
+  --tier-broad: 38 85% 55%;
+  --tier-extended: 18 80% 58%;
+  --tier-reserve: 331 65% 60%;
+
+  --action-stop: 152 50% 46%;
+  --action-narrow: 187 68% 46%;
+  --action-continue: 200 10% 58%;
+  --action-escalate: 351 70% 58%;
+  --action-oral: 262 60% 66%;
+}
+
+@layer base {
+  body {
+    /* Faint teal wash so large empty surfaces do not read as flat white. */
+    background-image: radial-gradient(
+      ellipse 90rem 50rem at 50% -20%,
+      hsl(var(--primary) / 0.05),
+      transparent 70%
+    );
+    background-attachment: fixed;
+  }
 }
 
 @layer base {

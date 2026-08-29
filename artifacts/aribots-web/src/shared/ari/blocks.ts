@@ -132,8 +132,8 @@ function tryParseStructured(line: string): AriBlock | null {
     };
   }
 
-  // JSON parsed but isn't one of our known structured shapes — treat as prose.
-  // Quick filter: contains a known key but in unexpected shape — still prose.
+  // JSON parsed but isn't one of our known structured shapes - treat as prose.
+  // Quick filter: contains a known key but in unexpected shape - still prose.
   for (const k of Array.from(KNOWN_KEYS)) {
     if (k in parsed) return null;
   }
@@ -208,7 +208,7 @@ export interface PartialParseResult {
  *
  * Note: a fully-formed JSON line MUST end with `\n` to be parsed as a
  * structured block. Otherwise it stays in trailingBuffer until a newline
- * arrives — this prevents flickering between "looks like prose" and "looks
+ * arrives - this prevents flickering between "looks like prose" and "looks
  * like JSON" while a block is mid-stream.
  */
 export function parseAriStreamPartial(streamText: string): PartialParseResult {

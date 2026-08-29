@@ -1,33 +1,11 @@
-import {
-  Pill,
-  Activity,
-  Calculator,
-  Stethoscope,
-  AlertTriangle,
-  FileText,
-  Scan,
-  Bandage,
-  Microscope,
-  type LucideIcon,
-} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import {
   ARI_CAPABILITIES,
   type AriCapability,
   type AriCapabilityId,
 } from "@shared/ari/capabilities";
+import { getCapabilityIcon } from "@/lib/capabilityIcons";
 import { cn } from "@/lib/utils";
-
-const CAPABILITY_ICONS: Record<AriCapabilityId, LucideIcon> = {
-  pharmacy: Pill,
-  ventilator: Activity,
-  calculators: Calculator,
-  clinical_protocols: Stethoscope,
-  er_triage: AlertTriangle,
-  cms_billing: FileText,
-  rad_onc_imaging: Scan,
-  wound_skin: Bandage,
-  antibiotic_stewardship: Microscope,
-};
 
 interface CapabilitySidebarProps {
   selected: AriCapabilityId | null;
@@ -48,7 +26,7 @@ export function CapabilitySidebar({ selected, onSelect }: CapabilitySidebarProps
         <CapabilityCard
           key={cap.id}
           capability={cap}
-          icon={CAPABILITY_ICONS[cap.id]}
+          icon={getCapabilityIcon(cap.id)}
           selected={cap.id === selected}
           shortcutNumber={idx + 1}
           onClick={() => onSelect(cap.id)}

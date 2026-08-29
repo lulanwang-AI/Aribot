@@ -1,261 +1,257 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { resetAnalytics } from "@/lib/analytics";
-import { useToast } from "@/hooks/use-toast";
 import {
-  Settings,
-  Shield,
-  BarChart3,
-  Trash2,
-  CheckCircle,
-  User as UserIcon,
-  Building,
-  Stethoscope,
-  GraduationCap,
-  LogOut,
-  MapPin,
-  Award,
-  Trophy,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SectionHeading, Pill, DecisionSupportNotice } from "@/components/amr/primitives";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { amrApi } from "@/lib/amr";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { useRole, type AppRole } from "@/lib/role";
-import { UserCog } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import type { User } from "@shared/schema";
+import { Building2, LogOut, Moon, ShieldCheck, Sun } from "lucide-react";
+import { useMemo, useState } from "react";
 
 export default function Account() {
-  const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
-  const [role, setRole] = useRole();
   const { toast } = useToast();
   const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      await apiRequest("PATCH", "/api/me", data);
-    },
+  const { data: user, isLoading } = useQuery<User>({ queryKey: ["/api/me"] });
+  const { data: reference } = useQuery({
+    queryKey: ["amr", "reference"],
+    queryFn: () => amrApi.reference(),
+  });
+
+  const [draft, setDraft] = useState<Partial<User>>({});
+  /** Draft value if the field has been edited, otherwise the saved value. */
+  function text(key: "name" | "specialty" | "hospital" | "ward" | "regionId"): string {
+    return draft[key] ?? user?.[key] ?? "";
+  }
+
+  const save = useMutation({
+    mutationFn: (payload: Partial<User>) => apiRequest("PATCH", "/api/me", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me"] });
-      toast({ title: "Settings updated" });
+      setDraft({});
+      toast({ title: "Profile updated" });
     },
+    onError: (err: Error) =>
+      toast({ title: "Could not save", description: err.message, variant: "destructive" }),
   });
+
+  const regionsByArea = useMemo(() => {
+    const grouped = new Map<string, NonNullable<typeof reference>["regions"]>();
+    for (const region of reference?.regions ?? []) {
+      const list = grouped.get(region.area) ?? [];
+      list.push(region);
+      grouped.set(region.area, list);
+    }
+    return [...grouped.entries()];
+  }, [reference]);
 
   if (isLoading || !user) {
     return (
-      <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <div className="mx-auto w-full max-w-3xl px-6 py-6 lg:px-8">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64" />
+        <Skeleton className="mt-6 h-64 w-full rounded-xl" />
       </div>
     );
   }
 
+  const dirty = Object.keys(draft).length > 0;
+
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-account-title">
-          <Settings className="h-5 w-5 text-primary" />
-          Account Settings
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your profile and preferences
+    <div className="mx-auto w-full max-w-3xl px-6 py-6 lg:px-8">
+      <header className="mb-6">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Account</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your profile and the default antibiogram applied to new assessments.
         </p>
-      </div>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <UserCog className="h-4 w-4" />
-            Role
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg max-w-sm" data-testid="role-toggle">
-            {(["physician", "medstudent", "admin"] as AppRole[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRole(r)}
-                data-testid={`role-btn-${r}`}
-                className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-1.5 rounded-md transition-all ${
-                  role === r
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {r === "physician" && <Stethoscope className="h-3.5 w-3.5 shrink-0" />}
-                {r === "medstudent" && <GraduationCap className="h-3.5 w-3.5 shrink-0" />}
-                {r === "admin" && <UserCog className="h-3.5 w-3.5 shrink-0" />}
-                <span className="truncate">
-                  {r === "physician" ? "MD/DO" : r === "medstudent" ? "Student" : "Admin"}
-                </span>
-              </button>
-            ))}
-          </div>
-          {role === "medstudent" && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-              Observer mode — some features restricted
-            </p>
-          )}
-          {role === "admin" && (
-            <p className="text-xs text-primary mt-2">
-              Admin view — elevated access
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <UserIcon className="h-4 w-4" />
-            Profile
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <InfoField icon={UserIcon} label="Name" value={user.name} />
-            <InfoField icon={Stethoscope} label="Specialty" value={user.specialty} />
-            <InfoField icon={GraduationCap} label="Subspecialty" value={user.subspecialty} />
-            <InfoField icon={Building} label="Hospital" value={user.hospital} />
-            <InfoField icon={MapPin} label="Location" value={`${user.city}, ${user.state}`} />
-            <InfoField icon={Award} label="Experience" value={`${user.yearsExperience} years`} />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Trophy className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-sm font-medium">Ranking Score: {user.rankingScore}</span>
-          </div>
-
-          {user.badges.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Badges</p>
-              <div className="flex flex-wrap gap-1.5">
-                {user.badges.map(b => (
-                  <Badge key={b} className="text-xs">
-                    <Award className="h-2.5 w-2.5 mr-0.5" />
-                    {b}
-                  </Badge>
-                ))}
-              </div>
+      <div className="space-y-5">
+        <section className="rounded-xl border border-card-border bg-card p-5">
+          <SectionHeading title="Clinician" />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-medium">
+                Name
+              </Label>
+              <Input
+                id="name"
+                data-testid="input-name"
+                value={text("name")}
+                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+              />
             </div>
-          )}
-
-          {user.bio && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Bio</p>
-              <p className="text-sm text-muted-foreground">{user.bio}</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="specialty" className="text-xs font-medium">
+                Specialty
+              </Label>
+              <Input
+                id="specialty"
+                data-testid="input-specialty"
+                value={text("specialty")}
+                onChange={(e) => setDraft((d) => ({ ...d, specialty: e.target.value }))}
+              />
             </div>
-          )}
-
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">Interests</p>
-            <div className="flex flex-wrap gap-1.5">
-              {user.interests.map((interest) => (
-                <Badge key={interest} variant="secondary" className="text-xs">{interest}</Badge>
-              ))}
+            <div className="space-y-1.5">
+              <Label htmlFor="hospital" className="text-xs font-medium">
+                Facility
+              </Label>
+              <Input
+                id="hospital"
+                data-testid="input-hospital"
+                value={text("hospital")}
+                onChange={(e) => setDraft((d) => ({ ...d, hospital: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ward" className="text-xs font-medium">
+                Ward or unit
+              </Label>
+              <Input
+                id="ward"
+                data-testid="input-ward"
+                value={text("ward")}
+                onChange={(e) => setDraft((d) => ({ ...d, ward: e.target.value }))}
+              />
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">{user.role}</Badge>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <Pill className="border-primary/30 bg-primary/10 text-primary">
+              <ShieldCheck className="h-2.5 w-2.5" />
+              {user.credential}
+            </Pill>
             {user.verified && (
-              <Badge variant="default" className="text-xs">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Verified
-              </Badge>
+              <Pill className="border-susceptible/25 bg-susceptible-soft text-susceptible">
+                Licence verified
+              </Pill>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Compliance & Privacy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium">PHI-Safe Mode</p>
-              <p className="text-xs text-muted-foreground">
-                When enabled, additional safeguards are applied to prevent sharing of Protected Health Information.
-              </p>
-            </div>
-            <Switch
-              checked={user.phiSafeMode}
-              onCheckedChange={(v) => updateMutation.mutate({ phiSafeMode: v })}
-              data-testid="switch-phi-safe-global"
-            />
+        <section className="rounded-xl border border-card-border bg-card p-5">
+          <SectionHeading
+            title="Default antibiogram"
+            description="Applied to new assessments unless travel history overrides it."
+          />
+          <div className="mt-4 space-y-1.5">
+            <Label htmlFor="region" className="text-xs font-medium">
+              Region
+            </Label>
+            <Select
+              value={text("regionId") || "us_northeast"}
+              onValueChange={(next) => setDraft((d) => ({ ...d, regionId: next }))}
+            >
+              <SelectTrigger id="region" data-testid="select-default-region">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {regionsByArea.map(([area, regions]) => (
+                  <SelectGroup key={area}>
+                    <SelectLabel>{area}</SelectLabel>
+                    {regions.map((region) => (
+                      <SelectItem key={region.id} value={region.id}>
+                        {region.name}
+                        {region.facilityData ? " (facility data)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Separator />
-          <p className="text-xs text-muted-foreground">
-            PHI-safe mode affects Aribot context sharing and adds stricter warnings when composing triage posts and comments.
-            This setting is mirrored in the Aribot context bar.
+          <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            <Building2 className="mt-px h-3.5 w-3.5 shrink-0" />
+            Regions without facility data use the shipped illustrative profile. Load your own
+            CLSI-interpreted antibiogram before clinical use.
           </p>
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Aribot tracks anonymous usage analytics locally in your browser to power trending topics and personalization.
-            No data is sent to external servers.
-          </p>
+        <section className="rounded-xl border border-card-border bg-card p-5">
+          <SectionHeading title="Preferences" />
+          <div className="mt-4 space-y-2.5">
+            <label className="flex cursor-pointer items-center justify-between rounded-md border border-border/60 px-3 py-2.5">
+              <span>
+                <span className="block text-xs font-medium text-foreground">
+                  Protected health information safe mode
+                </span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Warns before identifiers are typed into a free-text field.
+                </span>
+              </span>
+              <Switch
+                checked={draft.phiSafeMode ?? user?.phiSafeMode ?? true}
+                data-testid="switch-phi-safe-mode"
+                onCheckedChange={(checked) => setDraft((d) => ({ ...d, phiSafeMode: checked }))}
+              />
+            </label>
+
+            <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2.5">
+              <span>
+                <span className="block text-xs font-medium text-foreground">Appearance</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Ward displays are often dimmed overnight.
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="button-toggle-theme"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="mr-1.5 h-3.5 w-3.5" />
+                    Light
+                  </>
+                ) : (
+                  <>
+                    <Moon className="mr-1.5 h-3.5 w-3.5" />
+                    Dark
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => {
-              resetAnalytics();
-              toast({ title: "Analytics reset", description: "All local analytics data has been cleared." });
-            }}
-            data-testid="button-reset-analytics"
+            type="button"
+            disabled={!dirty || save.isPending}
+            data-testid="button-save-profile"
+            onClick={() => save.mutate(draft)}
           >
-            <Trash2 className="h-3 w-3 mr-1.5" />
-            Reset Analytics Data
+            {save.isPending ? "Saving" : "Save changes"}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={signOut}
-            data-testid="button-sign-out"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+          <Button type="button" variant="outline" onClick={signOut} data-testid="button-sign-out">
+            <LogOut className="mr-1.5 h-3.5 w-3.5" />
+            Sign out
           </Button>
-        </CardContent>
-      </Card>
+        </div>
 
-      <p className="text-center text-[10px] text-muted-foreground py-2">
-        For licensed clinicians only. Not for patient use. Content is not medical advice — verify with primary sources.
-      </p>
-    </div>
-  );
-}
-
-function InfoField({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="space-y-0.5">
-      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {label}
-      </p>
-      <p className="text-sm" data-testid={`text-${label.toLowerCase()}`}>{value}</p>
+        <DecisionSupportNotice
+          lines={[
+            `Knowledge base ${reference?.knowledgeBaseVersion ?? "loading"}. Recommendations are reproducible for a given intake and antibiogram.`,
+            "Clinical decision support for licensed clinicians. It informs but does not replace clinical judgement.",
+          ]}
+        />
+      </div>
     </div>
   );
 }

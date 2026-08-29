@@ -55,6 +55,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       "@shared": path.resolve(import.meta.dirname, "src", "shared"),
+      "@engine": path.resolve(import.meta.dirname, "..", "api-server", "src", "amr"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
@@ -71,6 +72,12 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: false,
+    },
+    proxy: {
+      "/api": {
+        target: process.env.API_ORIGIN || "http://localhost:8080",
+        changeOrigin: true,
+      },
     },
   },
   preview: {

@@ -7,16 +7,16 @@ export interface User {
   name: string;
   specialty: string;
   subspecialty: string;
-  interests: string[];
   hospital: string;
+  /** Ward or unit the clinician covers, shown on the stewardship worklist. */
+  ward: string;
   city: string;
   state: string;
+  /** Region id used to pick the default antibiogram for this user. */
+  regionId: string;
   role: string;
   verified: boolean;
   phiSafeMode: boolean;
-  yearsExperience: number;
-  rankingScore: number;
-  badges: string[];
   bio: string;
   avatarUrl: string;
   credential: string;

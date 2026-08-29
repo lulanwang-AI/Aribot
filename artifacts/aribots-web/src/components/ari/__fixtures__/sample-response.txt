@@ -12,20 +12,20 @@ For suspected hospital-acquired pneumonia in a UCLA Health ICU patient, start du
 
 - **Cefepime** 2 g IV q8h
 - **Tobramycin** 7 mg/kg IV q24h
-- **Vancomycin** 25–30 mg/kg load if MRSA risk factors are present (recent IV antibiotics, prior MRSA colonization, or local MRSA prevalence >20%)
+- **Vancomycin** 25-30 mg/kg load if MRSA risk factors are present (recent IV antibiotics, prior MRSA colonization, or local MRSA prevalence >20%)
 
 {"ari_claim": "Cefepime 2g IV q8h plus tobramycin 7 mg/kg IV q24h is appropriate empiric therapy when local P. aeruginosa cefepime susceptibility is below 90%.", "verified": true, "verification_source": "IDSA HAP/VAP 2016 §VII"}
 
 ### De-escalation plan
 
-- Discontinue tobramycin at 48–72h once susceptibilities return and the patient is improving.
+- Discontinue tobramycin at 48-72h once susceptibilities return and the patient is improving.
 - Reassess anaerobic coverage only if aspiration is suspected.
-- Pip-tazo is the usual aspiration choice but is currently in intermittent shortage — confirm with pharmacy.
+- Pip-tazo is the usual aspiration choice but is currently in intermittent shortage - confirm with pharmacy.
 
-{"ari_claim": "Tobramycin should be discontinued at 48–72h once susceptibilities return and the patient is improving.", "verified": false, "verification_source": ""}
+{"ari_claim": "Tobramycin should be discontinued at 48-72h once susceptibilities return and the patient is improving.", "verified": false, "verification_source": ""}
 
 {"ari_citation": "IDSA", "title": "Management of Adults with Hospital-acquired and Ventilator-associated Pneumonia: 2016 Clinical Practice Guidelines", "doi_or_url": "https://doi.org/10.1093/cid/ciw353", "evidence_class": "Guideline"}
 {"ari_citation": "UCLA Health", "title": "2026 ICU Antibiogram", "doi_or_url": "", "evidence_class": "Local data"}
-{"ari_citation": "FDA", "title": "Drug Shortages — Piperacillin/Tazobactam", "doi_or_url": "https://www.accessdata.fda.gov/scripts/drugshortages/", "evidence_class": "Regulatory notice"}
+{"ari_citation": "FDA", "title": "Drug Shortages - Piperacillin/Tazobactam", "doi_or_url": "https://www.accessdata.fda.gov/scripts/drugshortages/", "evidence_class": "Regulatory notice"}
 
 If renal function declines below CrCl 30, switch tobramycin to a beta-lactam-only regimen and reassess.

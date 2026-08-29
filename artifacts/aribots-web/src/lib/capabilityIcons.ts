@@ -1,28 +1,22 @@
 import {
-  Bandage,
-  Calculator,
-  ClipboardList,
-  Pill,
-  PillBottle,
+  FlaskConical,
+  Gauge,
+  Globe2,
   Plus,
-  Receipt,
-  ScanLine,
-  Siren,
-  Wind,
+  ShieldAlert,
+  TrendingDown,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import type { AriCapabilityId } from "@shared/ari/capabilities";
 
 export const CAPABILITY_ICONS: Record<AriCapabilityId, LucideIcon> = {
-  antibiotic_stewardship: Pill,
-  wound_skin: Bandage,
-  pharmacy: PillBottle,
-  ventilator: Wind,
-  calculators: Calculator,
-  clinical_protocols: ClipboardList,
-  er_triage: Siren,
-  cms_billing: Receipt,
-  rad_onc_imaging: ScanLine,
+  empiric_selection: FlaskConical,
+  de_escalation: TrendingDown,
+  dosing_monitoring: Gauge,
+  resistance_patterns: Globe2,
+  source_control: Wrench,
+  allergy_assessment: ShieldAlert,
 };
 
 export function getCapabilityIcon(id: AriCapabilityId): LucideIcon {

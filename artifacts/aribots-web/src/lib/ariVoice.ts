@@ -248,7 +248,7 @@ export async function speakText(text: string): Promise<TtsHandle> {
 }
 
 // ── Live interim transcription via the browser's Web Speech API ──────────
-// This is a UX nicety only — it lets us stream interim text into the
+// This is a UX nicety only - it lets us stream interim text into the
 // composer while the user is still talking so they can see "what the
 // system thinks they're saying". The authoritative transcription is still
 // produced by ElevenLabs Scribe on stop (more accurate, multilingual,

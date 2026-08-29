@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../api-server/src/amr/**/*"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,
@@ -13,7 +13,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["./src/shared/*"],
-      "@assets/*": ["../../attached_assets/*"]
+      "@assets/*": ["../../attached_assets/*"],
+      "@engine/*": ["../api-server/src/amr/*"]
     }
   },
   "references": [

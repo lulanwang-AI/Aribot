@@ -49,12 +49,12 @@ export interface AriTab {
   id: string;
   title: string;
   mode: AriMode;
-  // No default capability — when null, Ari auto-infers from the query.
+  // No default capability - when null, Ari auto-infers from the query.
   capability: AriCapabilityId | null;
   additionalCapabilities: AriCapabilityId[];
   attachments: AriAttachment[];
   messages: AriMessage[];
-  // In-progress composer draft — kept per-tab so switching tabs preserves
+  // In-progress composer draft - kept per-tab so switching tabs preserves
   // unsent text in each.
   draft: string;
   locationProvided: boolean;
@@ -64,7 +64,7 @@ export interface AriTab {
   // Bumped every time a message is added or streamed into. Used to sort
   // the History panel so the most recent conversations float to the top.
   updatedAt: number;
-  // Telemetry helper — not persisted across reloads on purpose.
+  // Telemetry helper - not persisted across reloads on purpose.
   _erSessionStart?: ErSessionStart;
 }
 
@@ -91,10 +91,10 @@ interface AriState {
   closeTab: (id: string) => void;
   switchTab: (id: string) => void;
   renameTab: (id: string, title: string) => void;
-  // History actions — wipe every saved conversation and start a fresh tab.
+  // History actions - wipe every saved conversation and start a fresh tab.
   clearHistory: () => void;
 
-  // Existing actions — operate on the active tab.
+  // Existing actions - operate on the active tab.
   setMode: (mode: AriMode) => void;
   setCapability: (capability: AriCapabilityId | null) => void;
   toggleCapability: (id: AriCapabilityId) => void;
@@ -130,7 +130,7 @@ function bridgeSessionStorageToLocalStorage(): void {
     window.localStorage.setItem(PERSIST_KEY, legacy);
     window.sessionStorage.removeItem(PERSIST_KEY);
   } catch {
-    // Quota / privacy mode — fail silently, the user just starts fresh.
+    // Quota / privacy mode - fail silently, the user just starts fresh.
   }
 }
 bridgeSessionStorageToLocalStorage();
@@ -329,7 +329,7 @@ export const useAriStore = create<AriState>()(
       toggleCapability: (id) =>
         set((s) =>
           applyToActive(s, (t) => {
-            // Clicking the current primary clears it — capabilities are all
+            // Clicking the current primary clears it - capabilities are all
             // optional and there is no required default.
             if (t.capability === id) {
               if (t.additionalCapabilities.length === 0) {
@@ -488,7 +488,7 @@ export const useAriStore = create<AriState>()(
       // v3 → capability is now optional.
       // v4 → chat history persists across browser sessions (localStorage)
       //      and each tab gains an `updatedAt` field for History sorting.
-      version: 5,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       // Persist tabs (minus heavy attachment blobs). Cap at MAX_HISTORY_TABS
       // to keep localStorage from ballooning indefinitely. Mirror fields
@@ -512,7 +512,7 @@ export const useAriStore = create<AriState>()(
         if (fromVersion < 3) {
           tabs = tabs.map((t: any) => ({
             ...t,
-            // Only clear capability for empty tabs — preserve the choice
+            // Only clear capability for empty tabs - preserve the choice
             // for any tab that already has a conversation in progress so
             // continuing answers stay consistent.
             capability:
@@ -528,13 +528,6 @@ export const useAriStore = create<AriState>()(
             ...t,
             updatedAt: t.updatedAt ?? t.sessionStartedAt ?? Date.now(),
           }));
-        }
-        if (fromVersion < 5) {
-          // ER mode was removed from the product — coerce any persisted
-          // ER tabs back to standard Ari mode.
-          tabs = tabs.map((t: any) =>
-            t.mode === "er" ? { ...t, mode: "ari" } : t
-          );
         }
         return { ...p, tabs } as any;
       },
@@ -555,7 +548,7 @@ export const useAriStore = create<AriState>()(
 );
 
 // Heuristic: detect whether the user mentioned a location/facility in their
-// query. Used only to soften the antibiotic_stewardship gate UI — the backend
+// query. Used only to soften the antibiotic_stewardship gate UI - the backend
 // still receives the raw query and applies its own rules.
 const LOCATION_HINTS = [
   /\b(hospital|clinic|icu|micu|sicu|ccu|emergency department|\bed\b|\ber\b|ward|floor|unit|facility|center|centre|county)\b/i,

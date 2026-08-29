@@ -15,6 +15,10 @@ import {
   type AriCapabilityId,
 } from "@shared/ari/capabilities";
 import { cn } from "@/lib/utils";
+import { STANDALONE } from "@/lib/amr";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { MessageSquareOff } from "lucide-react";
 
 interface MeResponse {
   user: {
@@ -39,7 +43,7 @@ export default function Aribot() {
     retry: false,
   });
 
-  // Onboarding is currently optional — clinicians can complete it at
+  // Onboarding is currently optional - clinicians can complete it at
   // /aribot/onboarding but are no longer forced through it before using Ari.
 
   const mode = useAriStore((s) => s.mode);
@@ -88,7 +92,7 @@ export default function Aribot() {
       filename: a.filename,
     }));
 
-    // ER mode bypasses capability gating entirely — drop both primary and
+    // ER mode bypasses capability gating entirely - drop both primary and
     // additional capability hints from the request so the backend sees a
     // clean ER query (matches the hidden chip strip / picker on the UI).
     const isEr = mode === "er";
@@ -169,6 +173,40 @@ export default function Aribot() {
     return () => window.removeEventListener("keydown", onKey);
   }, [setCapability]);
 
+  // The chat is the one part of this product that needs a server: it calls a
+  // model with a key that must never be shipped to a browser. In the standalone
+  // build it says so plainly rather than failing when someone presses send.
+  if (STANDALONE) {
+    return (
+      <div className="mx-auto flex h-full w-full max-w-2xl flex-col items-center justify-center px-6 py-10 text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <MessageSquareOff className="h-6 w-6" />
+        </div>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Ask Ari needs a server
+        </h1>
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          The chat retrieves from PubMed and current guidelines through a model API, which needs a
+          key that cannot safely be shipped to a browser. This build runs the stewardship engine
+          entirely on your device, so there is no backend to hold one.
+        </p>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+          Everything the chat would explain is already computed and shown on the case itself: the
+          organism differential and why each entry is on it, the coverage arithmetic behind the
+          ranking, the allergy assessment, and the reasoning for the 48 to 72 hour decision.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link href="/dashboard">Back to the dashboard</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/guidance">How Ari decides</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (meQuery.isLoading) {
     return (
       <div className="flex h-full items-center justify-center" data-testid="loader-ari-me">
@@ -190,21 +228,24 @@ export default function Aribot() {
       data-testid="page-aribot"
       data-mode={mode}
     >
-      {/* Liquid Glass background — soft radial blue-sky gradient */}
-      <div
+      {/* Mode-aware animated gradient backdrops. Two layers crossfade
+          when the user toggles between Ari and ER so the whole surface
+          gently shifts color rather than snapping. */}
+      <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background: "radial-gradient(90% 55% at 12% 0%, #d8e8ff 0%, rgba(216,232,255,0) 60%), radial-gradient(80% 48% at 96% 7%, #cdf7ee 0%, rgba(205,247,238,0) 55%), radial-gradient(130% 70% at 50% 106%, #dbeafe 0%, rgba(219,234,254,0) 60%), linear-gradient(180deg, #f4f9ff, #edfaff)",
-        }}
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/[0.07] via-background to-primary/[0.04]"
+        initial={false}
+        animate={{ opacity: isEr ? 0 : 1 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
         data-testid="bg-ari-gradient"
       />
-      <div
+      <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 hidden dark:block"
-        style={{
-          background: "radial-gradient(90% 55% at 12% 0%, #123a5a 0%, rgba(18,58,90,0) 62%), radial-gradient(80% 48% at 96% 7%, #0b4948 0%, rgba(11,73,72,0) 55%), radial-gradient(130% 70% at 50% 106%, #0b2e4d 0%, rgba(11,46,77,0) 60%), linear-gradient(180deg, #081a2c, #03101d)",
-        }}
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-intermediate/[0.10] via-background to-resistant/[0.06]"
+        initial={false}
+        animate={{ opacity: isEr ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
+        data-testid="bg-er-gradient"
       />
       <TopBar onClear={handleClearScratch} />
       <div className="flex min-h-0 flex-1 flex-col">
@@ -232,11 +273,7 @@ export default function Aribot() {
             streaming={streaming}
           />
           <footer
-            className="border-t px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-xl sm:px-6"
-            style={{
-              backgroundColor: "rgba(255,255,255,0.45)",
-              borderColor: "rgba(255,255,255,0.72)",
-            }}
+            className="border-t border-border bg-muted/10 px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-sm sm:px-6"
             data-testid="footer-ari"
           >
             <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2">
@@ -283,11 +320,7 @@ function CapabilityChips({
   if (ids.length === 0) return null;
   return (
     <div
-      className="border-t px-4 py-2 backdrop-blur-xl sm:px-6"
-      style={{
-        backgroundColor: "rgba(255,255,255,0.45)",
-        borderColor: "rgba(255,255,255,0.72)",
-      }}
+      className="border-t border-border bg-muted/30 px-4 py-2 sm:px-6"
       data-testid="region-ari-capability-chips"
     >
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">

@@ -85,8 +85,8 @@ export function Composer({
   const inputHint = capability
     ? capability.inputHint
     : mode === "er"
-      ? "Describe the case — ER mode is unverified, confirm before clinical use."
-      : "Ask Ari anything — pick a capability with + or let Ari choose.";
+      ? "Describe the case - ER mode is unverified, confirm before clinical use."
+      : "Ask Ari anything - pick a capability with + or let Ari choose.";
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
@@ -187,7 +187,7 @@ export function Composer({
         } else {
           toast({
             title: "No speech detected",
-            description: "Try recording again — speak a bit closer to the mic.",
+            description: "Try recording again - speak a bit closer to the mic.",
           });
         }
       } catch (err: any) {
@@ -214,7 +214,7 @@ export function Composer({
       // Tell the user we're recording with a quick non-blocking toast so
       // the action is unmistakable, even if the banner is below the fold.
       toast({
-        title: "Recording — speak now",
+        title: "Recording - speak now",
         description:
           "Click the mic again to stop and transcribe. Your audio goes only to the transcription provider.",
       });
@@ -226,7 +226,7 @@ export function Composer({
         const ok = live.start({
           onInterim: (text) => setLiveTranscript(text),
           onError: () => {
-            // Fail silently — the final transcription still works.
+            // Fail silently - the final transcription still works.
             setLiveTranscript("");
           },
         });
@@ -318,7 +318,7 @@ export function Composer({
         }
         setUploadingName(file.name);
         const attachment = await uploadAriFile(file);
-        // When no capability is selected, accept everything — Ari will
+        // When no capability is selected, accept everything - Ari will
         // infer how to handle the attachment from the query.
         const allowed =
           !capability ||
@@ -395,15 +395,11 @@ export function Composer({
   return (
     <div
       className={cn(
-        "border-t backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-500",
+        "border-t bg-background/85 backdrop-blur-sm transition-[background-color,border-color,box-shadow] duration-500",
         mode === "er"
           ? "border-rose-400/70 shadow-[0_-6px_24px_-12px_rgba(244,63,94,0.35)] dark:border-rose-500/50"
-          : ""
+          : "border-border"
       )}
-      style={mode !== "er" ? {
-        backgroundColor: "rgba(255,255,255,0.55)",
-        borderColor: "rgba(255,255,255,0.72)",
-      } : undefined}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -415,7 +411,7 @@ export function Composer({
             className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 text-sm font-medium text-primary"
             data-testid="overlay-ari-dropzone"
           >
-            Drop files to attach (images, PDFs, text — up to 4 × 10 MB)
+            Drop files to attach (images, PDFs, text - up to 4 × 10 MB)
           </div>
         )}
         {/* Gate strip */}
@@ -450,18 +446,13 @@ export function Composer({
 
         <div
           className={cn(
-            "rounded-2xl border backdrop-blur-sm",
+            "rounded-lg border bg-card",
             mode === "er"
-              ? "border-red-500 bg-card"
+              ? "border-red-500"
               : gate.ok
-                ? ""
+                ? "border-border"
                 : "border-amber-300 dark:border-amber-700"
           )}
-          style={mode !== "er" && gate.ok ? {
-            backgroundColor: "rgba(255,255,255,0.72)",
-            borderColor: "rgba(255,255,255,0.90)",
-            boxShadow: "0 4px 32px rgba(42,123,255,0.08)",
-          } : undefined}
         >
           <Textarea
             ref={textareaRef}
@@ -502,9 +493,9 @@ export function Composer({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 border-t px-3 py-2" style={{ borderColor: "rgba(255,255,255,0.72)" }}>
+          <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
             <div className="flex items-center gap-1">
-              {/* Plus button — opens an inline picker for any capability so
+              {/* Plus button - opens an inline picker for any capability so
                   users don't need the sidebar to switch context.
                   Hidden in ER mode: ER bypasses capability gating entirely. */}
               {mode !== "er" && (
@@ -684,7 +675,7 @@ export function Composer({
                         ? "Click again to stop and transcribe."
                         : transcribing
                           ? "Sending audio to transcription…"
-                          : "Dictate your question — voice is converted to text via ElevenLabs."}
+                          : "Dictate your question - voice is converted to text via ElevenLabs."}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -721,34 +712,17 @@ export function Composer({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>
-                        {mode === "er" ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={onSend}
-                            disabled={!canSend}
-                            variant="destructive"
-                            data-testid="button-ari-send"
-                          >
-                            <Send className="mr-1.5 h-4 w-4" />
-                            Send (ER, unverified)
-                          </Button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={onSend}
-                            disabled={!canSend}
-                            data-testid="button-ari-send"
-                            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-medium text-white shadow-md transition-opacity disabled:opacity-40"
-                            style={{
-                              background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)",
-                              boxShadow: "0 4px 16px rgba(42,123,255,0.35)",
-                            }}
-                          >
-                            <Send className="h-4 w-4" />
-                            Send
-                          </button>
-                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={onSend}
+                          disabled={!canSend}
+                          variant={mode === "er" ? "destructive" : "default"}
+                          data-testid="button-ari-send"
+                        >
+                          <Send className="mr-1.5 h-4 w-4" />
+                          {mode === "er" ? "Send (ER, unverified)" : "Send"}
+                        </Button>
                       </span>
                     </TooltipTrigger>
                     {!gate.ok && (
@@ -821,7 +795,7 @@ function evaluateGate(opts: {
         return {
           ok: false,
           message:
-            "Confirm a reference object is visible — required for accurate wound measurement.",
+            "Confirm a reference object is visible - required for accurate wound measurement.",
         };
       }
       return { ok: true };
@@ -983,7 +957,7 @@ function RecordingBanner({
             <p
               className="line-clamp-2 text-xs leading-relaxed"
               data-testid="text-ari-live-transcript"
-              title="Live preview — final transcript may differ"
+              title="Live preview - final transcript may differ"
             >
               <span className="mr-1 rounded bg-rose-200/70 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-rose-800 dark:bg-rose-900/60 dark:text-rose-100">
                 Preview

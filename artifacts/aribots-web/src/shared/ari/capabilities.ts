@@ -1,16 +1,18 @@
 // Single source of truth for the active capability list. Declared as a
 // `const` tuple so consumers (server Zod enum + client UI) preserve the exact
-// literal-string union — DON'T change this to a plain array.
+// literal-string union - DON'T change this to a plain array.
+//
+// The registry is scoped to antimicrobial stewardship. Ari's chat surface is
+// an adjunct to the deterministic recommendation engine: it explains, cites and
+// answers follow-ups, but the regimen, dose, duration and monitoring plan come
+// from the engine so they stay reproducible and auditable.
 export const ACTIVE_CAPABILITY_IDS = [
-  "antibiotic_stewardship",
-  "wound_skin",
-  "pharmacy",
-  "ventilator",
-  "calculators",
-  "clinical_protocols",
-  "er_triage",
-  "cms_billing",
-  "rad_onc_imaging",
+  "empiric_selection",
+  "de_escalation",
+  "dosing_monitoring",
+  "resistance_patterns",
+  "source_control",
+  "allergy_assessment",
 ] as const;
 
 export type AriCapabilityId = (typeof ACTIVE_CAPABILITY_IDS)[number];
@@ -30,152 +32,102 @@ export interface AriCapability {
 
 export const ARI_CAPABILITIES: AriCapability[] = [
   {
-    id: "antibiotic_stewardship",
-    displayName: "Antibiotic Stewardship",
+    id: "empiric_selection",
+    displayName: "Empiric selection",
     shortDescription:
-      "Empiric coverage, de-escalation, and duration grounded in local resistance patterns.",
+      "Which agents to start before cultures result, weighted by the likely organisms and the regional resistance pattern.",
     inputHint:
-      "Describe suspected source, organism if known, allergies, renal function, and patient location or facility.",
+      "Give the suspected source, care setting, severity, allergies, renal function and the patient's region or recent travel.",
     acceptsImages: false,
     acceptsPdfs: true,
     gateRequirement: {
       type: "location",
-      uiHint:
-        "Include patient location or treating facility — local resistance patterns required",
+      uiHint: "Include the patient's region or treating facility - empiric choice depends on the local antibiogram",
     },
     exampleQueries: [
-      "Empiric coverage for hospital-acquired pneumonia in our ICU.",
-      "Step-down options for MSSA bacteremia after 72 hours of cefazolin.",
-      "Outpatient parenteral antibiotic therapy for cellulitis at our facility.",
+      "Empiric cover for ventilator-associated pneumonia on day 8 of intubation.",
+      "Patient fell ill in Chennai and presented here with pyelonephritis - which antibiogram applies?",
+      "Does this febrile neutropenia case need vancomycin from the start?",
     ],
   },
   {
-    id: "wound_skin",
-    displayName: "Wound & Skin",
+    id: "de_escalation",
+    displayName: "De-escalation and stopping",
     shortDescription:
-      "Wound staging, dressing selection, and infection assessment from a measurable photo.",
+      "The 48-72 hour decision: stop, narrow, escalate, or switch intravenous to oral.",
     inputHint:
-      "Describe wound location, duration, exudate, and patient comorbidities. Photo with size reference required.",
-    acceptsImages: true,
-    acceptsPdfs: false,
+      "Paste the culture and susceptibility panel, the current regimen, and how the patient has responded.",
+    acceptsImages: false,
+    acceptsPdfs: true,
+    gateRequirement: { type: "none", uiHint: "" },
+    exampleQueries: [
+      "MSSA in blood after 72 hours of vancomycin - what now?",
+      "Cultures are negative at 48 hours and the patient is better. Can I stop?",
+      "Meets every intravenous-to-oral criterion. Which oral agent covers this isolate?",
+    ],
+  },
+  {
+    id: "dosing_monitoring",
+    displayName: "Dosing and monitoring",
+    shortDescription:
+      "Renal and weight-based dosing, therapeutic drug monitoring, and which labs to follow on therapy.",
+    inputHint:
+      "Give the agent, indication, weight, creatinine clearance, dialysis status and concomitant medications.",
+    acceptsImages: false,
+    acceptsPdfs: true,
+    gateRequirement: { type: "none", uiHint: "" },
+    exampleQueries: [
+      "Vancomycin AUC-guided dosing for a 78-year-old with a creatinine clearance of 35.",
+      "Which labs do I follow on six weeks of daptomycin for osteomyelitis?",
+      "Cefepime dosing at a creatinine clearance of 12 and how do I watch for neurotoxicity?",
+    ],
+  },
+  {
+    id: "resistance_patterns",
+    displayName: "Resistance patterns",
+    shortDescription:
+      "How regional and facility antibiograms change the empiric choice, and what travel exposure implies.",
+    inputHint: "Name the organism, the agent in question and the region or facility.",
+    acceptsImages: false,
+    acceptsPdfs: true,
     gateRequirement: {
-      type: "measurement_image",
-      uiHint: "Upload a photo with a ruler or known-size reference object visible",
+      type: "location",
+      uiHint: "Name the region or facility whose antibiogram you want applied",
     },
     exampleQueries: [
-      "Stage and dressing for a sacral pressure ulcer in a bedbound patient.",
-      "Is this lower-leg redness cellulitis or stasis dermatitis?",
-      "DFU classification and offloading recommendation.",
+      "How does a 62% regional ESBL rate change empiric therapy for urosepsis?",
+      "Is ceftriaxone still reasonable for E. coli bacteraemia in our unit?",
+      "What resistance should I expect after a month in Eastern Europe?",
     ],
   },
   {
-    id: "pharmacy",
-    displayName: "Pharmacy",
+    id: "source_control",
+    displayName: "Source control",
     shortDescription:
-      "Dosing, interactions, and renal/hepatic adjustments with primary-source citations.",
-    inputHint:
-      "Drug name, indication, patient weight, renal/hepatic function, and concomitant medications.",
+      "What has to be drained, removed or debrided, and how that changes the duration clock.",
+    inputHint: "Describe the focus, any devices or hardware, and what has been done so far.",
     acceptsImages: false,
     acceptsPdfs: true,
     gateRequirement: { type: "none", uiHint: "" },
     exampleQueries: [
-      "Vancomycin loading and maintenance for a 78-year-old with CrCl 35.",
-      "Apixaban dosing in CrCl 22 — preferred alternative?",
-      "Tacrolimus interaction risk when starting clarithromycin.",
+      "Infected hernia mesh with MSSA - can the mesh stay in?",
+      "When does the duration clock start after a percutaneous drain?",
+      "Line-associated candidaemia: does the line have to come out?",
     ],
   },
   {
-    id: "ventilator",
-    displayName: "Ventilator",
+    id: "allergy_assessment",
+    displayName: "Allergy assessment",
     shortDescription:
-      "Initial settings, mode selection, and troubleshooting for invasive ventilation.",
-    inputHint:
-      "Indication for intubation, ABG values, plateau pressure, PEEP, and patient ideal body weight.",
+      "Whether a documented beta-lactam allergy really rules out the best agent, and what the safe alternative is.",
+    inputHint: "Give the recorded allergy, the reaction, how severe it was and when it happened.",
     acceptsImages: false,
     acceptsPdfs: true,
     gateRequirement: { type: "none", uiHint: "" },
     exampleQueries: [
-      "Initial vent settings for ARDS in a 70 kg IBW patient.",
-      "Rising plateau pressure on volume control — next steps.",
-      "Weaning protocol after four days on AC/VC for COPD exacerbation.",
-    ],
-  },
-  {
-    id: "calculators",
-    displayName: "Calculators",
-    shortDescription: "Validated clinical scoring tools with explicit input requirements.",
-    inputHint:
-      "Name the score and provide the inputs (age, vitals, labs, comorbidities).",
-    acceptsImages: false,
-    acceptsPdfs: true,
-    gateRequirement: { type: "none", uiHint: "" },
-    exampleQueries: [
-      "CHA2DS2-VASc for a 72-year-old woman with HTN and prior TIA.",
-      "Wells score for PE in this presenting patient.",
-      "MELD-Na with these labs.",
-    ],
-  },
-  {
-    id: "clinical_protocols",
-    displayName: "Clinical Protocols",
-    shortDescription:
-      "Step-by-step pathways for common admissions and bedside procedures.",
-    inputHint:
-      "Name the protocol or procedure and the patient context driving the question.",
-    acceptsImages: false,
-    acceptsPdfs: true,
-    gateRequirement: { type: "none", uiHint: "" },
-    exampleQueries: [
-      "DKA management protocol for an adult with K 3.2 on presentation.",
-      "Rapid sequence intubation drug selection for elevated ICP.",
-      "Massive transfusion protocol activation thresholds.",
-    ],
-  },
-  {
-    id: "er_triage",
-    displayName: "ER Triage",
-    shortDescription: "Acuity assessment grounded in ESI v4 with explicit reasoning.",
-    inputHint:
-      "Chief complaint, vitals, key history, and current level of distress.",
-    acceptsImages: false,
-    acceptsPdfs: true,
-    gateRequirement: { type: "none", uiHint: "" },
-    exampleQueries: [
-      "ESI level for a 56-year-old with chest pain, BP 150/90, HR 88.",
-      "Triage acuity for a febrile post-chemo patient with ANC unknown.",
-      "Reassessment criteria for a Level 3 patient awaiting workup.",
-    ],
-  },
-  {
-    id: "cms_billing",
-    displayName: "CMS Billing",
-    shortDescription:
-      "Coverage policy, codes, and modifier selection from CMS coverage data.",
-    inputHint:
-      "Service or procedure, the patient's payer or region if known, and the documentation you have.",
-    acceptsImages: false,
-    acceptsPdfs: true,
-    gateRequirement: { type: "none", uiHint: "" },
-    exampleQueries: [
-      "Is continuous glucose monitoring covered for this Type 2 diabetic on insulin?",
-      "Modifier guidance for billing critical care alongside an ED E/M.",
-      "LCD for outpatient cardiac rehab in our jurisdiction.",
-    ],
-  },
-  {
-    id: "rad_onc_imaging",
-    displayName: "Rad/Onc Imaging",
-    shortDescription:
-      "Modality selection and follow-up imaging recommendations for oncology workups.",
-    inputHint:
-      "Suspected diagnosis, organ system, and any prior imaging or pathology results.",
-    acceptsImages: true,
-    acceptsPdfs: true,
-    gateRequirement: { type: "none", uiHint: "" },
-    exampleQueries: [
-      "Best modality to evaluate a new solid liver lesion in a Hep C patient.",
-      "Surveillance imaging interval after stage I melanoma resection.",
-      "MRI vs CT for staging a newly diagnosed glioblastoma.",
+      "Childhood penicillin rash - is cefazolin safe for this MSSA bacteraemia?",
+      "Documented anaphylaxis to ceftazidime. Is aztreonam still an option?",
+      "Which agents remain if the patient reacts to both penicillins and sulfonamides?",
     ],
   },
 ];

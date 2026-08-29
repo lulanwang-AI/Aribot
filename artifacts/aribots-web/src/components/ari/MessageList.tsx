@@ -68,8 +68,8 @@ function MessageBubble({
   const isUser = message.role === "user";
 
   // User messages stay as a compact right-aligned bubble. Assistant
-  // responses render flat across the full content column — no bubble, no
-  // border — so long answers read like a document instead of a chat reply.
+  // responses render flat across the full content column - no bubble, no
+  // border - so long answers read like a document instead of a chat reply.
   if (isUser) {
     return (
       <motion.div
@@ -83,8 +83,9 @@ function MessageBubble({
           You
         </div>
         <div
-          className="max-w-[85ch] rounded-2xl px-4 py-3 text-sm leading-relaxed text-white"
-          style={{ background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)" }}
+          className={cn(
+            "max-w-[85ch] rounded-lg border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-foreground"
+          )}
         >
           <pre className="whitespace-pre-wrap break-words font-sans">
             {message.content}
@@ -102,37 +103,10 @@ function MessageBubble({
       className="flex w-full flex-col gap-1"
       data-testid={`message-assistant-${message.id}`}
     >
-      {/* Glass avatar row */}
-      <div className="flex items-center gap-2">
-        <div
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[10px] font-bold text-white"
-          style={{ background: "linear-gradient(135deg, #2a7bff 0%, #12b5c9 100%)" }}
-        >
-          Ari
-        </div>
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Ari
-        </div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        Ari
       </div>
-      {/* Glass bubble */}
-      <div
-        className="ml-9 w-full rounded-2xl rounded-tl-sm border p-4 text-sm leading-relaxed backdrop-blur-xl dark:text-[#eaf2fc]"
-        style={{
-          backgroundColor: "rgba(255,255,255,0.52)",
-          borderColor: "rgba(255,255,255,0.72)",
-        }}
-      >
-        <div
-          className="hidden dark:block"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundColor: "rgba(28,44,64,0.55)",
-            borderRadius: "inherit",
-            pointerEvents: "none",
-          }}
-          aria-hidden
-        />
+      <div className="w-full text-sm leading-relaxed text-foreground">
         <AriMessage
           text={message.content}
           mode={message.mode || mode}
@@ -144,11 +118,14 @@ function MessageBubble({
 }
 
 function EmptyState() {
+  // Describes what this surface actually does. Compliance postures and corpus
+  // sizes are claims about a deployment, not properties of the software, so
+  // they are not asserted here.
   const trustBadges = [
-    { icon: ShieldCheck, label: "HIPAA-compliant" },
-    { icon: Languages, label: "Multi-language support" },
-    { icon: UserCheck, label: "Human expert–derived" },
-    { icon: BookOpen, label: "Evidence-based references" },
+    { icon: BookOpen, label: "Primary-source citations" },
+    { icon: ShieldCheck, label: "Fail-closed when unverified" },
+    { icon: UserCheck, label: "Licensed clinicians only" },
+    { icon: Languages, label: "Adjunct to the engine" },
   ];
   const inputModes = [
     { icon: Keyboard, label: "Type" },
@@ -168,8 +145,10 @@ function EmptyState() {
           >
             Ask Ari
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Your clinical assistant. Cited, fail-closed, multi-language support.
+          <p className="max-w-lg text-sm text-muted-foreground">
+            Interrogate a recommendation, check a dose, or work through an
+            isolate. The regimen, dose and duration still come from the
+            stewardship engine so they stay reproducible.
           </p>
         </div>
 
@@ -180,15 +159,10 @@ function EmptyState() {
           {trustBadges.map(({ icon: Icon, label }) => (
             <span
               key={label}
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.52)",
-                borderColor: "rgba(255,255,255,0.72)",
-                color: "#0c1c2c",
-              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-foreground"
               data-testid={`badge-trust-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
             >
-              <Icon className="h-3.5 w-3.5" style={{ color: "#2a7bff" }} />
+              <Icon className="h-3.5 w-3.5 text-primary" />
               {label}
             </span>
           ))}
@@ -198,10 +172,10 @@ function EmptyState() {
           className="max-w-xl text-xs leading-relaxed text-muted-foreground"
           data-testid="text-evidence-stats"
         >
-          5M Clinical Triage Data; 220M+ peer-reviewed papers; 50k curated
-          guidelines; 40M+ PubMed citations; 2M+ Central records plus 530k+
-          Clinical Trials studies; 38.4M Open Targets evidence items
-          associations.
+          In verified mode Ari retrieves from PubMed and the current society
+          guidelines before it states a clinical fact, and marks any claim it
+          could not confirm. In rapid mode it answers from the model alone and
+          says so.
         </p>
 
         <div
@@ -211,15 +185,10 @@ function EmptyState() {
           {inputModes.map(({ icon: Icon, label }, i) => (
             <span key={label} className="inline-flex items-center gap-3">
               <span
-                className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 backdrop-blur-sm"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.52)",
-                  borderColor: "rgba(255,255,255,0.72)",
-                  color: "#0c1c2c",
-                }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-foreground"
                 data-testid={`hint-input-${label.toLowerCase()}`}
               >
-                <Icon className="h-3.5 w-3.5" style={{ color: "#2a7bff" }} />
+                <Icon className="h-3.5 w-3.5" />
                 {label}
               </span>
               {i < inputModes.length - 1 && (

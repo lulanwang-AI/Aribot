@@ -3,7 +3,7 @@ import type { AriAttachment } from "@/stores/ariStore";
 
 export interface AriChatRequest {
   mode: "ari" | "er";
-  // Optional — when omitted/null, Ari auto-infers a capability from the query.
+  // Optional - when omitted/null, Ari auto-infers a capability from the query.
   capability?: AriCapabilityId | null;
   query: string;
   attachments?: AriAttachment[];
@@ -43,7 +43,7 @@ export async function sendAriMessage(
       signal: cb.signal,
     });
   } catch (err: any) {
-    // Aborted before the response started — silent, matches the in-stream
+    // Aborted before the response started - silent, matches the in-stream
     // abort handling below.
     if (err?.name === "AbortError") return;
     cb.onError?.(err?.message || "Ari request failed before sending.");
@@ -118,7 +118,7 @@ export async function sendAriMessage(
         if (data.length > 0) cb.onProgress(data);
       }
     }
-    // Stream ended without an explicit `done` event — treat as completion.
+    // Stream ended without an explicit `done` event - treat as completion.
     cb.onDone?.();
   } catch (err: any) {
     if (err?.name === "AbortError") {

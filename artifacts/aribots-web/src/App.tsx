@@ -1,34 +1,26 @@
 import { useState } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ProfileSheetProvider } from "@/components/doctor-profile-sheet";
-import { FloatingAribot } from "@/components/floating-aribot";
-import { NetworkBackground } from "@/components/network-background";
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/home";
-import Aribot from "@/pages/aribot";
-import AribotOnboarding from "@/pages/aribot-onboarding";
-import AribotDevBlocks from "@/pages/aribot-dev-blocks";
-import Events from "@/pages/events";
+import Dashboard from "@/pages/dashboard";
+import Cases from "@/pages/cases";
+import CaseDetail from "@/pages/case-detail";
+import Intake from "@/pages/intake";
+import Antibiogram from "@/pages/antibiogram";
+import Formulary from "@/pages/formulary";
+import Guidance from "@/pages/guidance";
+import Ari from "@/pages/aribot";
 import Account from "@/pages/account";
-import Team from "@/pages/team";
-import Chats from "@/pages/chats";
-import Training from "@/pages/training";
-import Admin from "@/pages/admin";
-import PreCharting from "@/pages/pre-charting";
-import ClinicalChat from "@/pages/clinical-chat";
-import SoapNote from "@/pages/soap";
-import VisitSummary from "@/pages/visit-summary";
-import WorkflowHistory from "@/pages/workflow-history";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
-import Whitepaper from "@/pages/whitepaper";
 import { AuthContext } from "@/lib/auth";
+import { STANDALONE } from "@/lib/amr";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -39,9 +31,14 @@ function SidebarEdgeTrigger() {
     <button
       onClick={toggleSidebar}
       data-testid="button-sidebar-toggle"
-      className="absolute top-1/2 left-0 -translate-y-1/2 z-10 h-12 w-5 flex items-center justify-center bg-background/80 backdrop-blur-sm border border-l-0 rounded-r-md shadow-sm hover:bg-accent transition-colors"
+      aria-label={isOpen ? "Collapse navigation" : "Expand navigation"}
+      className="absolute top-1/2 left-0 z-10 flex h-12 w-5 -translate-y-1/2 items-center justify-center rounded-r-md border border-l-0 bg-background/80 shadow-sm backdrop-blur-sm transition-colors hover:bg-accent"
     >
-      {isOpen ? <ChevronLeft className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      {isOpen ? (
+        <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+      ) : (
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      )}
     </button>
   );
 }
@@ -49,49 +46,39 @@ function SidebarEdgeTrigger() {
 function AppRouter() {
   return (
     <Switch>
-      <Route path="/aribot/onboarding" component={AribotOnboarding} />
-      <Route path="/aribot/dev/blocks" component={AribotDevBlocks} />
-      <Route path="/aribot" component={Aribot} />
-      <Route path="/home" component={Home} />
-      <Route path="/events" component={Events} />
-      <Route path="/chats" component={Chats} />
-      <Route path="/training" component={Training} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/cases" component={Cases} />
+      <Route path="/cases/:id">{(params) => <CaseDetail id={params.id} />}</Route>
+      <Route path="/intake" component={Intake} />
+      <Route path="/antibiogram" component={Antibiogram} />
+      <Route path="/formulary" component={Formulary} />
+      <Route path="/guidance" component={Guidance} />
+      <Route path="/ari" component={Ari} />
       <Route path="/account" component={Account} />
-      <Route path="/team" component={Team} />
-      <Route path="/admin" component={Admin} />
-      <Route path="/pre-charting" component={PreCharting} />
-      <Route path="/clinical-chat" component={ClinicalChat} />
-      <Route path="/soap" component={SoapNote} />
-      <Route path="/visit-summary" component={VisitSummary} />
-      <Route path="/workflow-history" component={WorkflowHistory} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 const sidebarStyle = {
-  "--sidebar-width": "15rem",
+  "--sidebar-width": "15.5rem",
   "--sidebar-width-icon": "3rem",
 };
 
 function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
   return (
     <AuthContext.Provider value={{ signOut: onSignOut }}>
-      <ProfileSheetProvider>
-        <NetworkBackground />
-        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 min-w-0 relative">
-              <main className="flex-1 overflow-auto">
-                <AppRouter />
-              </main>
-              <SidebarEdgeTrigger />
-            </div>
+      <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+        <div className="flex h-screen w-full">
+          <AppSidebar />
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            <main className="flex-1 overflow-auto">
+              <AppRouter />
+            </main>
+            <SidebarEdgeTrigger />
           </div>
-          <FloatingAribot />
-        </SidebarProvider>
-      </ProfileSheetProvider>
+        </div>
+      </SidebarProvider>
     </AuthContext.Provider>
   );
 }
@@ -104,9 +91,8 @@ function AppContent() {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch {
-      // Logout best-effort: even if the call fails, drop local state below.
+      // Logout is best-effort: drop local state either way.
     }
-    localStorage.removeItem("aribot_authenticated");
     queryClient.clear();
     setAuthenticated(false);
     setLocation("/");
@@ -116,16 +102,12 @@ function AppContent() {
     return <Landing />;
   }
 
-  if (location === "/whitepaper") {
-    return <Whitepaper />;
-  }
-
   if (!authenticated || location === "/login") {
     return (
       <Login
         onLogin={() => {
           setAuthenticated(true);
-          setLocation("/aribot");
+          setLocation("/dashboard");
         }}
         onNavigateToLanding={() => setLocation("/")}
       />
@@ -140,7 +122,15 @@ function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          {/*
+            The standalone build is a single document served from one URL, so it
+            routes on the hash. Path routing would rewrite the address bar to a
+            location the host has no file for, and a reload would 404.
+          */}
+          <WouterRouter
+            base={STANDALONE ? "" : import.meta.env.BASE_URL.replace(/\/$/, "")}
+            hook={STANDALONE ? useHashLocation : undefined}
+          >
             <Toaster />
             <AppContent />
           </WouterRouter>

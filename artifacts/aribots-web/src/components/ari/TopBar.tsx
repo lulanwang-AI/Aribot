@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { motion, LayoutGroup } from "framer-motion";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { History, Info, LogOut, Menu, Moon, Sun } from "lucide-react";
-import { useAriStore } from "@/stores/ariStore";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { LogOut, Moon, Sun } from "lucide-react";
+import { useAriStore, type AriMode } from "@/stores/ariStore";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/use-theme";
 import { ExplainerSheet } from "@/components/ari/ExplainerSheet";
@@ -19,159 +24,206 @@ interface TopBarProps {
   onClear: () => void;
 }
 
-export function TopBar(_props: TopBarProps) {
+export function TopBar({ onClear }: TopBarProps) {
   const auth = useAuth();
   const { theme, setTheme } = useTheme();
-  const tabs = useAriStore((s) => s.tabs);
+  const mode = useAriStore((s) => s.mode);
+  const setMode = useAriStore((s) => s.setMode);
+  const messages = useAriStore((s) => s.messages);
+  const resetSession = useAriStore((s) => s.resetSession);
   const isDark = theme === "dark";
 
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [explainerOpen, setExplainerOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<AriMode | null>(null);
+
+  function handleModeChange(next: AriMode) {
+    if (next === mode) return;
+    if (messages.length > 0) {
+      setPendingMode(next);
+      return;
+    }
+    setMode(next);
+  }
+
+  function confirmModeSwitch() {
+    if (pendingMode) {
+      setMode(pendingMode);
+      resetSession();
+      onClear();
+    }
+    setPendingMode(null);
+  }
+
+  const isSwitchToEr = pendingMode === "er";
+
+  const isEr = mode === "er";
 
   return (
     <>
-      {/* Liquid-glass header bar */}
       <div
-        className="relative flex flex-row items-center justify-between gap-2 border-b px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-6 sm:py-3"
-        style={{
-          backgroundColor: isDark ? "rgba(8,26,44,0.72)" : "rgba(255,255,255,0.55)",
-          borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.72)",
-        }}
+        className="relative flex flex-row items-center justify-between gap-2 border-b border-border bg-background/70 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-6 sm:py-3"
         data-testid="topbar-ari"
       >
-        {/* Liquid glass top sheen line */}
-        <div
+        {/* Thin accent line that crossfades between Ari and ER tints -
+            two stacked layers with opacity transitions ensure a smooth,
+            deterministic animation (browsers can't tween gradient strings). */}
+        <motion.div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px"
-          style={{
-            background: isDark
-              ? "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)"
-              : "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
-          }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,rgba(56,189,248,0)_0%,rgba(99,102,241,0.55)_50%,rgba(167,139,250,0)_100%)]"
+          initial={false}
+          animate={{ opacity: isEr ? 0 : 1 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
         />
-        {/* Ari accent gradient line at bottom */}
-        <div
+        <motion.div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-          style={{
-            background: "linear-gradient(90deg, transparent 0%, rgba(42,123,255,0.45) 40%, rgba(18,181,201,0.45) 60%, transparent 100%)",
-          }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,rgba(244,63,94,0)_0%,rgba(244,63,94,0.7)_50%,rgba(251,146,60,0)_100%)]"
+          initial={false}
+          animate={{ opacity: isEr ? 1 : 0 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
         />
-
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          {/* Glass logo chip */}
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-sm"
-            style={{
-              backgroundColor: "#ffffff",
-              borderColor: isDark ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.9)",
-            }}
-          >
-            <img
-              src={aribotLogoPath}
-              alt="Aribot"
-              className="h-6 w-6 object-contain"
-              data-testid="img-ari-logo"
-            />
-          </div>
+          <img
+            src={aribotLogoPath}
+            alt="Aribot"
+            className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9"
+            data-testid="img-ari-logo"
+          />
           <div className="min-w-0">
             <h1
               className="flex items-center gap-2 text-base font-semibold leading-tight"
               data-testid="text-ari-title"
-              style={{ color: isDark ? "#eaf2fc" : "#0c1c2c" }}
             >
               Ari
               <span
-                className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
-                style={{
-                  backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)",
-                  borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)",
-                  color: isDark ? "#9db0c2" : "#5a6c7d",
-                }}
+                className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
                 data-testid="badge-ari-version"
               >
-                V4.0
+                V3.0
               </span>
             </h1>
-            <p
-              className="hidden text-xs md:block"
-              style={{ color: isDark ? "#9db0c2" : "#5a6c7d" }}
-            >
-              Clinical assistant — primary-source citations, fail-closed gating
+            <p className="hidden text-xs text-muted-foreground md:block">
+              Stewardship assistant - primary-source citations, fail-closed gating
             </p>
           </div>
         </div>
-
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="button-ari-menu"
-                aria-label="Open menu"
-                title="Menu"
-                className="border backdrop-blur-sm"
-                style={{
-                  backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)",
-                  borderColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)",
-                  color: isDark ? "#eaf2fc" : "#0c1c2c",
-                }}
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:gap-3">
+          <Tabs
+            value={mode}
+            onValueChange={(v) => handleModeChange(v as AriMode)}
+          >
+            <LayoutGroup id="ari-mode-tabs">
+              <TabsList
+                data-testid="tabs-ari-mode"
+                className={
+                  "relative transition-colors duration-500 " +
+                  (isEr
+                    ? "bg-rose-100/70 dark:bg-rose-950/40"
+                    : "bg-primary/60")
+                }
               >
-                <Menu className="h-4 w-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">Menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onClick={() => setHistoryOpen(true)}
-                data-testid="menu-item-history"
-              >
-                <History className="mr-2 h-4 w-4" />
-                History
-                {tabs.length > 0 && (
-                  <span className="ml-auto rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
-                    {tabs.length}
+                <TabsTrigger
+                  value="ari"
+                  data-testid="tab-ari-mode-ari"
+                  className="relative z-10 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  {!isEr && (
+                    <motion.span
+                      layoutId="ari-mode-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-sm bg-gradient-to-br from-primary/10 via-primary/10 to-primary/10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">
+                    Verified<span className="hidden sm:inline">&nbsp;mode</span>
                   </span>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setExplainerOpen(true)}
-                data-testid="menu-item-explainer"
-              >
-                <Info className="mr-2 h-4 w-4" />
-                What Ari can do
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                data-testid="menu-item-theme"
-              >
-                {isDark ? (
-                  <Sun className="mr-2 h-4 w-4" />
-                ) : (
-                  <Moon className="mr-2 h-4 w-4" />
-                )}
-                {isDark ? "Day mode" : "Night mode"}
-              </DropdownMenuItem>
-              {auth?.signOut && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={auth.signOut}
-                    data-testid="menu-item-signout"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="er"
+                  data-testid="tab-ari-mode-er"
+                  className="relative z-10 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  {isEr && (
+                    <motion.span
+                      layoutId="ari-mode-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-sm bg-gradient-to-br from-rose-600 via-red-600 to-orange-700 shadow-sm dark:from-rose-600 dark:via-red-700 dark:to-orange-700"
+                      transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative">
+                    Rapid<span className="hidden sm:inline">&nbsp;mode</span>
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </LayoutGroup>
+          </Tabs>
+          <HistorySheet />
+          <ExplainerSheet />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            data-testid="button-ari-theme-toggle"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+          {auth?.signOut && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={auth.signOut}
+              data-testid="button-ari-signout"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          )}
         </div>
       </div>
 
-      <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
-      <ExplainerSheet open={explainerOpen} onOpenChange={setExplainerOpen} />
+      <AlertDialog
+        open={pendingMode !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingMode(null);
+        }}
+      >
+        <AlertDialogContent data-testid="dialog-ari-mode-switch">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isSwitchToEr ? "Switch to rapid mode?" : "Switch to verified mode?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isSwitchToEr
+                ? "Rapid mode disables source verification. Answers come from the model's training alone and are not checked against current guidelines or your antibiogram. Switch to rapid mode?"
+                : "Switching modes clears the current conversation. Continue?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-ari-mode-cancel">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmModeSwitch}
+              className={
+                isSwitchToEr
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : undefined
+              }
+              data-testid="button-ari-mode-confirm"
+            >
+              {isSwitchToEr ? "Switch to rapid mode" : "Switch and clear"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

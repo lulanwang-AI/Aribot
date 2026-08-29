@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes/routes";
 import ariRouter from "./ari/routes";
 import healthRouter from "./routes/health";
 import mobileRouter from "./routes/mobile-router";
+import amrRouter from "./amr/routes";
 import "./ari/client";
 
 const app: Express = express();
@@ -44,6 +45,7 @@ setupAuth(app);
 registerAuthRoutes(app);
 app.use("/api", healthRouter);
 app.use("/api/mobile", mobileRouter);
+app.use("/api/amr", amrRouter);
 
 let routesRegistered = false;
 export async function initRoutes() {

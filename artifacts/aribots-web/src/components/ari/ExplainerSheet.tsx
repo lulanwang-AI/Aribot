@@ -22,97 +22,80 @@ interface Section {
 
 const SECTIONS: Section[] = [
   {
-    title: "Evidence Sources",
+    title: "What the engine decides, not Ari",
     items: [
-      { name: "PubMed", desc: "NEJM, JAMA, Cochrane & peer-reviewed lit" },
-      { name: "bioRxiv", desc: "Preprint biology & life sciences" },
-      { name: "Open Targets", desc: "Drug-target & disease associations" },
-      { name: "Consensus", desc: "Synthesis across literature" },
-      { name: "Scholar Gateway", desc: "Broad academic search" },
+      {
+        name: "Regimen, dose, duration",
+        desc: "Computed from the knowledge base and the applicable antibiogram",
+      },
+      {
+        name: "The 48 to 72 hour action",
+        desc: "Stop, narrow, continue, escalate or switch to oral",
+      },
+      {
+        name: "Monitoring plan",
+        desc: "Levels and labs derived from the agents actually prescribed",
+      },
+    ],
+  },
+  {
+    title: "Stewardship capabilities",
+    items: [
+      {
+        name: "Empiric selection",
+        desc: "What to start before cultures, weighted by regional resistance",
+      },
+      {
+        name: "De-escalation and stopping",
+        desc: "Reading a susceptibility panel and acting on it",
+      },
+      {
+        name: "Dosing and monitoring",
+        desc: "Renal and weight-based dosing, therapeutic drug monitoring",
+      },
+      {
+        name: "Resistance patterns",
+        desc: "How a regional or facility antibiogram changes the choice",
+      },
+      {
+        name: "Source control",
+        desc: "What has to be drained or removed, and when the clock starts",
+      },
+      {
+        name: "Allergy assessment",
+        desc: "Whether a recorded label genuinely rules out the best agent",
+      },
+    ],
+  },
+  {
+    title: "Evidence sources",
+    items: [
+      { name: "PubMed", desc: "Peer-reviewed literature and society guidelines" },
+      { name: "bioRxiv", desc: "Preprint biology and life sciences" },
+      { name: "ChEMBL", desc: "Bioactivity, pharmacokinetics and pharmacology" },
+      { name: "Clinical Trials", desc: "Registered and reported trial data" },
       { name: "Exa", desc: "Semantic search for full-text guidelines" },
     ],
   },
   {
-    title: "Drug & Decision Tools",
+    title: "Document parsing",
     items: [
-      { name: "ChEMBL", desc: "Bioactivity, PK/PD, pharmacology" },
-      { name: "ICD-10 Codes", desc: "Clinical-term → diagnosis code mapping" },
-      { name: "CMS Coverage", desc: "Medicare/Medicaid coverage lookups" },
-      { name: "NPI Registry", desc: "US licensed-provider lookup" },
+      { name: "PDF", desc: "Culture and susceptibility reports, discharge summaries" },
+      { name: "XLSX", desc: "Facility antibiogram tables and dosing worksheets" },
+      { name: "DOCX", desc: "Local policy documents and care plans" },
+      { name: "PPTX", desc: "Stewardship committee decks" },
     ],
   },
   {
-    title: "Hugging Face — Biomedical AI",
+    title: "Two modes",
     items: [
       {
-        name: "Triage Models",
-        desc: "Acuity scoring, ESI prediction from free text",
+        name: "Verified",
+        desc: "Retrieves before stating a fact, and flags anything unconfirmed",
       },
       {
-        name: "Clinical NLP",
-        desc: "NER, med extraction, discharge parsing",
-      },
-      {
-        name: "Drug Interaction & PK/PD",
-        desc: "ML-based interaction prediction",
-      },
-      {
-        name: "Protein & Molecular",
-        desc: "ESMFold/AlphaFold-style structure tools",
-      },
-      {
-        name: "Medical Imaging AI",
-        desc: "Radiology & pathology assist",
-      },
-    ],
-  },
-  {
-    title: "Document Parsing",
-    items: [
-      { name: "PDF", desc: "Labs, discharge, radiology, RT plan reports" },
-      { name: "XLSX", desc: "PK worksheets, dosing tables, DVH data" },
-      { name: "DOCX", desc: "Care plans, protocols, RT summaries" },
-      { name: "PPTX", desc: "Grand rounds & protocol decks" },
-    ],
-  },
-  {
-    title: "Clinical Capabilities",
-    items: [
-      {
-        name: "Antibiotic Stewardship",
-        desc: "IDSA empiric/targeted regimens, resistance",
-      },
-      { name: "Wound & Skin", desc: "Photo analysis, NPUAP staging, plans" },
-      {
-        name: "Pharmacy",
-        desc: "Dosing, renal/hepatic, PK, TPN, chemo banding",
-      },
-      { name: "Ventilator Mgmt", desc: "ARDSNet, weaning, RSBI/SBT" },
-      {
-        name: "Medical Calculators",
-        desc: "MDCalc-style scores & formulas",
-      },
-      {
-        name: "Clinical Protocols",
-        desc: "DKA, HHS, CIWA, sepsis, hypertensive emerg.",
-      },
-      {
-        name: "ER Triage",
-        desc: "ESI 1–5, time-sensitive Dx, AI-assisted acuity",
-      },
-      {
-        name: "Oncology & Rare Disease",
-        desc: "Open Targets + NCCN targeted therapy",
-      },
-      { name: "Billing & Coverage", desc: "ICD-10 + CMS policy support" },
-    ],
-  },
-  {
-    title: "Radiation Oncology",
-    items: [
-      {
-        name: "Imaging Review",
-        desc: "X-ray/CT/MRI; GTV/CTV/PTV-relevant findings",
+        name: "Rapid",
+        desc: "Answers from the model alone and labels itself as unverified",
       },
     ],
   },
@@ -120,36 +103,26 @@ const SECTIONS: Section[] = [
 
 interface ExplainerSheetProps {
   trigger?: ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export function ExplainerSheet({ trigger, open: controlledOpen, onOpenChange }: ExplainerSheetProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : uncontrolledOpen;
-  const setOpen = (next: boolean) => {
-    if (!isControlled) setUncontrolledOpen(next);
-    onOpenChange?.(next);
-  };
+export function ExplainerSheet({ trigger }: ExplainerSheetProps) {
+  const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      {!isControlled && (
-        <SheetTrigger asChild>
-          {trigger ?? (
-            <Button
-              variant="outline"
-              size="sm"
-              data-testid="button-ari-explainer"
-              aria-label="What can Ari do?"
-              title="What can Ari do?"
-            >
-              <Info className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">What Ari can do</span>
-            </Button>
-          )}
-        </SheetTrigger>
-      )}
+      <SheetTrigger asChild>
+        {trigger ?? (
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="button-ari-explainer"
+            aria-label="What can Ari do?"
+            title="What can Ari do?"
+          >
+            <Info className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">What Ari can do</span>
+          </Button>
+        )}
+      </SheetTrigger>
       <SheetContent
         side="right"
         className="w-full overflow-y-auto sm:max-w-lg"
