@@ -1,1 +1,1 @@
-- [Aribots and Ari AMR routes](product-route-separation.md) — preserve separate public pages, logins, and authenticated app shells for both products.
+- [Aribots product routing](product-route-separation.md) — use ARIbots as the hub while keeping ARIbots, Ari AMR, and Ari EMR as separate applications.

@@ -1,0 +1,70 @@
+reat — you want to keep the clean, modern aesthetic of your previous patient dashboard (like the "Medicare" UI you shared), but when a user clicks on a patient, the app should switch to a medical image viewer layout inspired by the screenshot of the PostDICOM Viewer.
+Here's exactly how you can integrate this layout style while maintaining your own design system:
+
+🖼️ Layout: Medical Image Viewer (Per Patient)
+💡 Trigger
+Clicking on any patient row (from the patient dashboard/table) opens a “Patient Detail + Imaging” page. This page adopts the PostDICOM-style layout for viewing CT, MRI, or PET scans.
+✅ Page Structure (Styled Like Your UI, Functioning Like PostDICOM)
+🔷 Top Bar (Persistent)
+Keep the Medicare-style header with:
+Back button ("← All Patients")
+Patient name (e.g., Patient: Willy Ben Chen)
+Optional dropdown: [CT] [MRI] [PET]
+Export / Report / AI Analyze buttons on right
+🔹 Left Sidebar (as in PostDICOM but restyled)
+Use a vertical sidebar with light styling consistent with your theme:
+Button	Function	Icon Suggestion
+📁 Studies	List of all scans	Reuse PostDICOM icon
+🧠 Series Viewer	Select modalities	Brain/MRI icon
+🛠 Tools	Open/close measurement bar	Wrench
+📤 Upload	Add new scans	Cloud upload
+📝 Annotations	Add/view markups	Pencil
+🗂 Compare	Load baseline/comparison	Side-by-side icon
+Make each section collapsible with soft transitions.
+🖼 Viewer Panel (PostDICOM-style)
+Split the screen into three vertical panels, each showing a loaded scan series:
+Use black or dark-gray background for this section only (mimicking radiology viewers).
+Each pane should be 1/3 width with scrollable image slices.
+Viewer Actions:
+Scroll through slices (arrow or slider)
+Zoom
+Window/Level
+Toggle overlays (ruler, measurements)
+Toggle AI Highlights (e.g., lesions, lymph nodes)
+Bottom row (PostDICOM style):
+Navigation arrows ⏮ ⏪ ⏩ ⏭
+Sync/lock panes 📌
+Fullscreen toggle 🔲
+Player mode ▶️ (auto scroll)
+If using Replit's no-code platform:
+Build three <div> blocks for image areas.
+Use embedded <canvas> or <img> elements to simulate scan frames.
+Add simple buttons below each for navigation.
+🟦 Patient Info Summary (Overlay Card)
+Floating on top-left of viewer area:
+Name: Willy Ben Chen
+Age: 27
+Gender: Male
+Modality: CT Abdomen
+Date of Scan: 10-04-2025
+Styled as a soft shadow card with blue border.
+📊 Optional Side Panel: AI-Detected Targets
+To the right of the viewer (toggleable):
+“Detected Findings”
+Lesion 1: 34mm × 17mm (Lung)
+Lesion 2: 21mm × 13mm (Lymph Node)
+“Review Buttons”
+Accept ✔️ / Modify ✏️ / Delete 🗑️
+“Generate Report” button
+🧠 Integration Notes
+Component	Source Layout	Your Style Guide
+Patient list UI	Medicare UI	Light, flat
+Viewer layout	PostDICOM	Dark viewer inside light shell
+Viewer functions	OHIF / Aidoc	Add AI markers
+Status tags	Medicare UI	Keep pill-style “Stable”, “Critical”
+Measurements	Aidoc-style	Inline viewer overlays
+📦 Optional Export Function
+At bottom right of viewer:
+📤 Export to PDF
+📤 Export as DICOM-SR
+🖨 Print

@@ -1,0 +1,32 @@
+kind = "web"
+previewPath = "/ari-emr/"
+title = "Ari EMR"
+description = "A full clinical EMR and imaging workspace with patient charts, scheduling, clinical workflows, DICOM viewing, AI tools, billing, CRM, and reporting for healthcare teams."
+version = "1.0.0"
+id = "artifacts/ari-emr"
+router = "path"
+
+
+[[services]]
+name = "web"
+paths = [ "/ari-emr/" ]
+localPort = 22522
+
+[services.development]
+run = "pnpm --filter @workspace/ari-emr run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ari-emr", "run", "build" ]
+
+[services.production.run]
+args = [ "node", "artifacts/ari-emr/dist/index.js" ]
+
+[services.production.run.env]
+NODE_ENV = "production"
+
+[services.production.health.startup]
+path = "/ari-emr/api/healthz"
+
+[services.env]
+PORT = "22522"
+BASE_PATH = "/ari-emr/"

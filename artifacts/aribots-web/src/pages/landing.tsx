@@ -227,6 +227,7 @@ function LandingNavbar() {
 
   const links = [
     { label: "Home", id: "hero" },
+    { label: "Applications", id: "applications" },
     { label: "Features", id: "capabilities" },
     { label: "Reviews", id: "testimonials" },
     { label: "Team", id: "team" },
@@ -569,6 +570,97 @@ function HeroSection() {
             <AribotMockup />
           </div>
 
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ApplicationsSection() {
+  const applications = [
+    {
+      name: "ARIbots",
+      eyebrow: "Clinical community",
+      description:
+        "The physician network and AI assistant for evidence-based answers, peer collaboration, news, triage, telemedicine, and professional groups.",
+      href: "/login",
+      cta: "Open ARIbots",
+      icon: Users,
+    },
+    {
+      name: "Ari AMR",
+      eyebrow: "Antimicrobial stewardship",
+      description:
+        "The dedicated antimicrobial resistance workspace for case intake, antibiograms, formulary review, guidance, and clinical decision support.",
+      href: "/ari-amr",
+      cta: "Explore Ari AMR",
+      icon: Shield,
+    },
+    {
+      name: "Ari EMR",
+      eyebrow: "Electronic medical record",
+      description:
+        "The clinician-facing patient record and imaging platform for charts, appointments, DICOM review, care operations, reporting, and billing.",
+      href: "/ari-emr/",
+      cta: "Open Ari EMR",
+      icon: Stethoscope,
+    },
+  ];
+
+  return (
+    <section id="applications" className="relative overflow-hidden bg-[#0e1117] py-20 md:py-24">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(74,144,217,0.14),transparent_40%)]" />
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7db8f0]">
+            One clinical ecosystem
+          </span>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
+            Choose the Ari application built for your workflow
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-white/55 md:text-lg">
+            ARIbots connects clinicians, Ari AMR supports antimicrobial stewardship,
+            and Ari EMR brings patient records and imaging into a dedicated workspace.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {applications.map((application) => {
+            const Icon = application.icon;
+            const content = (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#4A90D9]/30 bg-[#4A90D9]/10 text-[#7db8f0]">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-white/30 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#7db8f0]" />
+                </div>
+                <p className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-[#7db8f0]">
+                  {application.eyebrow}
+                </p>
+                <h3 className="mt-2 text-2xl font-bold text-white">{application.name}</h3>
+                <p className="mt-3 min-h-24 text-sm leading-6 text-white/55">
+                  {application.description}
+                </p>
+                <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                  {application.cta}
+                </span>
+              </>
+            );
+
+            const classes =
+              "group block rounded-2xl border border-white/10 bg-white/[0.045] p-7 transition duration-300 hover:-translate-y-1 hover:border-[#4A90D9]/45 hover:bg-white/[0.07]";
+
+            return application.href === "/ari-emr/" ? (
+              <a key={application.name} href={application.href} className={classes} data-testid="link-application-ari-emr">
+                {content}
+              </a>
+            ) : (
+              <Link key={application.name} href={application.href} className={classes} data-testid={`link-application-${application.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                {content}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -2345,6 +2437,7 @@ export default function Landing() {
     <div className="bg-gray-100 min-h-screen">
       <LandingNavbar />
       <HeroSection />
+      <ApplicationsSection />
       <MeetAriSection />
       <PhysicianFeaturesSection />
       <HowAriWorksSection />

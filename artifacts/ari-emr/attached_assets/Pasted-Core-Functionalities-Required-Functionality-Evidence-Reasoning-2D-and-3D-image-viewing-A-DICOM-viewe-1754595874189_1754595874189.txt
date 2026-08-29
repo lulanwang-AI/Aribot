@@ -1,0 +1,71 @@
+Core Functionalities Required
+Functionality	Evidence/Reasoning
+2D and 3D image viewing	A DICOM viewer must load scans from modalities like CT, MRI, X‑ray and PET and allow clinicians to move through slices, zoom, pan and adjust window/level to highlight different tissues
+blog.medicai.io
+. For advanced cases, it should reconstruct 2D slices into multiplanar views (axial, coronal, sagittal) and 3D volumes (MPR, volumetry, surface rendering)
+blog.medicai.io
+.
+Image manipulation tools	Users need basic controls—zoom, pan, rotate, flip, window/level, color mapping and cine loop playback—to enhance visualization
+blog.medicai.io
+.
+Measurement & annotation	Physicians must be able to measure distances, angles, areas and volumes and add text labels, arrows and markers to highlight findings
+capminds.com
+. Proper tools should also allow storing these measurements as structured data (DICOM SR)
+capminds.com
+.
+Comparative & serial imaging	Good DICOM viewers support overlaying past vs. current scans or showing different modalities side‑by‑side, enabling clinicians to track disease progression
+blog.medicai.io
+.
+Integration with PACS/RIS/EHR	To fit within hospital workflows, the viewer must connect to PACS, RIS and EHR systems so images and reports can be fetched and stored seamlessly
+blog.medicai.io
+.
+Security & compliance	Since medical images carry sensitive patient data, viewers must enforce HIPAA compliance, encrypt data at rest and in transit and provide role‑based access controls
+blog.medicai.io
+.
+AI enhancements (optional)	Modern viewers increasingly integrate AI for automated lesion detection, predictive analytics and workflow prioritization
+blog.medicai.io
+. In your case, this is central to SynaptiFlow’s value proposition.
+Reporting	Structured reporting should be available, allowing clinicians to generate DICOM‑SR or PDF summaries of findings and measurements for the patient’s record
+capminds.com
+.
+🔁 High‑Level Flow of the DICOM System
+Below is a logical sequence of steps that a user (e.g., radiologist or clinician) would follow in your web app. Each step corresponds to a set of underlying processes in the DICOM viewer and its integrations:
+User authentication & session initialization
+The clinician logs into SynaptiFlow using secure credentials.
+The system verifies identity and retrieves user roles (viewer, editor, admin).
+Patient/study lookup
+The user lands on the patient dashboard (Medicare‑style list) and can search or filter by name, ID or other criteria.
+Selecting a patient triggers a call to PACS/RIS via DICOM Query (C‑FIND or DICOMweb / studies endpoint) to fetch the patient’s studies and series metadata.
+Study & series selection
+A list of available studies (e.g., “CT Chest 29‑Jun‑2017”) appears in the left sidebar (PostDICOM‑style).
+The user chooses a study; the system retrieves series thumbnails and metadata (body part, modality, date) and shows them in a mini‑gallery.
+Image loading and viewer initialization
+On selecting a series, the viewer loads the DICOM images (via DICOMweb WADO-RS or C‑GET) and displays them in one or more panes.
+The viewer sets default window/level based on modality and allows slice navigation, zoom/pan and brightness/contrast adjustments.
+Multi‑planar and 3D reconstruction (as needed)
+For CT/MRI, the user can toggle MPR to view axial/coronal/sagittal planes simultaneously
+blog.medicai.io
+.
+Volume rendering or MIP can be enabled for surgical planning or vascular visualization.
+AI‑assisted analysis
+The user clicks “Run AI Analysis.” The system sends the series to relevant AI models (e.g., for pulmonary embolism, tumor triage).
+AI returns detected findings (lesion coordinates, sizes, classification) that appear as color‑coded overlays or bounding boxes.
+The user reviews each suggested lesion; accepted targets are added to the “Targets” list (like the Aidoc/OHIF interface), while false positives can be dismissed or re‑annotated.
+Manual measurements & annotations
+Additional measurement tools allow the user to draw calipers, angles or region‑of‑interest polygons; assign labels (e.g., “Lymph node,” “Tumor”) via context menu; and add comments.
+Each measurement is automatically stored with the image slice number and coordinates for later comparison.
+Comparative studies
+The user can switch to “Comparison” mode to load a prior exam in a separate pane. Synchronized scrolling and overlay tools show differences between the current and baseline scans
+blog.medicai.io
+.
+Measurement lists update to show which lesions correspond between studies, enabling growth or shrinkage calculations.
+Reporting
+After reviewing images, the user clicks “Generate Report.” The system compiles all measurements, AI findings and notes into a structured template (DICOM‑SR or PDF) and allows editing.
+The clinician finalizes the report; SynaptiFlow stores it in the PACS/EHR and optionally sends it to the referring physician.
+Saving & exporting
+All annotations, measurements and reports are saved back to the PACS or your own storage via DICOM C‑STORE / STOW-RS.
+The user can export images to other formats (JPEG, PNG) or share a secure link for collaboration.
+Audit & logging
+Each action (image access, annotation, report generation) is logged with user ID and timestamp to meet regulatory requirements and support audit trails.
+Logout & session termination
+The user logs out; the session ends and all cached data are cleared according to HIPAA and GDPR guidelines.

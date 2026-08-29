@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Ari AMR"
+title = "ARIbots"
 version = "1.0.0"
 id = "artifacts/aribots-web"
 router = "path"

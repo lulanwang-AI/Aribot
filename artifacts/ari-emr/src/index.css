@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --color-medical-blue: var(--medical-blue);
+  --color-medical-gray: var(--medical-gray);
+  --color-medical-green: var(--medical-green);
+  --color-medical-orange: var(--medical-orange);
+  --color-medical-red: var(--medical-red);
+
+  --font-inter: 'Inter', sans-serif;
+  --font-mono-clinical: 'JetBrains Mono', monospace;
+  --radius: var(--radius);
+}
+
+:root {
+  /* Meridian EMR design system — clinical calm: deep ink blues, soft teal accent */
+  --background: hsl(210, 33%, 97%);
+  --foreground: hsl(215, 45%, 12%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(215, 45%, 12%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(215, 45%, 12%);
+  --primary: hsl(200, 85%, 38%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(206, 40%, 94%);
+  --secondary-foreground: hsl(215, 45%, 15%);
+  --muted: hsl(208, 32%, 94%);
+  --muted-foreground: hsl(213, 14%, 44%);
+  --accent: hsl(186, 65%, 92%);
+  --accent-foreground: hsl(196, 80%, 26%);
+  --destructive: hsl(356, 75%, 50%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 26%, 89%);
+  --input: hsl(210, 26%, 87%);
+  --ring: hsl(200, 85%, 38%);
+  --sidebar: hsl(216, 50%, 11%);
+  --sidebar-foreground: hsl(213, 30%, 78%);
+  --sidebar-active: hsl(200, 85%, 45%);
+  --chart-1: hsl(200, 85%, 38%);
+  --chart-2: hsl(174, 60%, 41%);
+  --chart-3: hsl(256, 55%, 60%);
+  --chart-4: hsl(31, 90%, 55%);
+  --chart-5: hsl(356, 75%, 55%);
+  --success: hsl(152, 60%, 36%);
+  --warning: hsl(36, 92%, 44%);
+  --critical: hsl(356, 75%, 46%);
+  --medical-blue: hsl(200, 85%, 38%);
+  --medical-gray: hsl(213, 14%, 44%);
+  --medical-green: hsl(152, 60%, 36%);
+  --medical-orange: hsl(31, 90%, 50%);
+  --medical-red: hsl(356, 75%, 50%);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: hsl(218, 40%, 7%);
+  --foreground: hsl(210, 35%, 96%);
+  --card: hsl(217, 36%, 10%);
+  --card-foreground: hsl(210, 35%, 96%);
+  --popover: hsl(217, 36%, 10%);
+  --popover-foreground: hsl(210, 35%, 96%);
+  --primary: hsl(198, 85%, 52%);
+  --primary-foreground: hsl(218, 40%, 7%);
+  --secondary: hsl(216, 30%, 16%);
+  --secondary-foreground: hsl(210, 35%, 96%);
+  --muted: hsl(216, 30%, 15%);
+  --muted-foreground: hsl(213, 18%, 62%);
+  --accent: hsl(196, 60%, 16%);
+  --accent-foreground: hsl(190, 70%, 70%);
+  --destructive: hsl(356, 75%, 56%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(216, 28%, 18%);
+  --input: hsl(216, 28%, 20%);
+  --ring: hsl(198, 85%, 52%);
+  --sidebar: hsl(218, 44%, 6%);
+  --sidebar-foreground: hsl(213, 28%, 72%);
+  --sidebar-active: hsl(198, 85%, 52%);
+  --success: hsl(152, 55%, 45%);
+  --warning: hsl(36, 92%, 55%);
+  --critical: hsl(356, 75%, 58%);
+  --medical-blue: hsl(198, 85%, 52%);
+  --medical-gray: hsl(213, 18%, 62%);
+  --medical-green: hsl(152, 55%, 45%);
+  --medical-orange: hsl(31, 90%, 58%);
+  --medical-red: hsl(356, 75%, 56%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .text-medical-blue { color: var(--medical-blue); }
+  .text-medical-gray { color: var(--medical-gray); }
+  .text-medical-green { color: var(--medical-green); }
+  .text-medical-orange { color: var(--medical-orange); }
+  .text-medical-red { color: var(--medical-red); }
+  .bg-medical-blue { background-color: var(--medical-blue); }
+  .bg-medical-gray { background-color: var(--medical-gray); }
+  .bg-medical-green { background-color: var(--medical-green); }
+  .bg-medical-orange { background-color: var(--medical-orange); }
+  .bg-medical-red { background-color: var(--medical-red); }
+  
+  .font-inter { font-family: var(--font-inter); }
+  .font-mono-clinical { font-family: var(--font-mono-clinical); }
+
+  /* EMR surfaces */
+  .emr-card {
+    @apply bg-card rounded-xl border border-border shadow-[0_1px_2px_rgba(16,42,67,0.06)];
+  }
+  .emr-stat-value {
+    @apply text-xl font-bold tracking-tight;
+  }
+  .emr-section-title {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+  .status-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full;
+  }
+}

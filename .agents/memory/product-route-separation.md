@@ -1,10 +1,10 @@
 ---
-name: Aribots and Ari AMR route separation
-description: Product boundary between the Aribots V4 experience and the Ari AMR stewardship product.
+name: Aribots product routing
+description: Product boundaries and hub relationship across ARIbots, Ari AMR, and Ari EMR.
 ---
 
-Keep Aribots V4 and Ari AMR as separate experiences within the same web artifact. Aribots owns the main public site, its clinician login, and its original authenticated application. Ari AMR has its own public product page, login, and stewardship workspace.
+Use the ARIbots V4 public site as the shared product hub, with clear connections to three distinct applications. ARIbots keeps its own clinician login and authenticated community/assistant experience. Ari AMR keeps its own product page, login, and antimicrobial stewardship workspace. Ari EMR remains a standalone application with its own server and clinical data model.
 
-**Why:** The user explicitly requires Aribots V4 to remain available and does not want its login or authenticated experience replaced by Ari AMR.
+**Why:** The user explicitly wants one website that connects all three applications while preserving each product’s routes, login boundaries, purpose, and application shell.
 
-**How to apply:** When changing navigation, authentication, landing pages, or app shells, verify both product paths independently and avoid sharing redirects that send Aribots users into the AMR workspace.
+**How to apply:** When changing navigation, authentication, landing pages, APIs, or app shells, verify all three product paths independently. Do not share redirects or API paths in ways that move users or data into another product.

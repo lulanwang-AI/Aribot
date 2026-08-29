@@ -1,0 +1,22 @@
+a typical oncology follow‑up workflow from an Aidoc/OHIF viewer: radiologists scroll through an axial CT chest, draw linear measurements on lesions, assign those measurements as “Targets” or “Non‑Targets”, and immediately see an updated table in a right‑hand panel. Each measurement displays its length and width, and a contextual menu lets the user assign anatomical labels (e.g. “Lymph Node”, “Lung”, “Liver”). A “Generate Report” button then produces a concise summary of the measured lesions and their dimensions. Key design elements worth emulating are:
+Top toolbar for tools – icons for zoom, window/level, pan, linking series, creating new targets and temporary measurements, and moving the image.
+Left sidebar for study/patient navigation – shows the patient name, ID and baseline exam; users can select time‑points for longitudinal comparison.
+Central image viewer – a large viewing pane (approx. 800×600 px) with overlaid rulers; measurements appear as colored callouts with dimension labels.
+Right sidebar – divided into “Comparison” or “Key timepoints”, then lists “Targets” (max five) and “Non‑Targets” with their measurements and labels. A button labeled “Generate Report” exports the structured data.
+Context menu – when a measurement is created, a pop‑up menu lets the user assign a label (e.g. lymph node, lung) from a pre‑defined list.
+How to integrate this into the SynaptiFlow prototype
+Add a measurement toolbar:
+Extend the imaging viewer with a horizontal toolbar similar to the one in the video. Use icons and clear labels for “Zoom”, “Window/Level”, “Pan”, “Link Series”, “New Target”, and “Move”. Place this toolbar beneath the viewer’s header so it is always visible. When a doctor selects “New Target”, the cursor changes to a measurement tool allowing them to draw caliper lines on the image.
+Implement target/non‑target panel:
+Allocate a right‑side panel (about 20–25 % of the page width) with two collapsible sections, “Targets” and “Non‑Targets”. After the user draws a measurement, automatically add an entry under “Targets” with placeholder text (e.g., “No description – 35.1 mm × 17.5 mm”). Provide a small badge showing the current count of targets (maximum five). Each list item should allow editing the label or deleting the measurement. Include a “Generate Report” button at the bottom of this panel that summarizes all measurements into a structured report.
+Introduce a labeling context menu:
+When a measurement is drawn or selected, display a contextual drop‑down near the caliper with common anatomical sites (lung, lymph node, liver, etc.) and an “Other” category. Once selected, this label populates the entry in the “Targets” panel.
+Baseline and time‑point selector:
+Replicate the video’s study/time‑point selector above the image viewer. Use a breadcrumb or drop‑down labelled “Baseline (current)” with arrows to navigate to earlier or later exams. This should pull the appropriate series into the viewer and update the target list so clinicians can compare lesion growth or shrinkage over time.
+AI‑assisted measurement suggestions:
+Tie in your multi‑AI modules (e.g., Aidoc‑like triage, Lunit for chest findings, Annalise for brain/CTB) so that after a scan is uploaded, the system automatically highlights suspected lesions and proposes “targets” with preliminary measurements. The doctor can accept, modify, or discard these suggestions. Accepted AI measurements then appear in the target list and can be edited manually.
+Report generation:
+On clicking “Generate Report”, compile the list of target lesions, their labels, and their measurements into a structured summary (including baseline vs. current comparisons). Offer to insert this summary into the “Report” tab or export it as a PDF/DICOM‑SR.
+Layout adjustments:
+Ensure the right‑side panel collapses on smaller screens to maximize the viewer area. Use responsive design so that the measurement tools remain accessible on tablets. Buttons should remain at least 44 px high for touch usability.
+By incorporating these Aidoc/OHIF‑like features—measurement tools, target management, labeling menus, and an organized report generator—SynaptiFlow will not only provide AI‑driven detection but also streamline radiologists’ workflow for tumor response tracking and follow‑up exams.

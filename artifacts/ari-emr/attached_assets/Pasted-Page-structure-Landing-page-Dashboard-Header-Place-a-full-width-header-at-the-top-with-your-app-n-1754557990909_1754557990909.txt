@@ -1,0 +1,57 @@
+Page structure
+Landing page (Dashboard)
+Header: Place a full‑width header at the top with your app name (“SynaptiFlow”) and a compact navigation bar on the right (links: Home, Patients, AI Tools, Settings).
+Main section: Divide the page horizontally into two panels.
+Left panel (40 % width): Display a searchable list of patient names. Above the list, add a search bar labelled “Search Patients”. Below it, place an “Add New Patient” button. Pre‑populate the list with mock patient data (e.g., “John Doe – CT Brain 07/10/25”).
+Right panel (60 % width): Use a tabbed interface with tabs labelled “Imaging Viewer”, “Report”, and “History”. By default, show a placeholder image or a blank viewer area (approx. 800 px × 600 px) that later will display uploaded scans and 3D renderings.
+Patient detail page
+Breadcrumbs: Provide a breadcrumb trail (“Home > Patients > John Doe”) for easy navigation.
+Layout: Use a two‑column layout.
+Left column (30 %): Present patient demographics (name, ID, age) in a card. Add an “Upload Scan” button to import DICOM images (this can open a file picker). Beneath the card, include buttons for “Run CT Analysis”, “Run MRI Analysis”, and “View 3D Reconstruction”, which will later trigger AI functions.
+Right column (70 %): Embed the image viewer. Ensure the viewer area is large enough (about 900 px × 600 px) to display 2D slices. Include controls for scrolling through slices, adjusting window/level, and toggling between 2D and 3D views. At the top‑right corner of the viewer, place small icons for adding markers/annotations, measuring distances, and drawing regions of interest.
+AI Tools page
+Provide a grid of cards (three or four per row) summarizing available AI modules. Each card should contain:
+A title (e.g., “Brain CT Triage”).
+A short description (e.g., “Detects intracranial hemorrhage, large vessel occlusion, and midline shift”).
+A “Run on Current Patient” button.
+Reserve space at the bottom of the page to show AI results in an expandable panel. Use a collapsible section labelled “AI Findings” that lists detected conditions, confidence scores, and suggested next steps.
+Settings page
+Offer toggle switches or checkboxes for enabling or disabling specific AI modules.
+Include a button labelled “Import Mock Data” that populates the patient list with additional fake records to help demonstrate system functionality.
+Provide fields to configure integration settings (e.g., API keys for external AI services).
+Component and button wording
+Buttons:
+“Add New Patient”
+“Upload Scan”
+“Run CT Analysis”
+“Run MRI Analysis”
+“View 3D Reconstruction”
+“Add Annotation”
+“Save Report”
+“Import Mock Data”
+“Enable/Disable AI module [name]”
+Tabs: “Imaging Viewer”, “Report”, “History”, “AI Findings”
+Search bars: Label clearly (“Search Patients”, “Search Findings”).
+Panels: Use clear headings (“Patient Information”, “Imaging Viewer”, “AI Tools”).
+Functionality description
+Patient management and mock data
+Use the “Add New Patient” button to open a form where you can input mock patient data (name, ID, age, scan date). When “Import Mock Data” is clicked, auto‑populate the patient list with sample entries so that the user can test the workflow without real data.
+Imaging upload and viewing
+The “Upload Scan” button should allow users to upload a CT or MRI DICOM file. Once uploaded, the image appears in the viewer panel. Use buttons like “Next Slice” and “Previous Slice” to navigate through the series. Provide a toggle labelled “2D / 3D” to switch to a 3D reconstruction view.
+Annotations and markups
+Provide small icon buttons (e.g., pencil or measurement ruler) within the viewer toolbar to add 2D annotations or draw 3D volume outlines. When an annotation is created, store the coordinates and display a small text box for the user to add comments.
+AI analysis and multi‑AI integration
+Under the “AI Tools” page, each card triggers a different AI module. For example:
+“Brain CT Triage”: connect this button to an API call that sends the current patient’s CT scan to a service like Aidoc’s CARE1 or another foundation model; return detected findings with confidence values.
+“Lung X‑ray Analysis”: integrate an API such as Lunit INSIGHT CXR to detect lung nodules, pneumothorax and other findings with high AUC
+lunit.io
+.
+“Stroke Triage”: offer a module similar to RapidAI’s LVO detection; display sensitivity and specificity metrics from recent studies (e.g., 98 % sensitivity reported in the DUEL study
+rapidai.com
+).
+Each AI module runs asynchronously and populates the “AI Findings” panel with results, including clickable items that highlight the corresponding location in the viewer.
+Reporting and communication
+In the “Report” tab, provide a text editor that automatically inserts AI findings and physician annotations. Include a “Generate Summary” button that uses a generative‑AI service to draft a narrative report. Add a “Send to Care Team” button that routes the report and images to a selected department via email or internal messaging.
+Responsive design
+Set sections to use percentages rather than fixed pixel widths where possible (e.g., left panel 40 %, right panel 60 %). Ensure buttons are at least 44 px high for usability. Allow the viewer to expand fully on smaller screens by collapsing the left navigation list into a hamburger menu.
+By following these wording guidelines in Replit’s no‑code builder, you can assemble a functional prototype that mirrors the planned SynaptiFlow design, complete with mock data, clear navigation, and placeholders for multi‑AI integration.

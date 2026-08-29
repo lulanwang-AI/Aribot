@@ -1,0 +1,87 @@
+🧩 UI Layout Blueprint (Inspired by Uploaded Image)
+🔹 Overall Style
+Use light mode theme with soft shadows and rounded cards (border-radius: 8px).
+Font: Clean sans-serif (e.g., Inter, Open Sans, or Roboto).
+Use pill-style status indicators (Stable, Critical, Mild) with color codes:
+Stable = light blue
+Mild = light green
+Critical = light red
+✅ Replit Web Builder Page Setup: “Patient Overview”
+1. Header Section
+Full-width, horizontally aligned top bar:
+Left: Page title Patient Overview
+Right: Search bar (Search Patient...), notification bell, profile icon (with dropdown menu)
+2. Summary Cards (Top Stats)
+Create a 4-column grid across the top with cards:
+Title	Example Number	Icon Suggestion	Color Stripe (Optional)
+Total Patients	352	👥	Neutral
+Mild Patients	180	🟢	Green Stripe
+Stable Patients	150	🔵	Blue Stripe
+Critical Patients	22	🔴	Red Stripe
+Each card: 200–240px wide, with light shadow and padding (16px).
+3. Patient Table
+Use a dynamic table layout with the following columns:
+Column	Notes
+Checkbox	For bulk actions
+Photo + Name	Circle avatar + full name
+Last Appointment	Format: DD-MM-YYYY
+Age	Auto-calculated from DOB
+Date of Birth	DD-MM-YYYY
+Gender	Male/Female
+Diagnosis	Short string (e.g., “Asthma”, “Heart Failure”)
+Status	Styled tag (“Critical”, “Stable”, “Mild”) with colors
+Actions	Three dots ⋯ dropdown (View
+Mock Entries:
+Auto-generate a few mock rows using data like:
+Emily Tan – 22-02-1989 – Anxiety Disorder – Mild
+David Kim – 07-05-1984 – Asthma – Stable
+Use placeholder avatar images or emoji 👩‍⚕️👨‍⚕️ for profile icons.
+4. Filter & Export Bar (Above Table)
+Include the following components above the table:
+🔍 Search input — placeholder: “Search patient…”
+🔘 Filter dropdown — by gender/status/diagnosis
+⏬ Export button — style in blue
+5. Sidebar (Vertical Left Menu)
+Use a vertical navigation bar similar to the one in your image:
+Menu Items	Icons (optional)
+Dashboard	🏠
+Appointment	📅
+Patient (Active)	👤
+Report	📄
+Clinic	🏥
+Staff	👨‍⚕️👩‍⚕️
+Consultation	💬
+Favorites Section:
+VIP Patient ⭐
+Equipment ⚙️
+Staff Report 📈
+Bottom Section:
+Feedback 💬
+Help Center ❓
+Settings ⚙️
+🔁 Integration with Imaging Viewer & AI Tools
+Each patient row should be clickable. Clicking should:
+Take you to the Patient Detail Page.
+From there, show:
+Imaging Viewer (from Aidoc-style layout)
+Tabs for: Report, History, AI Findings
+Run AI buttons (e.g., “Run CT Analysis”)
+“View Targets” opens the right panel we previously discussed.
+🧠 AI Integration Example (Workflow)
+User uploads scan in Patient Detail Page.
+AI auto-detects 3 targets (e.g., lymph node, lung mass).
+Results populate on the sidebar.
+User can label, annotate, and export the report.
+Back on this patient dashboard, an icon appears next to the patient’s name:
+✅ if AI analysis complete
+⚠️ if pending
+📊 for results available
+🛠️ Building It in Replit (No Code Suggestions)
+Use Replit’s “Web App (HTML/CSS)” template.
+Use “Cards” and “Table” components.
+Style each table row and card using a consistent grid or flex layout.
+Leverage their visual builder to:
+Drag and drop components
+Use dropdowns and filters
+Set component spacing (gap: 16px, margin-top: 24px)
+For AI module buttons, use Replit’s “Button” component and point it to placeholder JS or API trigger functions.

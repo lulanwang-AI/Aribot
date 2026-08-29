@@ -1,0 +1,21 @@
+Concept Design for SynaptiFlow
+1. Core functions
+AI‑assisted imaging analysis – SynaptiFlow ingests DICOM data from CT and MRI scanners via secure PACS/FHIR connections and runs deep‑learning models to detect abnormalities. The platform would use a foundation model similar to Aidoc’s CARE1 (large pre‑trained model for CT imaging
+auntminnie.com
+) to handle multiple imaging modalities. Output includes heat maps, segmentation masks and probability scores for suspected findings, ranked for urgency.
+2D/3D viewer with markup tools – A web‑based viewer supports both axial/2D slices and interactive 3D reconstructions. Clinicians can add annotations, measurements and regions of interest, record voice or text comments and generate structured DICOM‑SR reports. The viewer offers one‑click lesion tracking and synchronized multiplanar views similar to New Lantern’s PET/CT mode
+auntminnie.com
+.
+Patient data management – SynaptiFlow keeps a longitudinal patient record linking imaging, reports and clinical notes. Data are stored in encrypted databases with fine‑grained role‑based access. Integration with electronic health records (EHRs) via HL7/FHIR enables automatic updating of demographics and test results.
+Search and natural‑language prompting – Clinicians can search by patient, body part, modality, finding, or free‑text queries. A generative AI interface allows users to ask questions (e.g., “show me all CT brains with intracranial hemorrhage in the past week”) and to draft preliminary impressions or follow‑up recommendations.
+Care‑team communication – Built‑in secure messaging routes annotated studies to the appropriate service line (e.g., neurosurgery, oncology). The system sends push notifications when critical findings are detected; clinicians can acknowledge, forward or request tele‑consultation directly from within the viewer.
+Workflow integration and compliance – The platform supports single sign‑on with hospital identity providers, logs all access for audit trails and provides encrypted data transfer. It adheres to HIPAA by ensuring data encryption in transit and at rest, strict access controls and business‑associate agreements when using cloud services. APIs and HL7/FHIR interfaces allow integration with existing PACS, RIS and EHR systems.
+2. Implementation considerations
+Architecture – A microservices architecture decouples the viewer, AI inference engine, data store and integration services. AI inference could run on‑premises GPUs or in a cloud environment with dedicated instances; results are cached to minimize latency.
+Models – Employ a multi‑modal foundation model pre‑trained on diverse annotated datasets to recognize numerous radiologic findings (similar to Aidoc’s CARE1
+auntminnie.com
+ or Annalise Enterprise CTB/CXR models which detect over 100 findings). Fine‑tune with local data to address population‑specific pathology distribution.
+Data interoperability – Implement DICOM networking (C‑MOVE/C‑STORE) for image retrieval and FHIR‑based APIs to push structured results to EHRs. Provide support for import/export of DICOM‑SR, HL7 ORU messages and JSON for analytics.
+Security and auditing – Use encryption (TLS 1.2+), token‑based authentication and audit logs. A governance layer checks models for bias and drift; a deployment framework like Aidoc’s BRIDGE (which defines technical, regulatory, operational and trust‑building criteria for clinical AI
+auntminnie.com
+) can guide risk management.
