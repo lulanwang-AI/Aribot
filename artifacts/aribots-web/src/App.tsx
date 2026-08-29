@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { ClerkProvider, useAuth, useClerk } from "@clerk/react";
+import { publishableKeyFromHost } from "@clerk/react/internal";
+import {
+  Redirect,
+  Switch,
+  Route,
+  useLocation,
+  Router as WouterRouter,
+} from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
-import { queryClient } from "./lib/queryClient";
+import { apiRequest, queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,15 +51,53 @@ import ClinicalChat from "@/pages/clinical-chat";
 import SoapNote from "@/pages/soap";
 import VisitSummary from "@/pages/visit-summary";
 import WorkflowHistory from "@/pages/workflow-history";
-import AribotsLogin from "@/pages/login";
-import AmrLogin from "@/pages/amr-login";
 import Landing from "@/pages/landing";
 import AriAmr from "@/pages/ari-amr";
 import Whitepaper from "@/pages/whitepaper";
+import { ClerkAuthScreen } from "@/components/auth/clerk-auth-screen";
 import { AuthContext } from "@/lib/auth";
 import { STANDALONE } from "@/lib/amr";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-access";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const basePath = STANDALONE
+  ? ""
+  : import.meta.env.BASE_URL.replace(/\/$/, "");
+const clerkPublishableKey = publishableKeyFromHost(
+  window.location.host,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
+type AuthState = "loading" | "authenticated" | "anonymous";
+type AuthProduct = "aribots" | "amr";
+
+function resolveAuthProduct(location: string): AuthProduct {
+  const requestedProduct = new URLSearchParams(window.location.search).get(
+    "product",
+  );
+  if (requestedProduct === "amr") {
+    window.sessionStorage.setItem("ari-auth-product", "amr");
+    return "amr";
+  }
+  if (location.startsWith("/sign-in/") || location.startsWith("/sign-up/")) {
+    return window.sessionStorage.getItem("ari-auth-product") === "amr"
+      ? "amr"
+      : "aribots";
+  }
+  window.sessionStorage.setItem("ari-auth-product", "aribots");
+  return "aribots";
+}
+
+function clerkDestination(to: string) {
+  if (!basePath) return to;
+  const url = new URL(to, window.location.origin);
+  const pathname = url.pathname.startsWith(basePath)
+    ? url.pathname.slice(basePath.length) || "/"
+    : url.pathname;
+  return `${pathname}${url.search}${url.hash}`;
+}
 
 function SidebarEdgeTrigger() {
   const { toggleSidebar, state } = useSidebar();
@@ -165,9 +211,12 @@ function AuthenticatedAribotsApp({ onSignOut }: { onSignOut: () => void }) {
 }
 
 function AppContent() {
-  const [authenticated, setAuthenticated] = useState(true);
-  const [amrAuthState, setAmrAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [location, setLocation] = useLocation();
+  const [authState, setAuthState] = useState<AuthState>(
+    STANDALONE ? "authenticated" : "loading",
+  );
+  const { isLoaded: clerkLoaded, isSignedIn: clerkSignedIn } = useAuth();
+  const { signOut } = useClerk();
   const isAmrWorkspace =
     location === "/dashboard" ||
     location === "/intake" ||
@@ -178,35 +227,62 @@ function AppContent() {
     location === "/ari-amr/account" ||
     location === "/cases" ||
     location.startsWith("/cases/");
+  const isAuthRoute =
+    location.startsWith("/sign-in") || location.startsWith("/sign-up");
+  const isLegacyLoginRoute =
+    location === "/login" || location === "/ari-amr/login";
+  const isPublicRoute =
+    location === "/" ||
+    location === "/landing" ||
+    location === "/ari-amr" ||
+    location === "/amr" ||
+    location === "/whitepaper" ||
+    isAuthRoute ||
+    isLegacyLoginRoute;
+  const requiresAuth = !isPublicRoute;
+  const authProduct = resolveAuthProduct(location);
 
   useEffect(() => {
-    if (!isAmrWorkspace || amrAuthState !== "loading") return;
+    if (!requiresAuth || STANDALONE || !clerkLoaded) return;
     let cancelled = false;
+    setAuthState("loading");
     fetch("/api/auth/me", { credentials: "include" })
       .then((response) => {
-        if (!cancelled) setAmrAuthState(response.ok ? "authenticated" : "anonymous");
+        if (!cancelled) {
+          setAuthState(response.ok ? "authenticated" : "anonymous");
+        }
       })
       .catch(() => {
-        if (!cancelled) setAmrAuthState("anonymous");
+        if (!cancelled) setAuthState("anonymous");
       });
     return () => {
       cancelled = true;
     };
-  }, [amrAuthState, isAmrWorkspace]);
+  }, [requiresAuth, clerkLoaded, clerkSignedIn]);
 
-  async function handleSignOut(product: "amr" | "aribots") {
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {
-      // Logout is best-effort: drop local state either way.
+  async function handleDemoLogin(product: AuthProduct) {
+    if (!STANDALONE) {
+      await apiRequest("POST", "/api/auth/login", {
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
     }
+    setAuthState("authenticated");
+    setLocation(product === "amr" ? "/dashboard" : "/aribot");
+  }
+
+  async function handleSignOut(product: AuthProduct) {
     queryClient.clear();
-    if (product === "amr") {
-      setAmrAuthState("anonymous");
-      setLocation("/ari-amr");
+    const destination = product === "amr" ? "/ari-amr" : "/";
+    if (!STANDALONE) {
+      await apiRequest("POST", "/api/auth/logout").catch(() => undefined);
+    }
+    if (clerkSignedIn) {
+      setAuthState("anonymous");
+      await signOut({ redirectUrl: `${basePath}${destination}` });
     } else {
-      setAuthenticated(false);
-      setLocation("/");
+      setAuthState("anonymous");
+      setLocation(destination);
     }
   }
 
@@ -222,58 +298,35 @@ function AppContent() {
     return <Whitepaper />;
   }
 
-  if (location === "/login") {
-    return (
-      <AribotsLogin
-        onLogin={() => {
-          setAuthenticated(true);
-          setLocation("/aribot");
-        }}
-        onNavigateToLanding={() => setLocation("/")}
-      />
-    );
-  }
-
+  if (location === "/login") return <Redirect to="/sign-in" />;
   if (location === "/ari-amr/login") {
+    return <Redirect to="/sign-in?product=amr" />;
+  }
+
+  if (isAuthRoute) {
     return (
-      <AmrLogin
-        onLogin={() => {
-            setAmrAuthState("authenticated");
-          setLocation("/dashboard");
-        }}
-        onNavigateToLanding={() => setLocation("/ari-amr")}
+      <ClerkAuthScreen
+        mode={location.startsWith("/sign-up") ? "sign-up" : "sign-in"}
+        product={authProduct}
+        basePath={basePath}
+        onDemoLogin={() => handleDemoLogin(authProduct)}
+        onBack={() => setLocation(authProduct === "amr" ? "/ari-amr" : "/")}
       />
     );
   }
 
-  if (isAmrWorkspace && amrAuthState === "loading") {
+  if (requiresAuth && (!clerkLoaded || authState === "loading")) {
     return (
       <div className="amr-public-theme dark flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Checking demo access…
+        Checking account access…
       </div>
     );
   }
 
-  if (isAmrWorkspace && amrAuthState === "anonymous") {
+  if (requiresAuth && authState === "anonymous") {
     return (
-      <AmrLogin
-        onLogin={() => {
-          setAmrAuthState("authenticated");
-          setLocation("/dashboard");
-        }}
-        onNavigateToLanding={() => setLocation("/ari-amr")}
-      />
-    );
-  }
-
-  if (!authenticated) {
-    return (
-      <AribotsLogin
-        onLogin={() => {
-          setAuthenticated(true);
-          setLocation("/aribot");
-        }}
-        onNavigateToLanding={() => setLocation("/")}
+      <Redirect
+        to={isAmrWorkspace ? "/sign-in?product=amr" : "/sign-in"}
       />
     );
   }
@@ -282,6 +335,24 @@ function AppContent() {
     <AuthenticatedAmrApp onSignOut={() => handleSignOut("amr")} />
   ) : (
     <AuthenticatedAribotsApp onSignOut={() => handleSignOut("aribots")} />
+  );
+}
+
+function ClerkApp() {
+  const [, setLocation] = useLocation();
+  return (
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      proxyUrl={clerkProxyUrl}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      routerPush={(to) => setLocation(clerkDestination(to))}
+      routerReplace={(to) =>
+        setLocation(clerkDestination(to), { replace: true })
+      }
+    >
+      <AppContent />
+    </ClerkProvider>
   );
 }
 
@@ -296,11 +367,11 @@ function App() {
             location the host has no file for, and a reload would 404.
           */}
           <WouterRouter
-            base={STANDALONE ? "" : import.meta.env.BASE_URL.replace(/\/$/, "")}
+            base={basePath}
             hook={STANDALONE ? useHashLocation : undefined}
           >
             <Toaster />
-            <AppContent />
+            <ClerkApp />
           </WouterRouter>
         </TooltipProvider>
       </QueryClientProvider>

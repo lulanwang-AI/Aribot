@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { resolveAuthenticatedUser } from "../auth-setup";
 
 /**
  * Strict authentication gate for Ari clinical endpoints.
@@ -15,13 +16,19 @@ import type { Request, Response, NextFunction } from "express";
  * correct fail-closed behavior for a clinical tool. Wire up Passport (or
  * swap in your real auth middleware here) before exposing Ari to clinicians.
  */
-export function requireAriAuth(req: Request, res: Response, next: NextFunction) {
-  const r = req as Request & {
-    isAuthenticated?: () => boolean;
-    user?: unknown;
-  };
-  if (typeof r.isAuthenticated === "function" && r.isAuthenticated() && r.user) {
-    return next();
+export async function requireAriAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const user = await resolveAuthenticatedUser(req);
+    if (user) {
+      req.user = user;
+      return next();
+    }
+  } catch (error) {
+    return next(error);
   }
   return res.status(401).json({
     message: "Authentication required for Ari clinical workflows.",

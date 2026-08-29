@@ -1,7 +1,8 @@
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import type { Express } from "express";
+import { getAuth } from "@clerk/express";
+import type { Express, NextFunction, Request, Response } from "express";
 import { storage } from "./storage";
 import type { User } from "@workspace/db";
 
@@ -9,6 +10,95 @@ type SafeUser = Omit<User, "password">;
 
 export const DEMO_EMAIL = "demo@aribots.local";
 export const DEMO_PASSWORD = "demo";
+
+function claimString(
+  claims: Record<string, unknown> | null | undefined,
+  ...keys: string[]
+) {
+  for (const key of keys) {
+    const value = claims?.[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+export async function resolveAuthenticatedUser(
+  req: Request,
+): Promise<SafeUser | undefined> {
+  let clerkUserId: string | null = null;
+  let claims: Record<string, unknown> | null | undefined;
+  try {
+    const auth = getAuth(req as never) as {
+      userId?: string | null;
+      sessionClaims?: unknown;
+    };
+    clerkUserId = auth.userId || null;
+    claims = auth.sessionClaims as Record<string, unknown> | null | undefined;
+  } catch {
+    return undefined;
+  }
+  if (clerkUserId) {
+    const username = `clerk:${clerkUserId}`;
+    let user = await storage.getUserByUsername(username);
+    if (!user) {
+      const email = claimString(claims, "email", "email_address");
+      const name =
+        claimString(claims, "name", "full_name") ||
+        [claimString(claims, "first_name"), claimString(claims, "last_name")]
+          .filter(Boolean)
+          .join(" ") ||
+        email ||
+        "ARIbots member";
+      user = await storage.createUser({
+        username,
+        password: "managed-by-clerk",
+        name,
+        specialty: "",
+        subspecialty: "",
+        interests: [],
+        hospital: "",
+        city: "",
+        state: "",
+        role: "member",
+        verified: false,
+        phiSafeMode: true,
+        yearsExperience: 0,
+        rankingScore: 50,
+        badges: [],
+        bio: "",
+        avatarUrl: "",
+        credential: "",
+      });
+      if (email) {
+        user = (await storage.updateUser(user.id, { email })) || user;
+      }
+    }
+
+    const { password: _password, ...safe } = user;
+    return safe;
+  }
+
+  if (req.isAuthenticated?.() && req.user) return req.user;
+  return undefined;
+}
+
+export async function requireAuthenticatedWebApi(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (req.method === "POST" && req.path === "/demo-requests") {
+    return next();
+  }
+  try {
+    const user = await resolveAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Sign-in required." });
+    req.user = user;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
 
 declare global {
   namespace Express {
@@ -118,16 +208,35 @@ export function registerAuthRoutes(app: Express) {
     req.logout((err) => {
       if (err) return next(err);
       req.session?.destroy?.(() => {
-        res.clearCookie("connect.sid");
+        const cookieOptions = {
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax" as const,
+          secure: process.env.NODE_ENV === "production",
+        };
+        res.clearCookie("connect.sid", cookieOptions);
+        res.clearCookie("ari_emr_demo", cookieOptions);
         res.json({ ok: true });
       });
     });
   });
 
-  app.get("/api/auth/me", (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Demo sign-in required." });
+  app.get("/api/auth/me", async (req, res, next) => {
+    try {
+      const user = await resolveAuthenticatedUser(req);
+      if (!user) {
+        return res.status(401).json({ message: "Sign-in required." });
+      }
+      return res.json({
+        demo: Boolean(
+          req.isAuthenticated?.() &&
+            req.user &&
+            !String(user.username).startsWith("clerk:"),
+        ),
+        user,
+      });
+    } catch (error) {
+      return next(error);
     }
-    return res.json({ demo: true, user: req.user });
   });
 }

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
+import { resolveAuthenticatedUser } from "../auth-setup";
 import { ariAudit } from "./audit";
 
 export const LICENSE_TYPES = [
@@ -36,47 +37,36 @@ export type AriClinicianContext = {
  * currently optional — when no session exists we fall back to the seeded
  * default clinician (`u1`) so anyone can use Ari without forced signup.
  */
-export const ARI_GUEST_USER_ID = "u1";
-
 export async function requireAriClinician(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const r = req as Request & {
-    isAuthenticated?: () => boolean;
-    user?: { id?: string };
-  };
-  const sessionUserId =
-    typeof r.isAuthenticated === "function" && r.isAuthenticated()
-      ? r.user?.id
-      : undefined;
-  const userId = sessionUserId || ARI_GUEST_USER_ID;
-  const user = await storage.getUser(userId);
+  const authenticatedUser = await resolveAuthenticatedUser(req);
+  if (!authenticatedUser) {
+    res.status(401).json({ message: "Sign in required." });
+    return;
+  }
+  const user = await storage.getUser(authenticatedUser.id);
   if (!user) {
-    // Neither the session user nor the seeded guest is available — only
-    // happens in a totally empty store. Surface a clear error.
-    res.status(500).json({
-      message: "Ari user context unavailable.",
+    res.status(401).json({ message: "Sign in required." });
+    return;
+  }
+  if (!(user as any).licenseType || !(user as any).acceptedAriTermsAt) {
+    res.status(403).json({
+      code: "ARI_ONBOARDING_REQUIRED",
+      message: "Complete clinician onboarding before using Ari clinical tools.",
     });
     return;
   }
-  // Onboarding is currently optional. If the user has completed it we use
-  // their declared license type and terms-acceptance timestamp; otherwise we
-  // fall through with sensible defaults (license OTHER, terms ts = now) so
-  // every authenticated user can use Ari without forced signup.
   const lt = (user as any).licenseType as LicenseType | undefined;
   const ts = (user as any).acceptedAriTermsAt;
   (req as any).ariClinician = {
     userId: user.id,
-    licenseType: (lt || "OTHER") as LicenseType,
+    licenseType: lt as LicenseType,
     email: (user as any).email || (user as any).username || "",
     acceptedAriTermsAt:
-      typeof ts === "number"
-        ? ts
-        : ts
-          ? new Date(ts).getTime()
-          : Date.now(),
+      typeof ts === "number" ? ts : new Date(ts as string).getTime(),
   } satisfies AriClinicianContext;
   next();
 }

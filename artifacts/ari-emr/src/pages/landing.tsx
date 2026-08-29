@@ -34,18 +34,18 @@ function PublicHeader() {
               {item.label}
             </a>
           ))}
-          <a href="https://www.aribots.com/contact-8" target="_blank" rel="noopener noreferrer" className="text-sm text-white/80 transition-colors hover:text-[#4A90D9]" data-testid="link-emr-nav-contact">
-            Contact
-          </a>
-          <Link href="/login" className="rounded-full bg-[#4A90D9] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5BA0E9]" data-testid="link-emr-header-demo">
-            Demo access
+          <Link href="/sign-in" className="text-sm text-white/80 transition-colors hover:text-[#4A90D9]" data-testid="link-emr-nav-login">
+            Sign in
           </Link>
+          <a href="https://www.aribots.com/contact-8" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#4A90D9] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5BA0E9]" data-testid="link-emr-header-product-demo">
+            Book a product demo
+          </a>
         </nav>
 
         <div className="flex items-center gap-3 md:hidden">
-          <Link href="/login" className="rounded-full bg-[#4A90D9] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5BA0E9]" data-testid="link-emr-mobile-demo">
-            Demo
-          </Link>
+          <a href="https://www.aribots.com/contact-8" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#4A90D9] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5BA0E9]" data-testid="link-emr-mobile-product-demo">
+            Book demo
+          </a>
           <button type="button" className="text-white" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close menu" : "Open menu"} data-testid="button-emr-mobile-menu">
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -59,6 +59,9 @@ function PublicHeader() {
               {item.label}
             </a>
           ))}
+          <Link href="/sign-in" onClick={() => setMobileOpen(false)} className="block py-3 text-sm text-white/80 transition-colors hover:text-[#4A90D9]" data-testid="link-emr-mobile-login">
+            Sign in
+          </Link>
           <a href="https://www.aribots.com/contact-8" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="block py-3 text-sm text-white/80 transition-colors hover:text-[#4A90D9]" data-testid="link-emr-mobile-contact">
             Contact
           </a>
@@ -108,8 +111,8 @@ function PublicFooter() {
                 <a href="mailto:info@aribots.com" className="transition-colors hover:text-[#4A90D9]">info@aribots.com</a>
               </li>
             </ul>
-            <Link href="/login" className="inline-flex items-center gap-2 rounded-xl border border-[#4A90D9]/30 bg-[#4A90D9]/10 px-4 py-2 text-xs font-medium text-[#4A90D9] transition-colors hover:bg-[#4A90D9]/20" data-testid="link-emr-footer-demo">
-              Demo access
+            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-xl border border-[#4A90D9]/30 bg-[#4A90D9]/10 px-4 py-2 text-xs font-medium text-[#4A90D9] transition-colors hover:bg-[#4A90D9]/20" data-testid="link-emr-footer-login">
+              Sign in or use demo
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -187,8 +190,8 @@ export default function LandingPage() {
           </motion.p>
           
           <motion.div variants={item} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/login" className="flex items-center justify-center h-12 px-8 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shadow-[0_0_40px_-10px_rgba(var(--primary),0.5)] cursor-pointer text-base" data-testid="link-emr-open-demo">
-              Enter Demo Workspace
+            <Link href="/sign-in" className="flex items-center justify-center h-12 px-8 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shadow-[0_0_40px_-10px_rgba(var(--primary),0.5)] cursor-pointer text-base" data-testid="link-emr-open-demo">
+              Sign in or explore the demo
               <ArrowUpRight className="w-4 h-4 ml-2 opacity-70" />
             </Link>
             <a href="/" className="flex items-center justify-center h-12 px-8 rounded-full bg-white/5 text-white font-medium hover:bg-white/10 transition-colors border border-white/10 text-base" data-testid="link-emr-learn-aribots">

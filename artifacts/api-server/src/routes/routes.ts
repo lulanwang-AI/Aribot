@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage";
 import { z } from "zod";
@@ -43,13 +43,16 @@ const moderationSchema = z.object({
   status: z.enum(["pending", "safe", "edit_requested", "removed"]),
 });
 
+function currentUserId(req: Request) {
+  return (req as Request & { user: { id: string } }).user.id;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   app.get("/api/me", async (req, res) => {
-    const sessionUser = (req as any).user;
-    const userId = sessionUser?.id || "u1";
+    const userId = currentUserId(req);
     const user = await storage.getUser(userId);
     if (!user) { res.status(404).json({ message: "User not found" }); return; }
     const { password: _, ...safe } = user;
@@ -59,8 +62,7 @@ export async function registerRoutes(
   app.patch("/api/me", async (req, res) => {
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
-    const sessionUser = (req as any).user;
-    const userId = sessionUser?.id || "u1";
+    const userId = currentUserId(req);
     const updated = await storage.updateUser(userId, parsed.data);
     if (!updated) { res.status(404).json({ message: "User not found" }); return; }
     const { password: _, ...safe } = updated;
@@ -157,7 +159,7 @@ export async function registerRoutes(
     const parsed = createPostSchema.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const post = await storage.createTriagePost({
-      authorId: "u1",
+      authorId: currentUserId(req),
       title: parsed.data.title,
       content: parsed.data.content,
       tags: parsed.data.tags,
@@ -170,7 +172,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/triage/:id/like", async (req, res) => {
-    const post = await storage.likeTriagePost(req.params.id, "u1");
+    const post = await storage.likeTriagePost(req.params.id, currentUserId(req));
     if (!post) { res.status(404).json({ message: "Post not found" }); return; }
     res.json(post);
   });
@@ -182,7 +184,7 @@ export async function registerRoutes(
     await storage.createFlaggedItem({
       contentType: "post", contentId: req.params.id, content: post.content.substring(0, 200),
       authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
-      reportedBy: "u1", status: "pending", createdAt: new Date().toISOString(),
+      reportedBy: currentUserId(req), status: "pending", createdAt: new Date().toISOString(),
     });
     res.json(post);
   });
@@ -192,7 +194,7 @@ export async function registerRoutes(
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const comment = await storage.createComment({
       postId: req.params.id,
-      authorId: "u1",
+      authorId: currentUserId(req),
       content: parsed.data.content,
       parentId: parsed.data.parentId,
       anonymous: parsed.data.anonymous,
@@ -204,7 +206,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/comments/:id/like", async (req, res) => {
-    const comment = await storage.likeComment(req.params.id, "u1");
+    const comment = await storage.likeComment(req.params.id, currentUserId(req));
     if (!comment) { res.status(404).json({ message: "Comment not found" }); return; }
     res.json(comment);
   });
@@ -216,7 +218,7 @@ export async function registerRoutes(
     await storage.createFlaggedItem({
       contentType: "comment", contentId: req.params.id, content: comment.content.substring(0, 200),
       authorName: "Unknown", reason: parsed.success ? parsed.data.reason : "Flagged by user",
-      reportedBy: "u1", status: "pending", createdAt: new Date().toISOString(),
+      reportedBy: currentUserId(req), status: "pending", createdAt: new Date().toISOString(),
     });
     res.json(comment);
   });
@@ -268,7 +270,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/news/:id/like", async (req, res) => {
-    const item = await storage.likeNewsItem(req.params.id, "u1");
+    const item = await storage.likeNewsItem(req.params.id, currentUserId(req));
     if (!item) { res.status(404).json({ message: "News not found" }); return; }
     res.json(item);
   });
@@ -279,7 +281,7 @@ export async function registerRoutes(
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const comment = await storage.createNewsComment({
       newsId: req.params.id,
-      authorId: "u1",
+      authorId: currentUserId(req),
       content: parsed.data.content,
       parentId: parsed.data.parentId,
       likes: [],
@@ -289,7 +291,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/news-comments/:id/like", async (req, res) => {
-    const comment = await storage.likeNewsComment(req.params.id, "u1");
+    const comment = await storage.likeNewsComment(req.params.id, currentUserId(req));
     if (!comment) { res.status(404).json({ message: "Comment not found" }); return; }
     res.json(comment);
   });
@@ -319,13 +321,13 @@ export async function registerRoutes(
   });
 
   app.post("/api/groups/:id/join", async (req, res) => {
-    const group = await storage.joinGroup(req.params.id, "u1");
+    const group = await storage.joinGroup(req.params.id, currentUserId(req));
     if (!group) { res.status(404).json({ message: "Group not found" }); return; }
     res.json(group);
   });
 
   app.post("/api/groups/:id/leave", async (req, res) => {
-    const group = await storage.leaveGroup(req.params.id, "u1");
+    const group = await storage.leaveGroup(req.params.id, currentUserId(req));
     if (!group) { res.status(404).json({ message: "Group not found" }); return; }
     res.json(group);
   });
@@ -346,13 +348,13 @@ export async function registerRoutes(
   });
 
   app.post("/api/events/:id/rsvp", async (req, res) => {
-    const event = await storage.rsvpEvent(req.params.id, "u1");
+    const event = await storage.rsvpEvent(req.params.id, currentUserId(req));
     if (!event) { res.status(404).json({ message: "Event not found" }); return; }
     res.json(event);
   });
 
   app.post("/api/events/:id/unrsvp", async (req, res) => {
-    const event = await storage.unrsvpEvent(req.params.id, "u1");
+    const event = await storage.unrsvpEvent(req.params.id, currentUserId(req));
     if (!event) { res.status(404).json({ message: "Event not found" }); return; }
     res.json(event);
   });
@@ -370,8 +372,8 @@ export async function registerRoutes(
     res.json(item);
   });
 
-  app.get("/api/chats", async (_req, res) => {
-    const threads = await storage.getChatThreads("u1");
+  app.get("/api/chats", async (req, res) => {
+    const threads = await storage.getChatThreads(currentUserId(req));
     res.json(threads);
   });
 
@@ -386,7 +388,7 @@ export async function registerRoutes(
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
     const msg = await storage.createChatMessage({
       threadId: req.params.id,
-      senderId: "u1",
+      senderId: currentUserId(req),
       content: parsed.data.content,
       attachments: parsed.data.attachments,
       createdAt: new Date().toISOString(),
@@ -413,7 +415,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/training/:id/complete", async (req, res) => {
-    const mod = await storage.completeTrainingStep(req.params.id, "u1");
+    const mod = await storage.completeTrainingStep(req.params.id, currentUserId(req));
     if (!mod) { res.status(404).json({ message: "Module not found" }); return; }
     res.json(mod);
   });
@@ -433,11 +435,11 @@ export async function registerRoutes(
     res.json(enriched);
   });
 
-  app.get("/api/notifications", async (_req, res) => {
+  app.get("/api/notifications", async (req, res) => {
     const news = await storage.getNewsItems();
     const posts = await storage.getTriagePosts();
     const events = await storage.getEvents();
-    const threads = await storage.getChatThreads("u1");
+    const threads = await storage.getChatThreads(currentUserId(req));
     const recentNews = news.filter(n => {
       const age = Date.now() - new Date(n.publishedAt).getTime();
       return age < 24 * 3600000;
@@ -470,7 +472,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/telemed/consultations/:id/accept", async (req, res) => {
-    const consultation = await storage.acceptTelemedConsultation(req.params.id, "u1");
+    const consultation = await storage.acceptTelemedConsultation(req.params.id, currentUserId(req));
     if (!consultation) { res.status(404).json({ message: "Consultation not found" }); return; }
     res.json(consultation);
   });
@@ -497,8 +499,8 @@ export async function registerRoutes(
     res.json(consultation);
   });
 
-  app.get("/api/telemed/earnings", async (_req, res) => {
-    const earnings = await storage.getTelemedEarnings("u1");
+  app.get("/api/telemed/earnings", async (req, res) => {
+    const earnings = await storage.getTelemedEarnings(currentUserId(req));
     res.json(earnings);
   });
 

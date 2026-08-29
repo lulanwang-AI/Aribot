@@ -1,19 +1,31 @@
-import express, { type Express } from "express";
+import express, { type Express, type RequestHandler } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import { clerkMiddleware } from "@clerk/express";
+import { publishableKeyFromHost } from "@clerk/shared/keys";
 import path from "path";
 import { fileURLToPath } from "url";
 import { logger } from "./lib/logger";
-import { setupAuth, registerAuthRoutes } from "./auth-setup";
+import {
+  setupAuth,
+  registerAuthRoutes,
+  requireAuthenticatedWebApi,
+} from "./auth-setup";
 import { registerRoutes } from "./routes/routes";
 import ariRouter from "./ari/routes";
 import healthRouter from "./routes/health";
 import mobileRouter from "./routes/mobile-router";
 import amrRouter from "./amr/routes";
+import {
+  CLERK_PROXY_PATH,
+  clerkProxyMiddleware,
+  getClerkProxyHost,
+} from "./middlewares/clerkProxyMiddleware";
 import "./ari/client";
 
 const app: Express = express();
 
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(
   pinoHttp({
     logger,
@@ -36,6 +48,14 @@ app.use(
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(
+      getClerkProxyHost(req) || "",
+      process.env.CLERK_PUBLISHABLE_KEY,
+    ),
+  })) as unknown as RequestHandler,
+);
 
 // Serve static assets (e.g. generated avatars)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,6 +65,7 @@ setupAuth(app);
 registerAuthRoutes(app);
 app.use("/api", healthRouter);
 app.use("/api/mobile", mobileRouter);
+app.use("/api", requireAuthenticatedWebApi);
 app.use("/api/amr", amrRouter);
 
 let routesRegistered = false;

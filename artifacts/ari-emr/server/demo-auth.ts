@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { getAuth } from "@clerk/express";
 import type { Express, Request, Response, NextFunction } from "express";
 
 export const DEMO_EMAIL = "demo@aribots.local";
@@ -31,6 +32,14 @@ function hasValidSession(req: Request): boolean {
   return true;
 }
 
+function clerkUserId(req: Request): string | null {
+  try {
+    return getAuth(req).userId;
+  } catch {
+    return null;
+  }
+}
+
 function setDemoCookie(res: Response, token: string, isProduction: boolean) {
   const secure = isProduction ? "; Secure" : "";
   res.setHeader(
@@ -43,7 +52,10 @@ function clearDemoCookie(res: Response, isProduction: boolean) {
   const secure = isProduction ? "; Secure" : "";
   res.setHeader(
     "Set-Cookie",
-    `${DEMO_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
+    [
+      `${DEMO_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
+      `connect.sid=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
+    ],
   );
 }
 
@@ -68,17 +80,30 @@ export function setupDemoAuth(app: Express, isProduction: boolean) {
   });
 
   app.get("/api/auth/me", (req, res) => {
-    if (!hasValidSession(req)) {
-      return res.status(401).json({ message: "Demo sign-in required." });
+    const userId = clerkUserId(req);
+    if (userId) {
+      return res.json({
+        demo: false,
+        user: {
+          id: userId,
+          name: "Authenticated Clinician",
+          role: "clinician",
+        },
+      });
     }
-    res.json({
-      demo: true,
-      user: {
-        id: "demo-clinician",
-        name: "Demo Clinician",
-        role: "clinician",
-      },
-    });
+
+    if (hasValidSession(req)) {
+      return res.json({
+        demo: true,
+        user: {
+          id: "demo-clinician",
+          name: "Demo Clinician",
+          role: "clinician",
+        },
+      });
+    }
+
+    return res.status(401).json({ message: "Sign-in required." });
   });
 
   app.post("/api/auth/logout", (req, res) => {
@@ -98,8 +123,8 @@ export function setupDemoAuth(app: Express, isProduction: boolean) {
     ) {
       return next();
     }
-    if (!hasValidSession(req)) {
-      return res.status(401).json({ message: "Demo sign-in required." });
+    if (!hasValidSession(req) && !clerkUserId(req)) {
+      return res.status(401).json({ message: "Sign-in required." });
     }
     next();
   });

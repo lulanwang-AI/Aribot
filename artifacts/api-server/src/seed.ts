@@ -754,6 +754,8 @@ export function seedAllData() {
     bio: "Board-certified Infectious Disease specialist in Kentfield, CA with 21 years of clinical experience. Graduate of Ross University School of Medicine. Expertise in HIV/AIDS, antimicrobial stewardship, and travel medicine. Also fluent in Khmer.",
     avatarUrl: "/api/assets/avatars/avatar-chet-chea.jpg",
     credential: "MD",
+    licenseType: "MD",
+    acceptedAriTermsAt: Date.parse("2026-01-01T00:00:00.000Z"),
   };
 
   const news = generateNews(80, doctors);

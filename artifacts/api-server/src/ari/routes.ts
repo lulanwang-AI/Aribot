@@ -5,7 +5,6 @@ import { anthropic } from "./client";
 import { getAriAgentConfig } from "./agentSync";
 import { AriRequestSchema, type AriAttachment } from "./schema";
 import {
-  ARI_GUEST_USER_ID,
   buildClinicianPromptAddendum,
   onboardingSchema,
   requireAriClinician,
@@ -21,6 +20,7 @@ import {
   CAPABILITY_REJECTION_MESSAGE,
   isActiveCapability,
 } from "./capabilities";
+import { resolveAuthenticatedUser } from "../auth-setup";
 
 const MCP_BETA_HEADER = "mcp-client-2025-04-04";
 // PDFs need this beta header until Anthropic GAs native PDF input.
@@ -30,8 +30,8 @@ const router = Router();
 
 // --- Onboarding (does NOT require completed onboarding, but does require login)
 router.post("/onboarding", async (req, res) => {
-  const r = req as any;
-  if (typeof r.isAuthenticated !== "function" || !r.isAuthenticated() || !r.user?.id) {
+  const authenticatedUser = await resolveAuthenticatedUser(req);
+  if (!authenticatedUser) {
     res.status(401).json({ message: "Sign in required." });
     return;
   }
@@ -42,7 +42,7 @@ router.post("/onboarding", async (req, res) => {
       issues: (parsed.error as ZodError).flatten(),
     });
   }
-  const updated = await storage.updateUser(r.user.id, {
+  const updated = await storage.updateUser(authenticatedUser.id, {
     licenseType: parsed.data.licenseType,
     licenseNumber: parsed.data.licenseNumber || "",
     licenseState: parsed.data.licenseState || "",
@@ -58,20 +58,19 @@ router.post("/onboarding", async (req, res) => {
 // when no session exists we fall back to the seeded clinician (u1) so the
 // page renders without redirecting to the login screen.
 router.get("/me", async (req, res) => {
-  const r = req as any;
-  const sessionUserId =
-    typeof r.isAuthenticated === "function" && r.isAuthenticated()
-      ? r.user?.id
-      : undefined;
-  const userId = sessionUserId || ARI_GUEST_USER_ID;
-  const user = await storage.getUser(userId);
+  const authenticatedUser = await resolveAuthenticatedUser(req);
+  if (!authenticatedUser) {
+    res.status(401).json({ message: "Sign in required." });
+    return;
+  }
+  const user = await storage.getUser(authenticatedUser.id);
   if (!user) { res.status(404).json({ message: "User not found." }); return; }
   const { password: _, ...safe } = user;
   res.json({
     user: safe,
     onboarded: Boolean((user as any).licenseType && (user as any).acceptedAriTermsAt),
     sessionStartedAt: Date.now(),
-    guest: !sessionUserId,
+    guest: false,
   });
   return;
 });

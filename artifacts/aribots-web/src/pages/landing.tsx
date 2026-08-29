@@ -217,7 +217,7 @@ function AnimatedCounter({ target, label, suffix = "" }: { target: number; label
   );
 }
 
-export function LandingNavbar({ loginHref = "/login" }: { loginHref?: string }) {
+export function LandingNavbar({ loginHref = "/sign-in" }: { loginHref?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location, setLocation] = useLocation();
 
@@ -264,32 +264,34 @@ export function LandingNavbar({ loginHref = "/login" }: { loginHref?: string }) 
               {l.label}
             </button>
           ))}
+          <Link
+            href={loginHref}
+            className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
+            data-testid="link-nav-login"
+          >
+            Sign in
+          </Link>
           <a
             href={CONTACT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
-            data-testid="link-nav-contact"
-          >
-            Contact
-          </a>
-          <Link
-            href={loginHref}
             className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
-            data-testid="link-nav-login"
+            data-testid="link-nav-product-demo"
           >
-            Login
-          </Link>
+            Book a product demo
+          </a>
         </div>
 
         <div className="md:hidden flex items-center gap-3">
-          <Link
-            href={loginHref}
+          <a
+            href={CONTACT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-xs font-semibold px-4 py-1.5 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
-            data-testid="link-mobile-login"
+            data-testid="link-mobile-product-demo"
           >
-            Login
-          </Link>
+            Book demo
+          </a>
           <button
             className="text-white"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -312,6 +314,14 @@ export function LandingNavbar({ loginHref = "/login" }: { loginHref?: string }) 
               {l.label}
             </button>
           ))}
+          <Link
+            href={loginHref}
+            onClick={() => setMobileOpen(false)}
+            className="block py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
+            data-testid="link-mobile-login"
+          >
+            Sign in
+          </Link>
           <a
             href={CONTACT_URL}
             target="_blank"
@@ -573,7 +583,7 @@ function ApplicationsSection() {
       eyebrow: "Clinical community",
       description:
         "The physician network and AI assistant for evidence-based answers, peer collaboration, news, triage, telemedicine, and professional groups.",
-      href: "/login",
+      href: "/sign-in",
       cta: "Open ARIbots",
       icon: Users,
     },

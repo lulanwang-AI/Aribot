@@ -206,7 +206,7 @@ export default function Landing() {
 
   return (
     <div className="amr-public-theme dark min-h-screen bg-background text-foreground">
-      <LandingNavbar loginHref="/ari-amr/login" />
+      <LandingNavbar loginHref="/sign-in?product=amr" />
 
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                             */}
@@ -236,7 +236,7 @@ export default function Landing() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg">
-                <Link href="/ari-amr/login" data-testid="link-hero-signin">
+                <Link href="/sign-in?product=amr" data-testid="link-hero-signin">
                   Sign in
                   <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" />
                 </Link>
@@ -247,7 +247,7 @@ export default function Landing() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="ghost">
-                <Link href="/ari-amr/login" data-testid="link-hero-demo">
+                <Link href="/sign-in?product=amr" data-testid="link-hero-demo">
                   Try demo access
                 </Link>
               </Button>
@@ -423,7 +423,7 @@ export default function Landing() {
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <Button asChild>
-              <Link href="/ari-amr/login" data-testid="link-cta-signin">
+              <Link href="/sign-in?product=amr" data-testid="link-cta-signin">
                 Sign in
                 <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" />
               </Link>

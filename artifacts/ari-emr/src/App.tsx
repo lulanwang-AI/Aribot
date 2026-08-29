@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { ClerkProvider, useAuth, useClerk } from "@clerk/react";
+import { publishableKeyFromHost } from "@clerk/react/internal";
+import {
+  Redirect,
+  Switch,
+  Route,
+  useLocation,
+  Router as WouterRouter,
+} from "wouter";
+import { apiRequest, queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,22 +34,38 @@ import ThreeDViewer from "@/pages/3d-viewer";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import MedicalAIChat from "@/components/ai/medical-ai-chat";
-import LoginPage from "@/pages/login";
-
 import LandingPage from "@/pages/landing";
+import { ClerkAuthScreen } from "@/components/auth/clerk-auth-screen";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-access";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const clerkPublishableKey = publishableKeyFromHost(
+  window.location.host,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
+function clerkDestination(to: string) {
+  const url = new URL(to, window.location.origin);
+  const pathname = url.pathname.startsWith(basePath)
+    ? url.pathname.slice(basePath.length) || "/"
+    : url.pathname;
+  return `${pathname}${url.search}${url.hash}`;
+}
 
 function Router() {
   const [location, setLocation] = useLocation();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
+  const { isLoaded: clerkLoaded, isSignedIn: clerkSignedIn } = useAuth();
+  const { signOut } = useClerk();
+  const isAuthRoute =
+    location.startsWith("/sign-in") || location.startsWith("/sign-up");
+  const requiresAuth = location !== "/" && location !== "/login" && !isAuthRoute;
 
   useEffect(() => {
-    if (location === "/" || location === "/login") {
-      if (authState === "loading") setAuthState("anonymous");
-      return;
-    }
-    if (authState !== "loading") return;
-
+    if (!requiresAuth || !clerkLoaded) return;
     let cancelled = false;
+    setAuthState("loading");
     fetch("/api/auth/me", { credentials: "include" })
       .then((response) => {
         if (!cancelled) setAuthState(response.ok ? "authenticated" : "anonymous");
@@ -52,18 +76,24 @@ function Router() {
     return () => {
       cancelled = true;
     };
-  }, [authState, location]);
+  }, [requiresAuth, clerkLoaded, clerkSignedIn]);
 
-  function handleLogin() {
+  async function handleDemoLogin() {
+    await apiRequest("POST", "/api/auth/login", {
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
     setAuthState("authenticated");
     setLocation("/workspace");
   }
 
   async function handleSignOut() {
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } finally {
-      queryClient.clear();
+    queryClient.clear();
+    await apiRequest("POST", "/api/auth/logout").catch(() => undefined);
+    if (clerkSignedIn) {
+      setAuthState("anonymous");
+      await signOut({ redirectUrl: `${basePath}/` });
+    } else {
       setAuthState("anonymous");
       setLocation("/");
     }
@@ -73,18 +103,26 @@ function Router() {
   if (location === "/") {
     return <LandingPage />;
   }
-  if (location === "/login") {
-    return <LoginPage onLogin={handleLogin} onNavigateToLanding={() => setLocation("/")} />;
+  if (location === "/login") return <Redirect to="/sign-in" />;
+  if (isAuthRoute) {
+    return (
+      <ClerkAuthScreen
+        mode={location.startsWith("/sign-up") ? "sign-up" : "sign-in"}
+        basePath={basePath}
+        onDemoLogin={handleDemoLogin}
+        onBack={() => setLocation("/")}
+      />
+    );
   }
-  if (authState === "loading") {
+  if (requiresAuth && (!clerkLoaded || authState === "loading")) {
     return (
       <div className="dark flex min-h-[100dvh] items-center justify-center bg-background text-sm text-muted-foreground">
-        Checking demo access…
+        Checking account access…
       </div>
     );
   }
-  if (authState === "anonymous") {
-    return <LoginPage onLogin={handleLogin} onNavigateToLanding={() => setLocation("/")} />;
+  if (requiresAuth && authState === "anonymous") {
+    return <Redirect to="/sign-in" />;
   }
 
   // Check if we're on a patient detail page
@@ -137,13 +175,31 @@ function Router() {
   );
 }
 
+function ClerkApp() {
+  const [, setLocation] = useLocation();
+  return (
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      proxyUrl={clerkProxyUrl}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      routerPush={(to) => setLocation(clerkDestination(to))}
+      routerReplace={(to) =>
+        setLocation(clerkDestination(to), { replace: true })
+      }
+    >
+      <Router />
+    </ClerkProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        <WouterRouter base={basePath}>
           <Toaster />
-          <Router />
+          <ClerkApp />
         </WouterRouter>
       </TooltipProvider>
     </QueryClientProvider>
