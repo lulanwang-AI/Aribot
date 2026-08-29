@@ -7,4 +7,6 @@ Use the ARIbots V4 public site as the shared product hub, with clear connections
 
 **Why:** The user explicitly wants one website that connects all three applications while preserving each product’s routes, login boundaries, purpose, and application shell.
 
-**How to apply:** When changing navigation, authentication, landing pages, APIs, or app shells, verify all three product paths independently. Do not share redirects or API paths in ways that move users or data into another product.
+Public AMR and EMR pages should feel like members of the ARIbots visual family, while each authenticated workspace keeps its domain-specific clinical tokens and information architecture.
+
+**How to apply:** When changing navigation, authentication, landing pages, APIs, or app shells, verify all three product paths independently. Do not share redirects or API paths in ways that move users or data into another product. Apply shared branding at the public-page layer rather than globally restyling the clinical applications.

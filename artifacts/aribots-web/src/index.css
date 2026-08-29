@@ -253,6 +253,32 @@
   }
 }
 
+/* Public AMR page: share the ARIbots midnight/blue family without changing
+   the stewardship workspace's deliberately teal clinical token system. */
+.amr-public-theme {
+  --background: 222 28% 7%;
+  --foreground: 210 30% 96%;
+  --border: 214 22% 18%;
+  --card: 220 25% 10%;
+  --card-foreground: 210 30% 96%;
+  --card-border: 214 22% 18%;
+  --popover: 220 25% 10%;
+  --popover-foreground: 210 30% 96%;
+  --popover-border: 214 22% 18%;
+  --primary: 207 70% 58%;
+  --primary-foreground: 222 28% 7%;
+  --secondary: 216 24% 15%;
+  --secondary-foreground: 210 30% 96%;
+  --muted: 216 24% 13%;
+  --muted-foreground: 214 16% 66%;
+  --accent: 207 58% 18%;
+  --accent-foreground: 207 85% 78%;
+  --input: 214 22% 20%;
+  --ring: 207 70% 58%;
+  --sidebar: 222 30% 6%;
+  --sidebar-foreground: 214 18% 78%;
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

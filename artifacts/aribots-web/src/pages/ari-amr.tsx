@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { BRAND_NAME, BrandMark } from "@/components/brand-mark";
@@ -178,12 +179,28 @@ const WARD_REALITIES: { heading: string; body: string }[] = [
 /** The sidebar's shield mark, reused so signed-out and signed-in look like one product. */
 
 export default function Landing() {
+  useEffect(() => {
+    document.title = "Ari AMR | Antimicrobial Stewardship by ARIbots";
+    const description =
+      "Ari AMR supports evidence-based antimicrobial stewardship with case intake, ranked empiric regimens, antibiograms, and auditable 48-to-72-hour review.";
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+    document
+      .querySelector<HTMLMetaElement>('meta[property="og:description"]')
+      ?.setAttribute("content", description);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="amr-public-theme dark min-h-screen bg-background text-foreground">
       {/* ---------------------------------------------------------------- */}
       {/* Top bar                                                          */}
       {/* ---------------------------------------------------------------- */}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0e1117]/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3 lg:px-8">
           <Link
             href="/"
@@ -199,11 +216,20 @@ export default function Landing() {
             </span>
           </Link>
 
-          <Button asChild size="sm">
-            <Link href="/ari-amr/login" data-testid="link-header-signin">
-              Sign in
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="hidden text-xs font-medium text-white/55 transition-colors hover:text-white sm:inline-flex"
+              data-testid="link-amr-back-to-hub"
+            >
+              Back to ARIbots
             </Link>
-          </Button>
+            <Button asChild size="sm">
+              <Link href="/ari-amr/login" data-testid="link-header-signin">
+                Sign in
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 

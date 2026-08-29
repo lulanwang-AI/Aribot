@@ -120,7 +120,7 @@ export default function PatientChart() {
       {/* Demographics banner */}
       <div className="bg-card border-b border-border px-4 sm:px-8 py-5">
         <div className="max-w-[1280px] mx-auto">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3">
+          <Link href="/workspace" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to patients
           </Link>
           <div className="flex flex-wrap items-center gap-6">

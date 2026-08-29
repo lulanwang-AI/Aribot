@@ -507,7 +507,7 @@ export default function ComprehensiveDashboard() {
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-6 gap-4">
-          <Link href="/">
+          <Link href="/workspace">
             <Card className="hover:shadow-lg transition-all cursor-pointer hover:scale-105">
               <CardContent className="p-4 text-center">
                 <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />

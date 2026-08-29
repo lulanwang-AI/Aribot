@@ -38,7 +38,7 @@ function PatientSearch() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (q.trim()) {
-      setLocation(`/?search=${encodeURIComponent(q.trim())}`);
+      setLocation(`/workspace?search=${encodeURIComponent(q.trim())}`);
       setQ("");
       ref.current?.blur();
     }

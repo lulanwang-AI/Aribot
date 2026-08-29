@@ -8,15 +8,15 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "Home", href: "/" },
-    { name: "Patients", href: "/patients" },
+    { name: "Home", href: "/workspace" },
+    { name: "Patients", href: "/workspace" },
     { name: "AI Tools", href: "/ai-tools" },
     { name: "Settings", href: "/settings" },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/" && location === "/") return true;
-    if (href !== "/" && location.startsWith(href)) return true;
+    if (href === "/workspace" && location.startsWith("/workspace")) return true;
+    if (location.startsWith(href)) return true;
     return false;
   };
 
@@ -26,7 +26,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Link href="/">
+              <Link href="/workspace">
                 <h1 className="text-2xl font-bold text-medical-blue cursor-pointer">SynaptiFlow</h1>
               </Link>
             </div>

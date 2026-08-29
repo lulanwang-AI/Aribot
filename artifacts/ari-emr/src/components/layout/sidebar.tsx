@@ -32,7 +32,7 @@ const sections: NavSection[] = [
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: CalendarDays, label: "Schedule", path: "/appointments" },
-      { icon: Users, label: "Patients", path: "/" },
+      { icon: Users, label: "Patients", path: "/workspace" },
       { icon: Stethoscope, label: "Consults", path: "/consultation" },
     ],
   },

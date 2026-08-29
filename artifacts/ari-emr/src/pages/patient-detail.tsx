@@ -29,7 +29,7 @@ export default function PatientDetail() {
   }
 
   const handleBack = () => {
-    setLocation("/");
+    setLocation("/workspace");
   };
 
   // Use the ViewerLayout component for the full PostDICOM-style viewer

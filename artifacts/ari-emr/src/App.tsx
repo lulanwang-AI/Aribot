@@ -26,9 +26,16 @@ import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import MedicalAIChat from "@/components/ai/medical-ai-chat";
 
+import LandingPage from "@/pages/landing";
+
 function Router() {
   const [location] = useLocation();
   
+  // Public landing page bypasses layout
+  if (location === "/") {
+    return <LandingPage />;
+  }
+
   // Check if we're on a patient detail page
   const isPatientDetail = location.startsWith("/patient/") || location.startsWith("/patients/");
   
@@ -52,7 +59,7 @@ function Router() {
         <Header />
         <main className="flex-1 overflow-y-auto">
           <Switch>
-            <Route path="/" component={Patients} />
+            <Route path="/workspace" component={Patients} />
             <Route path="/chart/:id" component={PatientChart} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/radiology-hub" component={RadiologyHub} />

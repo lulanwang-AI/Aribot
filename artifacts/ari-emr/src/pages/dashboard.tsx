@@ -166,7 +166,7 @@ export default function Dashboard() {
               {pendingResults.slice(0, 6).map((o) => {
                 const p = patientById[o.patientId];
                 return (
-                  <Link key={o.id} href={p ? `/chart/${p.id}` : "/"} className="block px-5 py-2.5 hover:bg-muted/60 transition-colors">
+                  <Link key={o.id} href={p ? `/chart/${p.id}` : "/workspace"} className="block px-5 py-2.5 hover:bg-muted/60 transition-colors">
                     <p className="text-sm font-medium">{o.name}</p>
                     <p className="text-[11px] text-muted-foreground">{p?.name} · {o.orderType}</p>
                   </Link>
@@ -187,7 +187,7 @@ export default function Dashboard() {
               {openEncounters.slice(0, 6).map((e) => {
                 const p = patientById[e.patientId];
                 return (
-                  <Link key={e.id} href={p ? `/chart/${p.id}` : "/"} className="block px-5 py-2.5 hover:bg-muted/60 transition-colors">
+                  <Link key={e.id} href={p ? `/chart/${p.id}` : "/workspace"} className="block px-5 py-2.5 hover:bg-muted/60 transition-colors">
                     <p className="text-sm font-medium">{p?.name ?? "Unknown"}</p>
                     <p className="text-[11px] text-muted-foreground">{e.reason} · {format(new Date(e.encounterDate), "MMM d")}</p>
                   </Link>
