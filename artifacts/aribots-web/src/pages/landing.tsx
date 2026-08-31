@@ -237,7 +237,7 @@ export function LandingNavbar({ loginHref = "/sign-in" }: { loginHref?: string }
     { label: "Reviews", id: "testimonials" },
     { label: "Team", id: "team" },
     { label: "FAQ", id: "faq" },
-    { label: "Join the Community", id: "demo" },
+    { label: "Plan with Ari", id: "demo", testId: "link-nav-join-the-community" },
   ];
 
   const CONTACT_URL = "https://www.aribots.com/contact-8";
@@ -259,7 +259,7 @@ export function LandingNavbar({ loginHref = "/sign-in" }: { loginHref?: string }
               key={l.label}
               onClick={() => scrollTo(l.id)}
               className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
-              data-testid={`link-nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
+              data-testid={l.testId ?? `link-nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {l.label}
             </button>
@@ -309,7 +309,7 @@ export function LandingNavbar({ loginHref = "/sign-in" }: { loginHref?: string }
               key={l.label}
               onClick={() => scrollTo(l.id)}
               className="block w-full text-left py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
-              data-testid={`link-mobile-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
+               data-testid={l.testId?.replace("link-nav-", "link-mobile-") ?? `link-mobile-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {l.label}
             </button>
@@ -478,7 +478,7 @@ function AribotMockup() {
             </div>
           </div>
           <div className="flex gap-2 mt-2.5 flex-wrap">
-            {["Evidence-based", "HIPAA Safe", "Specialist-reviewed"].map((tag) => (
+            {["Evidence-linked", "Context-aware", "Team-ready"].map((tag) => (
               <span key={tag} className="text-[9px] bg-[#4A90D9]/10 border border-[#4A90D9]/20 text-[#4A90D9]/80 rounded-full px-2 py-0.5">
                 {tag}
               </span>
@@ -504,6 +504,88 @@ function AribotMockup() {
   );
 }
 
+function AriSystemFlow() {
+  const [active, setActive] = useState(1);
+  const stages = [
+    { name: "ARIbots", label: "Understand", icon: Brain, color: "#75d4cf", detail: "Patient context + evidence", note: "A complex case enters the system." },
+    { name: "Ari AMR", label: "Steward", icon: Shield, color: "#eab55c", detail: "Resistance + therapy review", note: "The team checks risk, spectrum, and local patterns." },
+    { name: "Ari EMR", label: "Carry forward", icon: Database, color: "#d99476", detail: "Record + continuity", note: "The decision and its context stay with the patient record." },
+  ];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % stages.length), 2800);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const current = stages[active];
+  const CurrentIcon = current.icon;
+  return (
+    <div className="relative w-full max-w-[540px] mx-auto" data-testid="mockup-aribot">
+      <div className="absolute -inset-6 rounded-[2rem] bg-[#75d4cf]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#142d3b] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <img src={aribotLogoPath} alt="Ari" className="h-7 w-7 rounded object-contain" />
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#75d4cf]">Ari platform</p>
+              <p className="text-xs text-white/55">Clinical context, connected</p>
+            </div>
+          </div>
+          <span className="flex items-center gap-2 text-[10px] text-white/45"><span className="h-2 w-2 rounded-full bg-[#75d4cf] animate-pulse" /> live system view</span>
+        </div>
+        <div className="p-5 md:p-7">
+          <div className="mb-7 flex items-center justify-between gap-2">
+            {stages.map((stage, index) => {
+              const Icon = stage.icon;
+              const selected = active === index;
+              return (
+                <div key={stage.name} className="flex flex-1 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActive(index)}
+                    aria-label={`Show ${stage.name} workflow`}
+                    className="group flex min-w-0 items-center gap-2 text-left"
+                    data-testid={`button-system-stage-${index}`}
+                  >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-300 ${selected ? "border-white/30 bg-white/15" : "border-white/10 bg-white/5"}`} style={{ color: stage.color }}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="hidden min-w-0 sm:block">
+                      <span className="block truncate text-[10px] font-semibold text-white/80">{stage.name}</span>
+                      <span className="block text-[9px] text-white/35">{stage.label}</span>
+                    </span>
+                  </button>
+                  {index < stages.length - 1 && <span className="mx-1 h-px flex-1 bg-gradient-to-r from-white/20 to-white/5" />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-[#0d222e] p-5 md:p-6 transition-all duration-500" key={current.name} style={{ animation: "chatBubbleIn .45s ease-out both" }}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: current.color }}>{current.name} / {current.label}</p>
+                <h3 className="mt-3 text-xl font-semibold tracking-tight text-white">{current.detail}</h3>
+              </div>
+              <CurrentIcon className="h-6 w-6 shrink-0" style={{ color: current.color }} />
+            </div>
+            <p className="mt-5 text-sm leading-6 text-white/55">{current.note}</p>
+            <div className="mt-6 space-y-2">
+              {["Context assembled", "Evidence and signals linked", "Next step ready for review"].map((item, index) => (
+                <div key={item} className="flex items-center gap-3 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/65">
+                  <span className="font-mono text-[10px]" style={{ color: current.color }}>0{index + 1}</span>{item}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-5 flex items-center justify-between text-[10px] text-white/35">
+            <span>One patient thread</span><span className="h-px w-12 bg-white/15" /><span>Many care perspectives</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HeroSection() {
   const [, setLocation] = useLocation();
   return (
@@ -517,30 +599,30 @@ function HeroSection() {
           <div className="flex flex-col justify-center order-1 lg:order-1">
             <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-8 w-fit">
               <span className="w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
-              <span className="text-[#4A90D9] text-sm font-medium tracking-wide">Doctor-Powered Platform</span>
+              <span className="text-[#75d4cf] text-sm font-medium tracking-wide">Connected clinical infrastructure</span>
             </div>
 
             <h1
               className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]"
               data-testid="text-hero-headline"
             >
-              Empowering
+              One clinical
               <br />
-              Medicine with{" "}
-              <span className="text-[#4A90D9]">AI</span>
+              system.{" "}
+              <span className="text-[#75d4cf]">Three ways in.</span>
             </h1>
 
             <p className="mt-6 text-lg text-white/60 leading-relaxed max-w-md" data-testid="text-hero-tagline">
-              The clinical AI community built by physicians, for physicians. Evidence-based answers, peer collaboration, and intelligent decision support — all in one place.
+              Ari connects the context around care: clinical intelligence, antimicrobial stewardship, and the longitudinal patient record. Give every team the right workspace, with a shared thread from question to action to continuity.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mt-10">
               <Button
-                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => document.getElementById("applications")?.scrollIntoView({ behavior: "smooth" })}
                 className="bg-[#4A90D9] text-white hover:bg-[#5BA0E9] font-semibold px-8 py-6 text-base rounded-xl"
                 data-testid="button-hero-cta"
               >
-                Join the Community
+                Explore the platform
               </Button>
               <Button
                 onClick={() => setLocation("/whitepaper")}
@@ -548,15 +630,15 @@ function HeroSection() {
                 className="border-white/20 text-white/80 hover:bg-white/5 hover:border-white/30 font-medium px-8 py-6 text-base rounded-xl bg-transparent"
                 data-testid="button-hero-learn"
               >
-                See How It Works
+                Read the whitepaper
               </Button>
             </div>
 
             <div className="flex items-center gap-6 mt-10 pt-10 border-t border-white/8">
               {[
-                { value: "100%", label: "Identity Verified" },
-                { value: "HIPAA", label: "& SOC 2 Compliant" },
-                { value: "Zero", label: "Pharma Influence" },
+                 { value: "3", label: "connected workspaces" },
+                 { value: "1", label: "shared patient thread" },
+                 { value: "24/7", label: "access to context" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className="text-xl font-bold text-[#4A90D9]">{stat.value}</div>
@@ -567,7 +649,7 @@ function HeroSection() {
           </div>
 
           <div className="flex items-center justify-center order-2 lg:order-2">
-            <AribotMockup />
+             <AriSystemFlow />
           </div>
 
         </div>
@@ -580,27 +662,27 @@ function ApplicationsSection() {
   const applications = [
     {
       name: "ARIbots",
-      eyebrow: "Clinical community",
+      eyebrow: "Think with the evidence",
       description:
-        "The physician network and AI assistant for evidence-based answers, peer collaboration, news, triage, telemedicine, and professional groups.",
+        "Clinical intelligence for the questions that move care forward: evidence synthesis, reasoning, collaboration, triage, and shared context for multidisciplinary teams.",
       href: "/sign-in",
       cta: "Open ARIbots",
       icon: Users,
     },
     {
       name: "Ari AMR",
-      eyebrow: "Antimicrobial stewardship",
+      eyebrow: "Protect the next decision",
       description:
-        "The dedicated antimicrobial resistance workspace for case intake, antibiograms, formulary review, guidance, and clinical decision support.",
+        "A stewardship workspace for resistance surveillance, antibiograms, case review, formulary guidance, and responsible therapy decisions.",
       href: "/ari-amr#hero",
       cta: "Explore Ari AMR",
       icon: Shield,
     },
     {
       name: "Ari EMR",
-      eyebrow: "Electronic medical record",
+      eyebrow: "Carry the story forward",
       description:
-        "The clinician-facing patient record and imaging platform for charts, appointments, DICOM review, care operations, reporting, and billing.",
+        "The operational record for patient charts, imaging, appointments, care operations, reporting, and billing—so the care story stays available beyond one encounter.",
       href: "/ari-emr/",
       cta: "Open Ari EMR",
       icon: Stethoscope,
@@ -608,23 +690,22 @@ function ApplicationsSection() {
   ];
 
   return (
-    <section id="applications" className="relative overflow-hidden bg-[#0e1117] py-20 md:py-24">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(74,144,217,0.14),transparent_40%)]" />
+    <section id="applications" className="relative overflow-hidden bg-[#101f2c] py-24 md:py-32">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(117,212,207,0.16),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(234,181,92,0.10),transparent_35%)]" />
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7db8f0]">
-            One clinical ecosystem
+             ONE ARI PLATFORM
           </span>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
-            Choose the Ari application built for your workflow
+             Three workspaces. One connected care operation.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-white/55 md:text-lg">
-            ARIbots connects clinicians, Ari AMR supports antimicrobial stewardship,
-            and Ari EMR brings patient records and imaging into a dedicated workspace.
+             Start where your work lives today. Ari keeps intelligence, stewardship, and the medical record in conversation—without forcing every role into the same interface.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+         <div className="relative mt-12 grid gap-5 lg:grid-cols-3">
           {applications.map((application) => {
             const Icon = application.icon;
             const content = (
@@ -649,7 +730,7 @@ function ApplicationsSection() {
             );
 
             const classes =
-              "group block rounded-2xl border border-white/10 bg-white/[0.045] p-7 transition duration-300 hover:-translate-y-1 hover:border-[#4A90D9]/45 hover:bg-white/[0.07]";
+              "group block rounded-[1.5rem] border border-white/10 bg-[#173246]/80 p-7 transition duration-300 hover:-translate-y-1 hover:border-[#75d4cf]/55 hover:bg-[#1b4053]";
 
             return application.href === "/ari-emr/" ? (
               <a key={application.name} href={application.href} className={classes} data-testid="link-application-ari-emr">
@@ -777,7 +858,7 @@ function MeetAriSection() {
     <section id="meet-ari" className="py-12 md:py-24 bg-gray-100 -mt-px">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-meet-ari-title">
-          meet <span className="text-[#4A90D9]">ARI</span>
+          The Ari layer: <span className="text-[#4A90D9]">context in motion</span>
         </h2>
         <div
           ref={ref}
@@ -804,7 +885,7 @@ function MeetAriSection() {
           className={`mt-10 md:mt-20 transition-all duration-1000 delay-200 ${srcVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <p className="text-center text-gray-400 text-xs uppercase tracking-widest mb-4 md:mb-6 font-medium">
-            Powered by 8 trusted evidence sources
+            Evidence is one layer of the system—not a silo
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
             {evidenceSources.map((src, i) => {
@@ -941,14 +1022,14 @@ function PhysicianFeaturesSection() {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-5">
             <Sparkles className="h-3.5 w-3.5 text-[#4A90D9]" />
-            <span className="text-[#4A90D9] text-sm font-medium">Built for the Modern Physician</span>
+            <span className="text-[#4A90D9] text-sm font-medium">Built for the care operation</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
             Everything you need,{" "}
             <span className="text-[#4A90D9]">in one place</span>
           </h2>
           <p className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto">
-            ARIbots gives physicians the tools to practice smarter, stay informed, and earn more — all within a trusted doctor-powered community.
+            ARIbots gives clinicians, pharmacists, nurses, operators, and health leaders a shared place to understand a case, find evidence, and coordinate the next step.
           </p>
         </div>
 
@@ -1145,10 +1226,10 @@ function HowAriWorksSection() {
     <section id="how-it-works" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-how-works-title">
-          How <span className="text-[#4A90D9]">ARI</span> Works
+          How the <span className="text-[#4A90D9]">system</span> works
         </h2>
         <p className="text-center text-gray-500 mb-12 max-w-2xl mx-auto">
-          See ARI's AI-powered clinical workflow in action across real scenarios
+          A shared flow from patient context to evidence, review, action, and the record that carries it forward.
         </p>
 
         <div ref={ref} className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
@@ -1402,10 +1483,10 @@ function TestimonialsSection() {
     <section id="testimonials" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-testimonials-title">
-          What <span className="text-[#4A90D9]">Physicians</span> Say
+          What <span className="text-[#4A90D9]">care teams</span> say
         </h2>
         <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
-          Trusted by leading clinicians at top hospitals worldwide
+          Perspectives from people doing the work across clinical and operational settings
         </p>
 
         <div
@@ -1614,14 +1695,14 @@ function WhatAriKnowsSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-4">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[#4A90D9]/30 bg-[#4A90D9]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#4A90D9]">
-            <Sparkles className="h-3.5 w-3.5" /> New in ARI v3.0
+            <Sparkles className="h-3.5 w-3.5" /> A living clinical knowledge layer
           </span>
         </div>
         <h2
           className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4"
           data-testid="text-what-ari-knows-title"
         >
-          What <span className="text-[#4A90D9]">ARI</span> Knows
+          What <span className="text-[#4A90D9]">Ari connects</span>
         </h2>
         <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
           Live integrations across literature, drug data, biomedical AI, and
@@ -1697,10 +1778,10 @@ function CommunitySection() {
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedCounter target={100} suffix="%" label="Physicians NPI-Verified" />
-          <AnimatedCounter target={98} suffix="%" label="HIPAA Compliance Score" />
-          <AnimatedCounter target={500} suffix="+" label="Peer-Reviewed Notes Shared" />
-          <AnimatedCounter target={40} suffix="+" label="Clinical Specialties Covered" />
+          <AnimatedCounter target={3} label="Connected Ari workspaces" />
+          <AnimatedCounter target={4} label="Core care perspectives" />
+          <AnimatedCounter target={500} suffix="+" label="Evidence pathways" />
+          <AnimatedCounter target={40} suffix="+" label="Clinical topics covered" />
         </div>
       </div>
 
@@ -1812,7 +1893,7 @@ function TeamSection() {
           Meet the <span className="text-[#4A90D9]">Team</span>
         </h2>
         <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">
-          Built by physicians and engineers passionate about transforming healthcare
+          Built by clinicians, engineers, and operators who understand that better care depends on better connective tissue
         </p>
 
         <div
@@ -1858,8 +1939,8 @@ function FaqSection() {
       a: "ARI uses de-identified outcome data to continuously refine its clinical models. When a treatment pathway leads to positive outcomes, ARI strengthens that recommendation pattern. All learning happens on aggregated, de-identified data — never on individual patient records.",
     },
     {
-      q: "Is ARI a replacement for physician judgment?",
-      a: "Absolutely not. ARI is a clinical decision support tool designed to augment — not replace — physician expertise. It surfaces evidence, generates differentials, and flags interactions, but every clinical decision remains with the treating physician.",
+      q: "Does Ari replace clinical judgment?",
+      a: "No. Ari is designed to organize context, surface evidence, and support review. Care teams remain responsible for interpreting information and making decisions within their own clinical and operational processes.",
     },
     {
       q: "What specialties does ARI support?",
@@ -1992,7 +2073,7 @@ function DemoFormSection() {
             taxonomy: primaryTax?.desc || "Physician",
           });
           setNpiStatus("verified");
-          toast({ title: "NPI Verified ✓", description: `Verified: ${result.basic.first_name} ${result.basic.last_name}, ${cred}` });
+          toast({ title: "NPI verified", description: `Verified: ${result.basic.first_name} ${result.basic.last_name}, ${cred}` });
         } else {
           setNpiStatus("failed");
           toast({ title: "Verification Failed", description: "This NPI does not belong to an active MD/DO physician.", variant: "destructive" });
@@ -2051,10 +2132,10 @@ function DemoFormSection() {
     <section id="demo" className="py-24 bg-gray-100">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4" data-testid="text-demo-title">
-          JOIN THE <span className="text-[#4A90D9]">COMMUNITY</span>
+          BRING ARI TO YOUR <span className="text-[#4A90D9]">OPERATION</span>
         </h2>
         <p className="text-center text-gray-500 mb-8">
-          ARIbots welcomes physicians, nurses, NPs, PAs, medical students, and allied health professionals.
+          Tell us where your team needs a clearer thread—from evidence and stewardship to records and day-to-day care operations.
         </p>
 
         {submitted ? (
@@ -2303,7 +2384,7 @@ function DemoFormSection() {
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Tell us about yourself and how you plan to use ARIbots..."
+                        placeholder="Tell us how your organization or team plans to use the Ari platform..."
                         rows={4}
                         className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#4A90D9]/40 resize-none"
                         data-testid="input-demo-message"
@@ -2359,7 +2440,7 @@ export function Footer() {
               <span className="text-white font-semibold text-lg">ARI bots</span>
             </div>
             <p className="text-white/40 text-sm leading-relaxed">
-              Empowering clinicians with AI-driven clinical decision support — built by physicians, for physicians.
+              A connected clinical infrastructure layer for the people and systems that carry care forward.
             </p>
           </div>
 
@@ -2434,7 +2515,7 @@ export function Footer() {
 
         <div className="border-t border-white/5 pt-6 text-center">
           <p className="text-white/30 text-xs">
-            © {new Date().getFullYear()} ARI bots. All rights reserved. Empowering medicine with AI.
+            © {new Date().getFullYear()} ARI bots. All rights reserved. Clinical context, connected.
           </p>
         </div>
       </div>
@@ -2453,7 +2534,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="landing-shell min-h-screen">
       <LandingNavbar />
       <HeroSection />
       <ApplicationsSection />

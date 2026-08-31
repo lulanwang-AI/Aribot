@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,9 +44,9 @@
   --chart-3: 38 92% 45%;
   --chart-4: 152 55% 36%;
   --chart-5: 351 68% 50%;
-  --font-sans: Open Sans, sans-serif;
-  --font-serif: 'Montserrat', sans-serif;
-  --font-mono: 'Open Sans', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
+  --font-serif: 'Manrope', sans-serif;
+  --font-mono: 'DM Mono', monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(187 84% 28% / 0.00);
@@ -165,9 +166,9 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --radius: 1.3rem;
   --spacing: 0.25rem;
-  --font-mono: Menlo, monospace;
-  --font-sans: Open Sans, sans-serif;
-  --font-serif: Georgia, serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-sans: 'Manrope', sans-serif;
+  --font-serif: 'Manrope', sans-serif;
   --tracking-normal: 0em;
 }
 
@@ -408,4 +409,45 @@
   min-height: 700px;
   display: block;
   background: #fff !important;
+}
+
+/* Public landing page: an editorial sea-glass / ink system, intentionally
+   distinct from the authenticated workspaces. */
+.landing-shell {
+  background: #f2f7f5;
+  color: #173246;
+  font-family: 'Manrope', sans-serif;
+}
+.landing-shell section:nth-of-type(odd) { background-color: #f2f7f5 !important; }
+.landing-shell section:nth-of-type(even) { background-color: #e5f0ed !important; }
+.landing-shell h1, .landing-shell h2, .landing-shell h3 {
+  letter-spacing: -0.035em;
+}
+.landing-shell .text-gray-900 { color: #173246 !important; }
+.landing-shell .text-gray-700 { color: #315567 !important; }
+.landing-shell .text-gray-600, .landing-shell .text-gray-500 { color: #55717a !important; }
+.landing-shell .bg-white { background-color: #fbfdfb !important; }
+.landing-shell .border-gray-200 { border-color: #cbded9 !important; }
+.landing-shell .text-\[\#4A90D9\] { color: #147d80 !important; }
+.landing-shell .bg-\[\#4A90D9\] { background-color: #147d80 !important; }
+.landing-shell .hover\:bg-\[\#5BA0E9\]:hover { background-color: #0e6268 !important; }
+.landing-shell section#hero {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(117,212,207,.17), transparent 28%),
+    radial-gradient(circle at 15% 85%, rgba(234,181,92,.10), transparent 30%),
+    #102632 !important;
+}
+.landing-shell section#applications {
+  background: #102f3c !important;
+}
+.landing-shell section#applications > div > div:last-child > a:nth-child(1) { border-top: 3px solid #75d4cf; }
+.landing-shell section#applications > div > div:last-child > a:nth-child(2) { border-top: 3px solid #eab55c; }
+.landing-shell section#applications > div > div:last-child > a:nth-child(3) { border-top: 3px solid #d99476; }
+.landing-shell input, .landing-shell textarea {
+  border-color: #cbded9;
+  background: #fbfdfb;
+}
+@media (max-width: 767px) {
+  .landing-shell section#hero h1 { font-size: 2.8rem; }
+  .landing-shell section#applications { padding-top: 5rem; padding-bottom: 5rem; }
 }
