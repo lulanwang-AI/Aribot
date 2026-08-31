@@ -505,7 +505,7 @@ function AribotMockup() {
 }
 
 function AriSystemFlow() {
-  const [active, setActive] = useState(1);
+  const [active, setActive] = useState(0);
   const stages = [
     { name: "ARIbots", label: "Understand", icon: Brain, color: "#75d4cf", detail: "Patient context + evidence", note: "A complex case enters the system." },
     { name: "Ari AMR", label: "Steward", icon: Shield, color: "#eab55c", detail: "Resistance + therapy review", note: "The team checks risk, spectrum, and local patterns." },
@@ -520,7 +520,7 @@ function AriSystemFlow() {
   const current = stages[active];
   const CurrentIcon = current.icon;
   return (
-    <div className="relative w-full max-w-[540px] mx-auto" data-testid="mockup-aribot">
+    <div className="relative w-full max-w-[540px] mx-auto" data-testid="mockup-platform-flow">
       <div className="absolute -inset-6 rounded-[2rem] bg-[#75d4cf]/10 blur-3xl" />
       <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#142d3b] shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
@@ -560,23 +560,29 @@ function AriSystemFlow() {
               );
             })}
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#0d222e] p-5 md:p-6 transition-all duration-500" key={current.name} style={{ animation: "chatBubbleIn .45s ease-out both" }}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: current.color }}>{current.name} / {current.label}</p>
-                <h3 className="mt-3 text-xl font-semibold tracking-tight text-white">{current.detail}</h3>
-              </div>
-              <CurrentIcon className="h-6 w-6 shrink-0" style={{ color: current.color }} />
+          {current.name === "ARIbots" ? (
+            <div key={current.name} className="rounded-2xl border border-white/10 bg-[#0d222e] p-2 transition-all duration-500" style={{ animation: "chatBubbleIn .45s ease-out both" }}>
+              <AribotMockup />
             </div>
-            <p className="mt-5 text-sm leading-6 text-white/55">{current.note}</p>
-            <div className="mt-6 space-y-2">
-              {["Context assembled", "Evidence and signals linked", "Next step ready for review"].map((item, index) => (
-                <div key={item} className="flex items-center gap-3 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/65">
-                  <span className="font-mono text-[10px]" style={{ color: current.color }}>0{index + 1}</span>{item}
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-[#0d222e] p-5 md:p-6 transition-all duration-500" key={current.name} style={{ animation: "chatBubbleIn .45s ease-out both" }}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: current.color }}>{current.name} / {current.label}</p>
+                  <h3 className="mt-3 text-xl font-semibold tracking-tight text-white">{current.detail}</h3>
                 </div>
-              ))}
+                <CurrentIcon className="h-6 w-6 shrink-0" style={{ color: current.color }} />
+              </div>
+              <p className="mt-5 text-sm leading-6 text-white/55">{current.note}</p>
+              <div className="mt-6 space-y-2">
+                {["Context assembled", "Evidence and signals linked", "Next step ready for review"].map((item, index) => (
+                  <div key={item} className="flex items-center gap-3 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/65">
+                    <span className="font-mono text-[10px]" style={{ color: current.color }}>0{index + 1}</span>{item}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div className="mt-5 flex items-center justify-between text-[10px] text-white/35">
             <span>One patient thread</span><span className="h-px w-12 bg-white/15" /><span>Many care perspectives</span>
           </div>
@@ -599,7 +605,7 @@ function HeroSection() {
           <div className="flex flex-col justify-center order-1 lg:order-1">
             <div className="inline-flex items-center gap-2 bg-[#4A90D9]/10 border border-[#4A90D9]/25 rounded-full px-4 py-1.5 mb-8 w-fit">
               <span className="w-2 h-2 rounded-full bg-[#4A90D9] animate-pulse" />
-              <span className="text-[#75d4cf] text-sm font-medium tracking-wide">Connected clinical infrastructure</span>
+              <span className="text-[#75d4cf] text-sm font-medium tracking-wide">Empowering Medicine with AI</span>
             </div>
 
             <h1
