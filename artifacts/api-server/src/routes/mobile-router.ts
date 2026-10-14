@@ -14,7 +14,7 @@ import { anthropic } from "../ari/client";
 import { getAriAgentConfig } from "../ari/agentSync";
 import { buildClinicianPromptAddendum } from "../ari/license";
 import { isActiveCapability, CAPABILITY_REJECTION_MESSAGE } from "../ari/capabilities";
-import { DEMO_EMAIL, DEMO_PASSWORD } from "../auth-setup";
+import { DEMO_EMAIL, DEMO_PASSWORD, MOBILE_JWT_SECRET } from "../auth-setup";
 import type {
   User, MobileTriagePost as TriagePost, MobileComment as Comment, MobileNewsItem as NewsItem,
   MobileGroup as Group, MobileMedEvent as MedEvent, MobileChatThread as ChatThread,
@@ -22,7 +22,7 @@ import type {
   MobileTelemedConsultation as TelemedConsultation,
 } from "@workspace/db";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "aribots-mobile-jwt-dev-secret";
+const JWT_SECRET = MOBILE_JWT_SECRET;
 
 // The web demo account plus the identity the Expo app's login screen offers.
 const MOBILE_DEMO_EMAILS = new Set([DEMO_EMAIL, "doctor@aribots.local"]);
@@ -31,23 +31,17 @@ function signToken(payload: { userId: string; username: string }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
 }
 
+// detachMobileBearer (app.ts) has already verified the token and moved its
+// payload to req.mobileToken; a bearer header still present here is not ours.
 function requireMobileAuth(req: any, res: any, next: any) {
+  if (req.mobileToken) { req.mobileUser = req.mobileToken; next(); return; }
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) { res.status(401).json({ message: "Authentication required" }); return; }
-  try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET) as any;
-    req.mobileUser = payload;
-    next();
-  } catch {
-    res.status(401).json({ message: "Invalid or expired token" });
-  }
+  res.status(401).json({ message: "Invalid or expired token" });
 }
 
 function optionalMobileAuth(req: any, _res: any, next: any) {
-  const header = req.headers.authorization;
-  if (header?.startsWith("Bearer ")) {
-    try { req.mobileUser = jwt.verify(header.slice(7), JWT_SECRET); } catch {}
-  }
+  if (req.mobileToken) req.mobileUser = req.mobileToken;
   next();
 }
 

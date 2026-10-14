@@ -11,6 +11,21 @@ export const DEMO_PASSWORD = "demo";
 const DEMO_COOKIE = "ari_emr_demo";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
+/**
+ * The mobile app cannot rely on cookie storage, so the sign-in token is also
+ * accepted as a bearer token. Both forms name the same emr_demo_sessions row.
+ */
+function readBearer(req: Request): string | undefined {
+  const header = req.header("authorization");
+  if (!header || !header.startsWith("Bearer ")) return undefined;
+  const token = header.slice(7).trim();
+  return token || undefined;
+}
+
+function sessionToken(req: Request): string | undefined {
+  return readCookie(req, DEMO_COOKIE) ?? readBearer(req);
+}
+
 function readCookie(req: Request, name: string): string | undefined {
   const header = req.header("cookie");
   if (!header) return undefined;
@@ -28,7 +43,7 @@ function readCookie(req: Request, name: string): string | undefined {
  * issued the cookie.
  */
 async function hasValidSession(req: Request): Promise<boolean> {
-  const token = readCookie(req, DEMO_COOKIE);
+  const token = sessionToken(req);
   if (!token) return false;
   const [row] = await db
     .select({ expiresAt: emrDemoSessions.expiresAt })
@@ -98,7 +113,9 @@ export function setupDemoAuth(app: Express, isProduction: boolean) {
       });
       pruneExpiredSessions();
       setDemoCookie(res, token, isProduction);
-      return res.json({ demo: true, user: DEMO_USER });
+      // The token is returned for clients without cookie storage (the mobile
+      // app); browsers keep using the HttpOnly cookie and never read it.
+      return res.json({ demo: true, user: DEMO_USER, token, expiresInSeconds: SESSION_TTL_MS / 1000 });
     } catch (err) {
       return next(err);
     }
@@ -126,7 +143,7 @@ export function setupDemoAuth(app: Express, isProduction: boolean) {
 
   app.post("/api/auth/logout", async (req, res, next) => {
     try {
-      const token = readCookie(req, DEMO_COOKIE);
+      const token = sessionToken(req);
       if (token) await db.delete(emrDemoSessions).where(eq(emrDemoSessions.token, token));
       clearDemoCookie(res, isProduction);
       return res.json({ ok: true });

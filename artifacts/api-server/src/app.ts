@@ -10,6 +10,7 @@ import {
   setupAuth,
   registerAuthRoutes,
   requireAuthenticatedWebApi,
+  detachMobileBearer,
 } from "./auth-setup";
 import { registerRoutes } from "./routes/routes";
 import ariRouter from "./ari/routes";
@@ -49,6 +50,7 @@ app.use(
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(detachMobileBearer);
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(

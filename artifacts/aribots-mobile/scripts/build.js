@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
 
@@ -125,6 +125,41 @@ async function checkMetroHealth() {
 
 function getExpoPublicReplId() {
   return process.env.REPL_ID || process.env.EXPO_PUBLIC_REPL_ID;
+}
+
+/**
+ * Exports the web build into static-build/web so the app can be opened in a
+ * browser (phone or desktop) without Expo Go. serve.js serves it under
+ * `${BASE_PATH}/web/`, which is also the `experiments.baseUrl` in app.json so
+ * the exported asset URLs and the router agree on where the app lives.
+ */
+function exportWeb(expoPublicReplId) {
+  console.log("Exporting web build...");
+  const outputDir = path.join(projectRoot, "static-build", "web");
+  // The web build is served from the platform domain itself, so it talks to
+  // the API at its own origin (lib/api.ts falls back to window.location when
+  // no domain is baked in). That keeps a custom domain working without a
+  // rebuild; the native bundles below still bake the domain in because a
+  // phone has no origin to fall back to.
+  const env = { ...process.env, CI: "1" };
+  delete env.EXPO_PUBLIC_DOMAIN;
+  if (expoPublicReplId) env.EXPO_PUBLIC_REPL_ID = expoPublicReplId;
+
+  const result = spawnSync(
+    "pnpm",
+    ["exec", "expo", "export", "--platform", "web", "--output-dir", outputDir],
+    { cwd: projectRoot, env, stdio: "inherit" },
+  );
+  if (result.error) {
+    exitWithError(`Web export failed to start: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    exitWithError(`Web export failed with exit code ${result.status}`);
+  }
+  if (!fs.existsSync(path.join(outputDir, "index.html"))) {
+    exitWithError("Web export produced no index.html");
+  }
+  console.log("Web build ready");
 }
 
 async function startMetro(expoPublicDomain, expoPublicReplId) {
@@ -517,6 +552,8 @@ async function main() {
 
   prepareDirectories(timestamp);
   clearMetroCache();
+
+  exportWeb(expoPublicReplId);
 
   await startMetro(domain, expoPublicReplId);
 

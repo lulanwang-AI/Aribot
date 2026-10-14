@@ -67,6 +67,9 @@
         gap: 20px;
       }
 
+      .web-section {
+        flex-direction: column;
+      }
       .step {
         padding: 24px;
         border: 1px solid #ddd;
@@ -338,7 +341,7 @@
 
       <div class="content" id="content">
         <h1>APP_NAME_PLACEHOLDER</h1>
-        <p class="subtitle">Preview this app on your phone</p>
+        <p class="subtitle">Preview this app on your phone, or open it in your browser</p>
 
         <div class="steps-container">
           <div class="step">
@@ -389,6 +392,26 @@
             <a href="exps://EXPS_URL_PLACEHOLDER" class="open-button"
               >Open in Expo Go</a
             >
+          </div>
+
+          <div class="step web-section" id="web-section" style="display: WEB_BUILD_DISPLAY_PLACEHOLDER">
+            <div class="step-header">
+              <div class="step-number">3</div>
+              <h2 class="step-title">Or open in your browser</h2>
+            </div>
+            <p class="step-description">
+              The same app, built for the web. No install needed.
+            </p>
+            <div class="store-buttons">
+              <a href="WEB_URL_PLACEHOLDER" class="store-button" id="web-preview-link">
+                <svg class="store-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                Open web preview
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -445,7 +468,8 @@
 
         qrCode.append(document.getElementById("qr-code"));
 
-        if (isAndroid || isIOS) {
+        const wantsWeb = new URLSearchParams(window.location.search).has("web");
+        if ((isAndroid || isIOS) && !wantsWeb) {
           loadingEl.style.display = "block";
           contentEl.style.display = "none";
           window.location.href = deepLink;

@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Ari EMR Mobile",
+    "slug": "emr-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "ari-emr",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f7db3"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.aribots.emr"
+    },
+    "android": {
+      "package": "com.aribots.emr"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/emr-mobile/web"
+    }
+  }
+}

@@ -30,6 +30,12 @@ function getBaseUrl(): string {
     cachedBaseUrl = `https://${domain}`;
     return cachedBaseUrl;
   }
+  // The web build is served from the same domain as the API, so relative
+  // requests reach it without any build-time configuration.
+  if (Platform.OS === "web" && typeof window !== "undefined" && window.location?.origin) {
+    cachedBaseUrl = window.location.origin;
+    return cachedBaseUrl;
+  }
   return "";
 }
 

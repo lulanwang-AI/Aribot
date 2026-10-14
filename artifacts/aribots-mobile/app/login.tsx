@@ -253,7 +253,7 @@ function CardContent({
       </TouchableOpacity>
 
       <Text style={[styles.demoNote, { color: isDark ? "#68798c" : "#93a2b1" }]}>
-        Demo: any email + any password
+        Demo account: doctor@aribots.local / demo
       </Text>
     </View>
   );

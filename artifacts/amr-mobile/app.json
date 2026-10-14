@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Ari AMR Mobile",
+    "slug": "amr-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "ari-amr",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b7583"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.aribots.amr"
+    },
+    "android": {
+      "package": "com.aribots.amr"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/amr-mobile/web"
+    }
+  }
+}
