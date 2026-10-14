@@ -115,10 +115,11 @@ public liveness checks.
 ## Mobile apps
 
 Three Expo (React Native) apps, one per workspace, each a workspace package
-with its own `.replit-artifact/artifact.toml`. Only `aribots-mobile` is
-declared `kind = "mobile"` (the platform allows one per project); the other
-two are `kind = "web"` with path routing, which is all their static server
-needs:
+with its own `.replit-artifact/artifact.toml`. All three are declared
+`kind = "web"` with `router = "path"`: that is all their static server needs,
+and it is the configuration that demonstrably builds and serves in the
+published deployment (as a `kind = "mobile"` artifact on the Expo domain
+router, the ARIbots service came up without its static build).
 
 | App | Package | Published at | Signs in with | Talks to |
 | --- | --- | --- | --- | --- |
