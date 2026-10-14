@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { ClerkProvider, useAuth, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import {
@@ -51,9 +51,16 @@ import ClinicalChat from "@/pages/clinical-chat";
 import SoapNote from "@/pages/soap";
 import VisitSummary from "@/pages/visit-summary";
 import WorkflowHistory from "@/pages/workflow-history";
-import Landing from "@/pages/landing";
-import AriAmr from "@/pages/ari-amr";
-import Whitepaper from "@/pages/whitepaper";
+import HomePage from "@/pages/site/home";
+import PlatformPage from "@/pages/site/platform";
+import AribotsProductPage from "@/pages/site/aribots";
+import AriAmrPage from "@/pages/site/ari-amr";
+import AriEmrProductPage from "@/pages/site/ari-emr";
+import MobilePage from "@/pages/site/mobile";
+import SecurityPage from "@/pages/site/security";
+import AboutPage from "@/pages/site/about";
+import RequestDemoPage from "@/pages/site/request-demo";
+import Whitepaper from "@/pages/site/whitepaper";
 import { ClerkAuthScreen } from "@/components/auth/clerk-auth-screen";
 import { AuthContext } from "@/lib/auth";
 import { STANDALONE } from "@/lib/amr";
@@ -71,6 +78,23 @@ const clerkPublishableKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 type AuthState = "loading" | "authenticated" | "anonymous";
+
+/** The public marketing site. Old single-page addresses stay valid as aliases. */
+const PUBLIC_PAGES: Record<string, ComponentType> = {
+  "/": HomePage,
+  "/landing": HomePage,
+  "/platform": PlatformPage,
+  "/products/aribots": AribotsProductPage,
+  "/products/ari-amr": AriAmrPage,
+  "/ari-amr": AriAmrPage,
+  "/amr": AriAmrPage,
+  "/products/ari-emr": AriEmrProductPage,
+  "/mobile": MobilePage,
+  "/security": SecurityPage,
+  "/about": AboutPage,
+  "/request-demo": RequestDemoPage,
+  "/whitepaper": Whitepaper,
+};
 type AuthProduct = "aribots" | "amr";
 
 function resolveAuthProduct(location: string): AuthProduct {
@@ -231,14 +255,8 @@ function AppContent() {
     location.startsWith("/sign-in") || location.startsWith("/sign-up");
   const isLegacyLoginRoute =
     location === "/login" || location === "/ari-amr/login";
-  const isPublicRoute =
-    location === "/" ||
-    location === "/landing" ||
-    location === "/ari-amr" ||
-    location === "/amr" ||
-    location === "/whitepaper" ||
-    isAuthRoute ||
-    isLegacyLoginRoute;
+  const PublicPage = PUBLIC_PAGES[location.replace(/\/+$/, "") || "/"];
+  const isPublicRoute = Boolean(PublicPage) || isAuthRoute || isLegacyLoginRoute;
   const requiresAuth = !isPublicRoute;
   const authProduct = resolveAuthProduct(location);
 
@@ -286,16 +304,8 @@ function AppContent() {
     }
   }
 
-  if (location === "/" || location === "/landing") {
-    return <Landing />;
-  }
-
-  if (location === "/ari-amr" || location === "/amr") {
-    return <AriAmr />;
-  }
-
-  if (location === "/whitepaper") {
-    return <Whitepaper />;
+  if (PublicPage) {
+    return <PublicPage />;
   }
 
   if (location === "/login") return <Redirect to="/sign-in" />;

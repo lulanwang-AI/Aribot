@@ -59,6 +59,32 @@ The two Drizzle configs (`lib/db` and `artifacts/ari-emr`) target the same
 database and each carries a `tablesFilter` so a push from one never proposes
 dropping the other's tables.
 
+## Public website
+
+The marketing site is a set of pages under `artifacts/aribots-web/src/pages/site/`,
+all rendered inside `SiteLayout` (`src/components/site/SiteLayout.tsx`), which
+provides the fixed header with a Products menu, the footer with compliance
+badges, page metadata and scroll-to-top. The marketing sections that used to
+make up the single landing page live in `src/components/site/sections.tsx` and
+are composed per page. `src/components/site/ComplianceBadges.tsx` draws the
+HIPAA and SOC 2 badges in-house; swap those two components for auditor-issued
+artwork if preferred.
+
+| Path | Page | Notes |
+|---|---|---|
+| `/` (alias `/landing`) | Home | hero, three workspaces, trust strip, Meet Ari, testimonials, community |
+| `/platform` | Platform | how the workspaces connect, guarantees, sources |
+| `/products/aribots` | ARIbots AI | assistant, physician features, capabilities, community |
+| `/products/ari-amr` (aliases `/ari-amr`, `/amr`) | Ari AMR | stewardship product page, dark token theme |
+| `/products/ari-emr` | Ari EMR | features, encounter workflow, audiences; "Open" goes to `/ari-emr/` |
+| `/mobile` | Mobile apps | per-app status and how to test (Expo Go, web previews) |
+| `/security` | Security and compliance | HIPAA and SOC 2, data handling controls, EMR audit records |
+| `/about` | About | vision, team, FAQ |
+| `/request-demo` | Request a demo | the demo request form with NPI verification |
+| `/whitepaper` | Whitepaper | technical white paper, dark reading theme |
+
+Routing lives in `src/App.tsx` (`PUBLIC_PAGES`); every other path requires sign-in.
+
 ## Roles
 
 Every account has a `role` on the server (`admin` for the first three seeded

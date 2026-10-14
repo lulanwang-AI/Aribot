@@ -1,8 +1,7 @@
-import { useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ActionBadge, Pill } from "@/components/amr/primitives";
-import { Footer, LandingNavbar } from "@/pages/landing";
+import { SiteLayout } from "@/components/site/SiteLayout";
 import type { StewardshipAction } from "@/lib/amr";
 import {
   ArrowRight,
@@ -19,7 +18,7 @@ import {
 } from "lucide-react";
 
 /**
- * Public landing page, shown at "/" before sign-in.
+ * Public product page for Ari AMR (/products/ari-amr, also /ari-amr and /amr).
  *
  * The audience is the people who have to sign off on the programme: pharmacy
  * directors, ID physicians and stewardship committee chairs. All of them have
@@ -177,36 +176,14 @@ const WARD_REALITIES: { heading: string; body: string }[] = [
 
 /** The sidebar's shield mark, reused so signed-out and signed-in look like one product. */
 
-export default function Landing() {
-  useEffect(() => {
-    document.title = "Ari AMR | Antimicrobial Stewardship by ARIbots";
-    const description =
-      "Ari AMR supports evidence-based antimicrobial stewardship with case intake, ranked empiric regimens, antibiograms, and auditable 48-to-72-hour review.";
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "description";
-      document.head.appendChild(meta);
-    }
-    meta.content = description;
-    document
-      .querySelector<HTMLMetaElement>('meta[property="og:description"]')
-      ?.setAttribute("content", description);
-
-    const frame = requestAnimationFrame(() => {
-      const hero = document.getElementById("hero");
-      if (hero) {
-        hero.scrollIntoView({ behavior: "auto", block: "start" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "auto" });
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
+export default function AriAmrPage() {
   return (
-    <div className="amr-public-theme dark min-h-screen bg-background text-foreground">
-      <LandingNavbar loginHref="/sign-in?product=amr" />
+    <SiteLayout
+      theme="amr"
+      loginHref="/sign-in?product=amr"
+      title="Ari AMR | Antimicrobial Stewardship by ARIbots"
+      description="Ari AMR supports evidence-based antimicrobial stewardship with case intake, ranked empiric regimens, antibiograms, and auditable 48-to-72-hour review."
+    >
 
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                             */}
@@ -437,7 +414,6 @@ export default function Landing() {
         </div>
       </section>
 
-      <Footer />
-    </div>
+    </SiteLayout>
   );
 }
