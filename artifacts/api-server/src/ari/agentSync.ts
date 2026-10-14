@@ -64,7 +64,7 @@ function parseAgent(json: any): AriAgentConfig | null {
   }
 
   return {
-    model: model || ARI_MODEL_ID,
+    model: ARI_MODEL_ID,
     system: system || ARI_SYSTEM_PROMPT,
     mcpServers,
     source: "console",

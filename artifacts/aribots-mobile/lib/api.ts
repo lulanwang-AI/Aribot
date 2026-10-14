@@ -78,6 +78,19 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
   return res.json();
 }
 
+// Compatibility helper consumed by the existing Clinical Workflow screens.
+export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${getBaseUrl()}${path}`, {
+    ...options, headers: { ...headers, ...options.headers },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export interface AriImageAttachment {
   mediaType: string; // image/jpeg | image/png | image/webp | image/gif
   data: string; // base64 (no data: prefix)

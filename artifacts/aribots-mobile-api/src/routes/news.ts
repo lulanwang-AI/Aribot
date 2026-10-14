@@ -12,7 +12,7 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req, res) => {
   const item = mobileStorage.getNewsItem(req.params.id);
-  if (!item) return res.status(404).json({ message: "Not found" });
+  if (!item) { res.status(404).json({ message: "Not found" }); return; }
   res.json(item);
 });
 

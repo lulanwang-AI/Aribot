@@ -1,5 +1,5 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { getAnthropic as sharedAnthropic, ARI_MODEL_ID, aiAvailable } from "@workspace/clinical-ai";
 import { requireAuth } from "../jwt";
 
 const router = Router();
@@ -22,15 +22,13 @@ Response format — use these XML-like tags:
 ER Mode: When mode is "er", prioritize rapid stabilization, life-threatening diagnoses first, immediate interventions.`;
 
 const getAnthropic = () => {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-  return new Anthropic({ apiKey: key });
+  return aiAvailable() ? sharedAnthropic() : null;
 };
 
 router.post("/chat", requireAuth, async (req: any, res) => {
   const { query, mode = "ari", capability } = req.body;
   if (!query || typeof query !== "string" || query.trim().length === 0) {
-    return res.status(400).json({ message: "Query is required" });
+    res.status(400).json({ message: "Query is required" }); return;
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -50,7 +48,7 @@ router.post("/chat", requireAuth, async (req: any, res) => {
 
   try {
     const stream = await anthropic.messages.create({
-      model: "claude-opus-4-5",
+      model: ARI_MODEL_ID,
       max_tokens: 2048,
       system: ARI_SYSTEM_PROMPT,
       messages: [{ role: "user", content: JSON.stringify({ mode, capability, query }) }],

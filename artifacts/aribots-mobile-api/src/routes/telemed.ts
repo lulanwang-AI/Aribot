@@ -16,7 +16,7 @@ router.get("/earnings", requireAuth, (req: any, res) => {
 
 router.get("/:id", requireAuth, (req: any, res) => {
   const consult = mobileStorage.getTelemedConsultation(req.params.id);
-  if (!consult) return res.status(404).json({ message: "Not found" });
+  if (!consult) { res.status(404).json({ message: "Not found" }); return; }
   res.json(consult);
 });
 

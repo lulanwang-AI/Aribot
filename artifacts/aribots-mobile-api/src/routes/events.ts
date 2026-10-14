@@ -10,7 +10,7 @@ router.get("/", (_req, res) => {
 
 router.post("/:id/rsvp", requireAuth, (req: any, res) => {
   const event = mobileStorage.rsvpEvent(req.params.id, req.jwtUser.userId);
-  if (!event) return res.status(404).json({ message: "Not found" });
+  if (!event) { res.status(404).json({ message: "Not found" }); return; }
   res.json(event);
 });
 

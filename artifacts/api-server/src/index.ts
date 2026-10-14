@@ -26,6 +26,9 @@ if (Number.isNaN(port) || port <= 0) {
     { configured: Boolean(process.env.ANTHROPIC_API_KEY) },
     "ANTHROPIC_API_KEY status (Ari chat)",
   );
+  if (!process.env.ANTHROPIC_API_KEY) {
+    logger.warn("ANTHROPIC_API_KEY missing: clinical documentation uses deterministic fallbacks; Ari AI is unavailable.");
+  }
 
   app.listen(port, "0.0.0.0", () => {
     logger.info({ port }, "Server listening");

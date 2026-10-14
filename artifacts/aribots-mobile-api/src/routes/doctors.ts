@@ -12,7 +12,7 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req, res) => {
   const user = mobileStorage.getUser(req.params.id);
-  if (!user) return res.status(404).json({ message: "Not found" });
+  if (!user) { res.status(404).json({ message: "Not found" }); return; }
   const { password: _, ...safe } = user;
   res.json(safe);
 });

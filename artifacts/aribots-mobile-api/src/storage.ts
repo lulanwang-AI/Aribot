@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
 import type {
-  User, TriagePost, Comment, NewsItem, Group, MedEvent,
-  ChatThread, ChatMessage, TrainingModule, TelemedConsultation
+  User, MobileTriagePost as TriagePost, MobileComment as Comment, MobileNewsItem as NewsItem,
+  MobileGroup as Group, MobileMedEvent as MedEvent, MobileChatThread as ChatThread,
+  MobileChatMessage as ChatMessage, MobileTrainingModule as TrainingModule,
+  MobileTelemedConsultation as TelemedConsultation
 } from "@workspace/db";
 
 function seededRandom(seed: number) {

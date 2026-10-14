@@ -1,1 +1,2 @@
 - [Aribots product routing](product-route-separation.md) — use ARIbots as the hub while keeping ARIbots, Ari AMR, and Ari EMR as separate applications.
+- [Workspace type cache](workspace-type-cache.md) — force a reference rebuild after dependency alignment if stale root and pnpm type identities still conflict.

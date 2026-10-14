@@ -33,7 +33,7 @@ router.get("/threads/:id/messages", requireAuth, (req: any, res) => {
 router.post("/threads/:id/messages", requireAuth, (req: any, res) => {
   const schema = z.object({ content: z.string().min(1) });
   const parsed = schema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+  if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
   const msg = mobileStorage.createChatMessage({
     threadId: req.params.id,
     senderId: req.jwtUser.userId,

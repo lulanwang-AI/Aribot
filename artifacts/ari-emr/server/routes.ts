@@ -831,7 +831,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { question } = z.object({ question: z.string().min(1).max(500) }).parse(req.body);
       res.json(await analyticsQA(question));
-    } catch { res.status(400).json({ message: "Invalid question" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid question" : "AI service error" });
+    }
   });
 
   // ===== Ari (clinical AI assistant) =====
@@ -842,19 +844,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await draftNoteFromEncounter(encounterId);
       if (!result) return res.status(404).json({ message: "Encounter not found" });
       res.json(result);
-    } catch { res.status(400).json({ message: "Invalid draft request" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid draft request" : "AI service error" });
+    }
   });
   app.post("/api/ari/structure-narrative", async (req, res) => {
     try {
       const { narrative, patientId } = z.object({ narrative: z.string().min(1), patientId: z.string().optional() }).parse(req.body);
       res.json(await structureNarrative(narrative, patientId));
-    } catch { res.status(400).json({ message: "Invalid narrative request" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid narrative request" : "AI service error" });
+    }
   });
   app.post("/api/ari/transform", async (req, res) => {
     try {
       const { text, mode } = z.object({ text: z.string().min(1), mode: z.enum(["summarize", "expand", "restructure"]) }).parse(req.body);
       res.json(await transformNoteText(text, mode));
-    } catch { res.status(400).json({ message: "Invalid transform request" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid transform request" : "AI service error" });
+    }
   });
   app.post("/api/ari/differential", async (req, res) => {
     try {
@@ -862,7 +870,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await differentialDiagnosis(patientId, presentation);
       if (!result) return res.status(404).json({ message: "Patient not found" });
       res.json(result);
-    } catch { res.status(400).json({ message: "Invalid differential request" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid differential request" : "AI service error" });
+    }
   });
   app.post("/api/ari/suggest-codes", async (req, res) => {
     try {
@@ -870,7 +880,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await suggestBillingCodes(encounterId);
       if (!result) return res.status(404).json({ message: "Encounter not found" });
       res.json(result);
-    } catch { res.status(400).json({ message: "Invalid code suggestion request" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid code suggestion request" : "AI service error" });
+    }
   });
   app.post("/api/ari/chart-qa", async (req, res) => {
     try {
@@ -878,7 +890,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await chartQA(patientId, question);
       if (!result) return res.status(404).json({ message: "Patient not found" });
       res.json(result);
-    } catch { res.status(400).json({ message: "Invalid question" }); }
+    } catch (err) {
+      res.status(err instanceof z.ZodError ? 400 : 502).json({ message: err instanceof z.ZodError ? "Invalid question" : "AI service error" });
+    }
   });
 
   // Imaging study routes

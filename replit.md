@@ -1,4 +1,10 @@
-# ARIbots — Project Overview
+# ARIbots V5 — Project Overview
+
+## AI provider
+
+Anthropic is the only AI provider. All Ari assistant, Clinical Workflow, mobile AI, and EMR AI features use `ANTHROPIC_API_KEY` and the single Claude model setting in `@workspace/clinical-ai`. Managed agent configuration may supply prompts and tools, but does not override that shared model.
+
+Existing response contracts and clinical-chat plain-text streaming are preserved. Deterministic documentation fallbacks apply only when the Anthropic key is missing or a required JSON response is invalid. Provider/network failures are reported as errors rather than silently substituted with templates. Both servers warn at startup when the key is missing.
 
 ARIbots is a doctor-only clinical AI platform. The project ships:
 

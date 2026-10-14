@@ -10,7 +10,7 @@ router.get("/", (_req, res) => {
 
 router.post("/:id/complete", requireAuth, (req: any, res) => {
   const module = mobileStorage.completeTrainingStep(req.params.id, req.jwtUser.userId);
-  if (!module) return res.status(404).json({ message: "Not found" });
+  if (!module) { res.status(404).json({ message: "Not found" }); return; }
   res.json(module);
 });
 

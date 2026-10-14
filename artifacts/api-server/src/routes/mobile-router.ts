@@ -5,6 +5,7 @@
  * and provides all endpoints consumed by the ARIbots Mobile (Expo) app.
  */
 import { Router } from "express";
+import type { MessageCreateParamsStreaming } from "@anthropic-ai/sdk/resources/beta/messages";
 import jwt from "jsonwebtoken";
 import multer, { MulterError } from "multer";
 import { randomUUID } from "crypto";
@@ -14,8 +15,10 @@ import { getAriAgentConfig } from "../ari/agentSync";
 import { buildClinicianPromptAddendum } from "../ari/license";
 import { isActiveCapability, CAPABILITY_REJECTION_MESSAGE } from "../ari/capabilities";
 import type {
-  User, TriagePost, Comment, NewsItem, Group, MedEvent,
-  ChatThread, ChatMessage, TrainingModule, TelemedConsultation,
+  User, MobileTriagePost as TriagePost, MobileComment as Comment, MobileNewsItem as NewsItem,
+  MobileGroup as Group, MobileMedEvent as MedEvent, MobileChatThread as ChatThread,
+  MobileChatMessage as ChatMessage, MobileTrainingModule as TrainingModule,
+  MobileTelemedConsultation as TelemedConsultation,
 } from "@workspace/db";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "aribots-mobile-jwt-dev-secret";
@@ -26,7 +29,7 @@ function signToken(payload: { userId: string; username: string }): string {
 
 function requireMobileAuth(req: any, res: any, next: any) {
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return res.status(401).json({ message: "Authentication required" });
+  if (!header?.startsWith("Bearer ")) { res.status(401).json({ message: "Authentication required" }); return; }
   try {
     const payload = jwt.verify(header.slice(7), JWT_SECRET) as any;
     req.mobileUser = payload;
@@ -334,25 +337,25 @@ mobile.get("/healthz", (_req, res) => res.json({ status: "ok", service: "mobile-
 // Auth
 mobile.post("/auth/login", (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Email and password required" });
-  if (process.env.NODE_ENV === "production") return res.status(401).json({ message: "Auth not configured for production" });
+  if (!email || !password) { res.status(400).json({ message: "Email and password required" }); return; }
+  if (process.env.NODE_ENV === "production") { res.status(401).json({ message: "Auth not configured for production" }); return; }
   const user = store.users.get("mu1") || [...store.users.values()][0];
-  if (!user) return res.status(401).json({ message: "No seed users" });
+  if (!user) { res.status(401).json({ message: "No seed users" }); return; }
   const { password: _, ...safe } = user;
   const token = signToken({ userId: user.id, username: user.username ?? email });
-  return res.json({ token, user: safe });
+  res.json({ token, user: safe }); return;
 });
 
 mobile.get("/auth/me", requireMobileAuth, (req: any, res) => {
   const user = store.users.get(req.mobileUser.userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user) { res.status(404).json({ message: "User not found" }); return; }
   const { password: _, ...safe } = user;
   res.json(safe);
 });
 
 mobile.patch("/auth/me", requireMobileAuth, (req: any, res) => {
   const user = store.users.get(req.mobileUser.userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+  if (!user) { res.status(404).json({ message: "User not found" }); return; }
   const { password: _pw, id: _id, ...updates } = req.body;
   const updated = { ...user, ...updates };
   store.users.set(user.id, updated);
@@ -379,7 +382,7 @@ mobile.get("/triage", optionalMobileAuth, (req: any, res) => {
 
 mobile.get("/triage/:id", optionalMobileAuth, (req: any, res) => {
   const post = store.posts.get(req.params.id);
-  if (!post) return res.status(404).json({ message: "Post not found" });
+  if (!post) { res.status(404).json({ message: "Post not found" }); return; }
   const uid = req.mobileUser?.userId;
   const author = !post.anonymous ? store.users.get(post.authorId) : null;
   const comments = [...store.comments.values()].filter(c => c.postId === post.id).sort((a, b) => a.createdAt - b.createdAt);
@@ -392,7 +395,7 @@ mobile.get("/triage/:id", optionalMobileAuth, (req: any, res) => {
 
 mobile.post("/triage", requireMobileAuth, (req: any, res) => {
   const { title, content, tags = [], anonymous = false } = req.body;
-  if (!title || !content) return res.status(400).json({ message: "Title and content required" });
+  if (!title || !content) { res.status(400).json({ message: "Title and content required" }); return; }
   const id = `mtp${Date.now()}`;
   const post: TriagePost = { id, title, content, tags, authorId: req.mobileUser.userId, anonymous, likes: 0, likedBy: [], commentCount: 0, images: [], status: "safe", flagged: false, createdAt: Date.now() };
   store.posts.set(id, post);
@@ -401,7 +404,7 @@ mobile.post("/triage", requireMobileAuth, (req: any, res) => {
 
 mobile.post("/triage/:id/like", requireMobileAuth, (req: any, res) => {
   const p = store.posts.get(req.params.id);
-  if (!p) return res.status(404).json({ message: "Not found" });
+  if (!p) { res.status(404).json({ message: "Not found" }); return; }
   const uid = req.mobileUser.userId;
   const liked = p.likedBy?.includes(uid);
   const updated = { ...p, likes: liked ? p.likes - 1 : p.likes + 1, likedBy: liked ? p.likedBy.filter((id: string) => id !== uid) : [...(p.likedBy || []), uid] };
@@ -411,7 +414,7 @@ mobile.post("/triage/:id/like", requireMobileAuth, (req: any, res) => {
 
 mobile.post("/triage/:id/comments", requireMobileAuth, (req: any, res) => {
   const { content, anonymous = false, parentId = null } = req.body;
-  if (!content) return res.status(400).json({ message: "Content required" });
+  if (!content) { res.status(400).json({ message: "Content required" }); return; }
   const id = `mc${Date.now()}${Math.random().toString(36).slice(2)}`;
   const comment: Comment = { id, postId: req.params.id, authorId: req.mobileUser.userId, content, anonymous, parentId, likes: 0, likedBy: [], flagged: false, createdAt: Date.now() };
   store.comments.set(id, comment);
@@ -432,7 +435,7 @@ mobile.get("/news", (req, res) => {
 
 mobile.get("/news/:id", (req, res) => {
   const item = store.news.get(req.params.id);
-  if (!item) return res.status(404).json({ message: "Not found" });
+  if (!item) { res.status(404).json({ message: "Not found" }); return; }
   res.json(item);
 });
 
@@ -449,7 +452,7 @@ mobile.get("/doctors", (req, res) => {
 
 mobile.get("/doctors/:id", (req, res) => {
   const user = store.users.get(req.params.id);
-  if (!user) return res.status(404).json({ message: "Not found" });
+  if (!user) { res.status(404).json({ message: "Not found" }); return; }
   const { password: _, ...safe } = user;
   res.json(safe);
 });
@@ -459,18 +462,18 @@ mobile.get("/groups", (_req, res) => res.json([...store.groups.values()]));
 
 mobile.get("/groups/:id", (req, res) => {
   const g = store.groups.get(req.params.id);
-  if (!g) return res.status(404).json({ message: "Not found" });
+  if (!g) { res.status(404).json({ message: "Not found" }); return; }
   res.json(g);
 });
 
 mobile.post("/groups/:id/join", requireMobileAuth, (req: any, res) => {
   const g = store.groups.get(req.params.id);
-  if (!g) return res.status(404).json({ message: "Not found" });
+  if (!g) { res.status(404).json({ message: "Not found" }); return; }
   const uid = req.mobileUser.userId;
   if (!g.members.includes(uid)) {
     const updated = { ...g, members: [...g.members, uid], memberCount: g.memberCount + 1 };
     store.groups.set(g.id, updated);
-    return res.json(updated);
+    res.json(updated); return;
   }
   res.json(g);
 });
@@ -480,7 +483,7 @@ mobile.get("/events", (_req, res) => res.json([...store.events.values()].sort((a
 
 mobile.post("/events/:id/rsvp", requireMobileAuth, (req: any, res) => {
   const e = store.events.get(req.params.id);
-  if (!e) return res.status(404).json({ message: "Not found" });
+  if (!e) { res.status(404).json({ message: "Not found" }); return; }
   const uid = req.mobileUser.userId;
   const rsvped = e.rsvps.includes(uid);
   const updated = { ...e, rsvps: rsvped ? e.rsvps.filter((id: string) => id !== uid) : [...e.rsvps, uid] };
@@ -504,8 +507,8 @@ mobile.get("/messaging/threads", requireMobileAuth, (req: any, res) => {
 
 mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req: any, res) => {
   const thread = store.threads.get(_req.params.id);
-  if (!thread) return res.status(404).json({ message: "Thread not found" });
-  if (!thread.participantIds?.includes(_req.mobileUser.userId)) return res.status(403).json({ message: "Not a participant of this thread" });
+  if (!thread) { res.status(404).json({ message: "Thread not found" }); return; }
+  if (!thread.participantIds?.includes(_req.mobileUser.userId)) { res.status(403).json({ message: "Not a participant of this thread" }); return; }
   const msgs = [...store.messages.values()].filter(m => m.threadId === _req.params.id).sort((a, b) => a.createdAt - b.createdAt);
   res.json(msgs.map(m => {
     const sender = store.users.get(m.senderId);
@@ -515,10 +518,10 @@ mobile.get("/messaging/threads/:id/messages", requireMobileAuth, (_req: any, res
 
 mobile.post("/messaging/threads/:id/messages", requireMobileAuth, (req: any, res) => {
   const { content } = req.body;
-  if (!content) return res.status(400).json({ message: "Content required" });
+  if (!content) { res.status(400).json({ message: "Content required" }); return; }
   const thread = store.threads.get(req.params.id);
-  if (!thread) return res.status(404).json({ message: "Thread not found" });
-  if (!thread.participantIds?.includes(req.mobileUser.userId)) return res.status(403).json({ message: "Not a participant of this thread" });
+  if (!thread) { res.status(404).json({ message: "Thread not found" }); return; }
+  if (!thread.participantIds?.includes(req.mobileUser.userId)) { res.status(403).json({ message: "Not a participant of this thread" }); return; }
   const id = `mmsg${Date.now()}`;
   const msg = { id, threadId: req.params.id, senderId: req.mobileUser.userId, content, createdAt: Date.now(), read: false };
   store.messages.set(id, msg as any);
@@ -530,12 +533,12 @@ mobile.get("/training", (_req, res) => res.json([...store.training.values()]));
 
 mobile.post("/training/:id/complete", requireMobileAuth, (req: any, res) => {
   const m = store.training.get(req.params.id);
-  if (!m) return res.status(404).json({ message: "Not found" });
+  if (!m) { res.status(404).json({ message: "Not found" }); return; }
   const uid = req.mobileUser.userId;
   if (!m.completedBy.includes(uid)) {
     const updated = { ...m, completedBy: [...m.completedBy, uid] };
     store.training.set(m.id, updated);
-    return res.json(updated);
+    res.json(updated); return;
   }
   res.json(m);
 });
@@ -552,7 +555,7 @@ mobile.get("/telemed/earnings", requireMobileAuth, (req: any, res) => {
 
 mobile.get("/telemed/:id", requireMobileAuth, (req, res) => {
   const c = store.telemed.get(req.params.id);
-  if (!c) return res.status(404).json({ message: "Not found" });
+  if (!c) { res.status(404).json({ message: "Not found" }); return; }
   res.json(c);
 });
 
@@ -567,19 +570,19 @@ mobile.post("/ari/voice/stt", requireMobileAuth, (req, res, next) => {
     if (!err) return next();
     if (err instanceof MulterError) {
       const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
-      return res.status(status).json({ message: `Upload error: ${err.message}` });
+      res.status(status).json({ message: `Upload error: ${err.message}` }); return;
     }
-    return res.status(400).json({ message: "Failed to read audio upload." });
+    res.status(400).json({ message: "Failed to read audio upload." }); return;
   });
 }, async (req: any, res) => {
   const file = req.file as { buffer: Buffer; mimetype: string; originalname: string } | undefined;
-  if (!file) return res.status(400).json({ message: "Missing audio file." });
+  if (!file) { res.status(400).json({ message: "Missing audio file." }); return; }
   if (!file.mimetype.startsWith("audio/") && file.mimetype !== "video/webm") {
-    return res.status(415).json({ message: `Unsupported media type: ${file.mimetype}` });
+    res.status(415).json({ message: `Unsupported media type: ${file.mimetype}` }); return;
   }
   const result = await transcribeAudioFile(file);
-  if (!result.ok) return res.status(result.status).json({ message: result.message });
-  return res.json({ text: result.text });
+  if (!result.ok) { res.status(result.status).json({ message: result.message }); return; }
+  res.json({ text: result.text }); return;
 });
 
 // Ari voice — text-to-speech (read-aloud) via ElevenLabs, mirrors web /api/ari/voice/tts
@@ -588,18 +591,18 @@ const MOBILE_MAX_TTS_CHARS = 4000;
 mobile.post("/ari/voice/tts", requireMobileAuth, async (req: any, res) => {
   const { text, voiceId } = (req.body ?? {}) as { text?: unknown; voiceId?: unknown };
   if (typeof text !== "string" || !text.trim()) {
-    return res.status(400).json({ message: "Missing text." });
+    res.status(400).json({ message: "Missing text." }); return;
   }
   const clean = stripAriMarkup(text);
   if (clean.length > MOBILE_MAX_TTS_CHARS) {
-    return res.status(413).json({ message: "Message is too long to read aloud." });
+    res.status(413).json({ message: "Message is too long to read aloud." }); return;
   }
   const result = await synthesizeSpeech(clean, typeof voiceId === "string" ? voiceId : undefined);
-  if (!result.ok) return res.status(result.status).json({ message: result.message });
+  if (!result.ok) { res.status(result.status).json({ message: result.message }); return; }
   res.setHeader("Content-Type", "audio/mpeg");
   res.setHeader("Content-Length", result.audio.length.toString());
   res.setHeader("Cache-Control", "no-store");
-  return res.send(result.audio);
+  res.send(result.audio); return;
 });
 
 // Ari streaming (optionally with base64 image attachments for vision)
@@ -621,16 +624,16 @@ function sniffImageType(buf: Buffer): string | null {
 mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
   const { query, mode = "ari", capability, images } = req.body;
   const hasImages = Array.isArray(images) && images.length > 0;
-  if (!query && !hasImages) return res.status(400).json({ message: "Query is required" });
+  if (!query && !hasImages) { res.status(400).json({ message: "Query is required" }); return; }
   // Same capability gating as the web endpoint so both clients agree.
   if (typeof capability === "string" && capability && !isActiveCapability(capability)) {
-    return res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE });
+    res.status(400).json({ message: CAPABILITY_REJECTION_MESSAGE }); return;
   }
 
   let imageBlocks: any[] = [];
   if (hasImages) {
     if (images.length > MAX_IMAGES) {
-      return res.status(400).json({ message: `At most ${MAX_IMAGES} images per message.` });
+      res.status(400).json({ message: `At most ${MAX_IMAGES} images per message.` }); return;
     }
     for (const img of images) {
       const mediaType = img?.mediaType;
@@ -638,13 +641,13 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
       if (typeof mediaType !== "string" || !ALLOWED_IMAGE_TYPES.has(mediaType) ||
           typeof data !== "string" || !data || data.length > MAX_IMAGE_B64_CHARS ||
           !BASE64_RE.test(data)) {
-        return res.status(400).json({ message: "Invalid image attachment." });
+        res.status(400).json({ message: "Invalid image attachment." }); return;
       }
       // Decode and verify magic bytes so the payload really is the image
       // type it claims to be before we forward it to the model.
       const buf = Buffer.from(data, "base64");
       if (sniffImageType(buf) !== mediaType) {
-        return res.status(400).json({ message: "Invalid image attachment." });
+        res.status(400).json({ message: "Invalid image attachment." }); return;
       }
       imageBlocks.push({ type: "image", source: { type: "base64", media_type: mediaType, data } });
     }
@@ -690,7 +693,7 @@ mobile.post("/ari/chat", requireMobileAuth, async (req: any, res) => {
         messages: [{ role: "user", content: userContent as any }],
         stream: true,
         ...(mode !== "er" ? { mcp_servers: agentConfig.mcpServers } : {}),
-      } as any,
+      } as MessageCreateParamsStreaming,
       { headers: { "anthropic-beta": "mcp-client-2025-04-04" } },
     );
 

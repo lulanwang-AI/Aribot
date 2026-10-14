@@ -11,13 +11,13 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req, res) => {
   const group = mobileStorage.getGroup(req.params.id);
-  if (!group) return res.status(404).json({ message: "Not found" });
+  if (!group) { res.status(404).json({ message: "Not found" }); return; }
   res.json(group);
 });
 
 router.post("/:id/join", requireAuth, (req: any, res) => {
   const group = mobileStorage.joinGroup(req.params.id, req.jwtUser.userId);
-  if (!group) return res.status(404).json({ message: "Not found" });
+  if (!group) { res.status(404).json({ message: "Not found" }); return; }
   res.json(group);
 });
 

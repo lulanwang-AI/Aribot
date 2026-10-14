@@ -25,7 +25,7 @@ router.get("/", optionalAuth, async (req: any, res) => {
 
 router.get("/:id", optionalAuth, async (req: any, res) => {
   const post = mobileStorage.getTriagePost(req.params.id);
-  if (!post) return res.status(404).json({ message: "Post not found" });
+  if (!post) { res.status(404).json({ message: "Post not found" }); return; }
   const users = mobileStorage.getAllUsers();
   const userMap = Object.fromEntries(users.map(u => [u.id, u]));
   const author = !post.anonymous ? userMap[post.authorId] : null;
@@ -50,7 +50,7 @@ router.post("/", requireAuth, async (req: any, res) => {
     anonymous: z.boolean().default(false),
   });
   const parsed = schema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+  if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
   const post = mobileStorage.createTriagePost({
     ...parsed.data,
     authorId: req.jwtUser.userId,
@@ -67,14 +67,14 @@ router.post("/", requireAuth, async (req: any, res) => {
 
 router.post("/:id/like", requireAuth, async (req: any, res) => {
   const post = mobileStorage.likeTriagePost(req.params.id, req.jwtUser.userId);
-  if (!post) return res.status(404).json({ message: "Post not found" });
+  if (!post) { res.status(404).json({ message: "Post not found" }); return; }
   res.json({ likes: post.likes, likedByMe: post.likedBy?.includes(req.jwtUser.userId) });
 });
 
 router.post("/:id/comments", requireAuth, async (req: any, res) => {
   const schema = z.object({ content: z.string().min(1), anonymous: z.boolean().default(false), parentId: z.string().nullable().default(null) });
   const parsed = schema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+  if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
   const comment = mobileStorage.createComment({
     ...parsed.data,
     postId: req.params.id,

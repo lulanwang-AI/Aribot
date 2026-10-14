@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Generated Expo bundles (recreated by the workspace build).
+/artifacts/aribots-mobile/static-build/

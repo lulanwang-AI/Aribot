@@ -5,7 +5,7 @@ import {
   type AriCapabilityId,
 } from "./capabilities";
 
-export const ARI_MODEL_ID = "claude-sonnet-4-6";
+export { ARI_MODEL_ID } from "@workspace/clinical-ai";
 
 // Re-export the shared single source of truth so existing imports keep working.
 export const ACTIVE_CAPABILITIES = ACTIVE_CAPABILITY_IDS;

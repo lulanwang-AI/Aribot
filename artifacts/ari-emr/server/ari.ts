@@ -1,11 +1,11 @@
-import OpenAI from "openai";
+import { aiAvailable, completeJSON, completeText, InvalidModelJSONError } from "@workspace/clinical-ai";
 import { emrStorage } from "./emr-storage";
 import type { Patient, Problem, Medication, Allergy, Vital, Encounter, Order } from "@shared/schema";
 
 // Ari — the ARI EMR platform's clinical AI assistant.
 // Powers note drafting (narrative → SOAP), text restructuring, differential
 // diagnosis suggestions, and chart-aware Q&A. Falls back to deterministic,
-// chart-data-driven output when no OpenAI API key is configured.
+// chart-data-driven output when no Anthropic API key is configured.
 
 export interface SoapDraft {
   subjective: string;
@@ -24,11 +24,10 @@ interface ChartContext {
   orders: Order[];
 }
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
-export const ariAvailable = !!openai;
+export const ariAvailable = aiAvailable();
+if (!ariAvailable) {
+  console.warn("[ari-emr] ANTHROPIC_API_KEY missing: Ari is unavailable; clinical tools use deterministic fallbacks.");
+}
 
 async function buildChartContext(patientId: string): Promise<ChartContext | null> {
   const patient = await emrStorage.getPatient(patientId);
@@ -42,6 +41,11 @@ async function buildChartContext(patientId: string): Promise<ChartContext | null
     emrStorage.getOrdersByPatient(patientId),
   ]);
   return { patient, problems, medications, allergies, vitals, encounters, orders };
+}
+
+export async function getPatientChartText(patientId: string): Promise<string | null> {
+  const ctx = await buildChartContext(patientId);
+  return ctx ? chartContextText(ctx) : null;
 }
 
 function fmtVital(v: Vital | undefined): string {
@@ -80,43 +84,56 @@ Never invent data that is not present in the provided chart context; clearly mar
 You are a decision-support tool: always defer final clinical judgment to the treating clinician.`;
 
 async function chatJSON<T>(prompt: string, fallback: () => T): Promise<{ result: T; ai: boolean }> {
-  if (!openai) return { result: fallback(), ai: false };
+  if (!aiAvailable()) return { result: fallback(), ai: false };
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: ARI_SYSTEM },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
+    const result = await completeJSON({
+      system: ARI_SYSTEM,
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.2,
-      max_tokens: 1400,
+      maxTokens: 1400,
     });
-    const raw = completion.choices[0].message.content ?? "{}";
-    return { result: JSON.parse(raw) as T, ai: true };
+    // Check the client-facing shape before accepting JSON, including arrays.
+    const template = fallback();
+    const matches = (value: any, expected: any): boolean => {
+      if (Array.isArray(expected)) {
+        return Array.isArray(value) && value.every((item: any) =>
+          expected.length ? matches(item, expected[0]) : item && typeof item === "object");
+      }
+      if (expected && typeof expected === "object") {
+        return value && typeof value === "object" &&
+          Object.keys(expected).every((key) => matches(value[key], expected[key]));
+      }
+      return typeof value === typeof expected;
+    };
+    if (!matches(result, template)) throw new InvalidModelJSONError("Invalid EMR AI response shape.");
+    if (Array.isArray(result.differentials) && !result.differentials.every((d: any) =>
+      d && ["high", "moderate", "low"].includes(d.likelihood) &&
+      ["diagnosis", "rationale", "workup"].every((key) => typeof d[key] === "string"))) {
+      throw new InvalidModelJSONError("Invalid differential fields.");
+    }
+    for (const key of ["cptCodes", "icd10Codes"]) {
+      if (key in result && (!Array.isArray(result[key]) || !result[key].every((code: any) =>
+        code && ["code", "description", "rationale"].every((field) => typeof code[field] === "string")))) {
+        throw new InvalidModelJSONError("Invalid billing code fields.");
+      }
+    }
+    return { result: result as T, ai: true };
   } catch (err) {
-    console.error("Ari AI error:", err instanceof Error ? err.message : err);
+    if (!(err instanceof InvalidModelJSONError)) throw err;
+    console.warn("[ari-emr] Anthropic returned invalid JSON; using deterministic fallback.");
     return { result: fallback(), ai: false };
   }
 }
 
 async function chatText(prompt: string, fallback: () => string): Promise<{ result: string; ai: boolean }> {
-  if (!openai) return { result: fallback(), ai: false };
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: ARI_SYSTEM },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 1200,
-    });
-    return { result: completion.choices[0].message.content ?? fallback(), ai: true };
-  } catch (err) {
-    console.error("Ari AI error:", err instanceof Error ? err.message : err);
-    return { result: fallback(), ai: false };
-  }
+  if (!aiAvailable()) return { result: fallback(), ai: false };
+  const result = await completeText({
+    system: ARI_SYSTEM,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.3,
+    maxTokens: 1200,
+  });
+  return { result, ai: true };
 }
 
 // ---------- Note drafting ----------
@@ -274,7 +291,7 @@ export async function analyticsQA(question: string): Promise<{ answer: string; a
   const { analyticsStorage } = await import("./analytics-storage");
   const snapshot = await analyticsStorage.getSnapshotText();
   const fallback = () =>
-    `Here is the current organization-wide analytics snapshot:\n\n${snapshot}\n\n(Ari's full reasoning requires an OpenAI API key — showing raw analytics summary instead.)`;
+    `Here is the current organization-wide analytics snapshot:\n\n${snapshot}\n\n(Ari's full reasoning requires an Anthropic API key — showing raw analytics summary instead.)`;
   const { result, ai } = await chatText(
     `You are answering an operational/population-health analytics question for practice leadership.
 Answer using ONLY the organization analytics snapshot below. Quote concrete numbers. If the snapshot doesn't contain the answer, say what data would be needed.
@@ -290,7 +307,7 @@ export async function chartQA(patientId: string, question: string): Promise<{ an
   const ctx = await buildChartContext(patientId);
   if (!ctx) return null;
   const fallback = () =>
-    `Here is what's on ${ctx.patient.name}'s chart:\n\n${chartContextText(ctx)}\n\n(Ari's full reasoning requires an OpenAI API key — showing raw chart summary instead.)`;
+    `Here is what's on ${ctx.patient.name}'s chart:\n\n${chartContextText(ctx)}\n\n(Ari's full reasoning requires an Anthropic API key — showing raw chart summary instead.)`;
   const { result, ai } = await chatText(
     `Answer the clinician's question using ONLY the chart context below. If the chart doesn't contain the answer, say so.
 QUESTION: """${question}"""
