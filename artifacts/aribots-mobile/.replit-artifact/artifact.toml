@@ -1,9 +1,16 @@
-kind = "web"
+kind = "mobile"
 previewPath = "/aribots-mobile/"
 title = "ARIbots Mobile"
 version = "1.0.0"
 id = "artifacts/aribots-mobile"
-router = "path"
+# Expo Go manifest requests (the expo-platform header) for every path on the
+# domain reach this artifact; server/serve.js forwards the sibling apps' paths
+# to their own servers (EXPO_PEER_ROUTES below).
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
 
 [[services]]
 ensurePreviewReachable = "/status"
@@ -14,17 +21,11 @@ localPort = 19512
 [services.development]
 run = "pnpm --filter @workspace/aribots-mobile run dev"
 
-# Declared as a path-routed web artifact, like the AMR and EMR apps. As a
-# "mobile" artifact on the Expo domain router the published service came up
-# without its static build (no Expo Go manifests, no web export), while the
-# two path-routed apps built and served correctly from the same scripts.
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/aribots-mobile", "run", "build" ]
 run = [ "pnpm", "--filter", "@workspace/aribots-mobile", "run", "serve" ]
 
-[services.production.health.startup]
-path = "/aribots-mobile/status"
-
 [services.env]
 PORT = "19512"
 BASE_PATH = "/aribots-mobile/"
+EXPO_PEER_ROUTES = "/amr-mobile/=19513,/emr-mobile/=19514"
