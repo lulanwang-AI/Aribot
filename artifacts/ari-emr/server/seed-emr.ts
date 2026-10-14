@@ -4,6 +4,7 @@ import {
   patients, encounters, problems, medications, allergies, vitals, orders, appointments,
 } from "@shared/schema";
 import { format, addDays, subDays, subHours } from "date-fns";
+import { demoSeedAllowed, demoSeedSkipReason } from "./seed-policy";
 
 const today = new Date();
 const d = (offset: number) => format(addDays(today, offset), "yyyy-MM-dd");
@@ -32,9 +33,8 @@ const PATIENTS = [
 ];
 
 export async function seedEmrData() {
-  // Demo seed data is for development only — never touch production data.
-  if (process.env.NODE_ENV === "production") {
-    console.log("[seed] Skipping demo seed in production");
+  if (!demoSeedAllowed()) {
+    console.log(demoSeedSkipReason());
     return;
   }
 

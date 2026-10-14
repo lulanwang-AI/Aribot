@@ -1,9 +1,10 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Request, type RequestHandler, Response, NextFunction } from "express";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupDemoAuth } from "./demo-auth";
+import { runDemoSeeds } from "./seed-runner";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -32,10 +33,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req),
+      getClerkProxyHost(req) || "",
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
-  })),
+  })) as unknown as RequestHandler,
 );
 
 app.use((req, res, next) => {
@@ -61,18 +62,6 @@ setupDemoAuth(app, process.env.NODE_ENV === "production");
 
 (async () => {
   const server = await registerRoutes(app);
-
-  // Seed EMR clinical data (no-op when already seeded)
-  try {
-    const { seedEmrData } = await import("./seed-emr");
-    await seedEmrData();
-    const { seedBillingData } = await import("./seed-billing");
-    await seedBillingData();
-    const { seedCrmData } = await import("./seed-crm");
-    await seedCrmData();
-  } catch (err) {
-    console.error("[seed] EMR seeding failed:", err);
-  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -102,5 +91,8 @@ setupDemoAuth(app, process.env.NODE_ENV === "production");
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    // Demo data backfill runs after the port is open so the deployment health
+    // check never waits on it. See seed-policy.ts for when it is permitted.
+    void runDemoSeeds().then((outcome) => log(`demo seed: ${outcome}`));
   });
 })();

@@ -13,6 +13,24 @@ ARIbots is a doctor-only clinical AI platform. The project ships:
 - **`artifacts/aribots-mobile`** — Expo (React Native, iOS + Android) mobile app, brand-matched to web. New in this build.
 - **`artifacts/mockup-sandbox`** — design canvas sandbox (existing).
 
+## Databases and demo data
+
+All three services share the single Replit Postgres database in `DATABASE_URL`.
+The API server (`lib/db`) and the EMR (`artifacts/ari-emr/server/db.ts`) both
+use the node-postgres driver, so a local Postgres works for development and
+tests as well.
+
+EMR demo data (20 patients, encounters, appointments, billing and CRM records)
+is written by `artifacts/ari-emr/server/seed-runner.ts` after the EMR server
+starts listening. Each seeder backfills a table only while that table is empty,
+and the run is serialized across autoscale instances with a Postgres advisory
+lock. In development it always runs. In production it runs only when the EMR
+service has `EMR_SEED_DEMO="true"`, which `artifacts/ari-emr/.replit-artifact/artifact.toml`
+sets for the demo tenant; remove that line for a deployment that must start
+empty. `pnpm --filter @workspace/ari-emr run typecheck:server` typechecks the
+EMR server code (it still reports pre-existing errors in `routes.ts` and
+`storage.ts`, so it is not yet wired into the workspace typecheck).
+
 ## Mobile app architecture
 
 `artifacts/aribots-mobile` uses Expo Router (file-based routing) with a tab bar plus stack screens.

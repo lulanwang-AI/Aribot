@@ -3,6 +3,7 @@ import { sql, eq, asc } from "drizzle-orm";
 import { payers, coverages, charges, claims, payments, encounters } from "@shared/schema";
 import { CPT_LIBRARY, DENIAL_REASONS } from "@shared/billing-codes";
 import { format, subDays } from "date-fns";
+import { demoSeedAllowed } from "./seed-policy";
 
 const today = new Date();
 
@@ -26,7 +27,7 @@ const ICD_BY_PATIENT: Record<string, string[]> = {
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 export async function seedBillingData() {
-  if (process.env.NODE_ENV === "production") return;
+  if (!demoSeedAllowed()) return;
 
   const isEmpty = async (t: any) =>
     Number((await db.select({ n: sql<number>`count(*)` }).from(t))[0].n) === 0;

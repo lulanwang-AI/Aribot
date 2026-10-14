@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["server/**/*", "shared/**/*"],
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "types": ["node"],
+    "lib": ["esnext", "dom"]
+  }
+}

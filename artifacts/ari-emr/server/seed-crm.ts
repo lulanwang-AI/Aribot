@@ -4,6 +4,7 @@ import {
   patientCrmProfiles, communications, crmTasks, campaigns, campaignMembers, referrals, inBasketMessages,
 } from "@shared/schema";
 import { format, subDays, addDays, subHours } from "date-fns";
+import { demoSeedAllowed } from "./seed-policy";
 
 const today = new Date();
 const d = (days: number) => format(subDays(today, days), "yyyy-MM-dd");
@@ -12,7 +13,7 @@ const pids = Array.from({ length: 20 }, (_, i) => `p${i + 1}`);
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 export async function seedCrmData() {
-  if (process.env.NODE_ENV === "production") return;
+  if (!demoSeedAllowed()) return;
 
   const isEmpty = async (t: any) =>
     Number((await db.select({ n: sql<number>`count(*)` }).from(t))[0].n) === 0;

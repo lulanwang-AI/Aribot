@@ -23,6 +23,10 @@ args = [ "node", "artifacts/ari-emr/dist/index.js" ]
 
 [services.production.run.env]
 NODE_ENV = "production"
+# Backfill the demo clinical dataset into empty tables on first start. The
+# seeders never touch tables that already hold rows; remove this line for a
+# tenant that must start empty.
+EMR_SEED_DEMO = "true"
 
 [services.production.health.startup]
 path = "/ari-emr/api/healthz"
