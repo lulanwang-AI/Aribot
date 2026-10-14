@@ -1,4 +1,6 @@
+import { ensureSchema, pool } from "@workspace/db";
 import app, { initRoutes } from "./app";
+import { seedCasesIfEmpty } from "./amr/case-repository";
 import { logger } from "./lib/logger";
 import { seedAllData } from "./seed";
 
@@ -17,6 +19,12 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 (async () => {
+  // Runtime tables (sessions, stewardship cases, audit log, memory, demo
+  // requests) are guaranteed here; a deploy never depends on a manual push.
+  await ensureSchema(pool);
+  const amrSeed = await seedCasesIfEmpty();
+  logger.info({ amrSeed }, "Postgres persistence ready");
+
   await seedAllData();
   await initRoutes();
 

@@ -4,6 +4,8 @@ import type {
   TelemedConsultation, DemoRequest, InsertDemoRequest
 } from "@workspace/db";
 import { randomUUID } from "crypto";
+import { desc } from "drizzle-orm";
+import { db, demoRequests } from "@workspace/db";
 import { seedAllData } from "./seed";
 
 export interface IStorage {
@@ -92,7 +94,6 @@ export class MemStorage implements IStorage {
   private aribotFolders: Map<string, AribotFolder> = new Map();
   private teams: Map<string, Team> = new Map();
   private telemedConsultations: Map<string, TelemedConsultation> = new Map();
-  private demoRequests: Map<string, DemoRequest> = new Map();
 
   constructor() {
     this.seed();
@@ -456,24 +457,24 @@ export class MemStorage implements IStorage {
     return { totalEarnings, thisMonth, thisWeek, pendingPayout, completedConsultations, avgPerConsultation };
   }
 
+  // Demo requests are the one write the public site makes, so they persist in
+  // the demo_requests table rather than the in-memory demo data above.
   async createDemoRequest(data: InsertDemoRequest): Promise<DemoRequest> {
-    const id = randomUUID();
-    const req: DemoRequest = {
-      id,
-      name: data.name,
-      email: data.email,
-      organization: data.organization,
-      role: data.role,
-      message: data.message || "",
-      createdAt: new Date(),
-    };
-    this.demoRequests.set(id, req);
-    return req;
+    const [row] = await db
+      .insert(demoRequests)
+      .values({
+        name: data.name,
+        email: data.email,
+        organization: data.organization,
+        role: data.role,
+        message: data.message || "",
+      })
+      .returning();
+    return row;
   }
 
   async getDemoRequests(): Promise<DemoRequest[]> {
-    return Array.from(this.demoRequests.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return db.select().from(demoRequests).orderBy(desc(demoRequests.createdAt));
   }
 }
 

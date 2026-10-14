@@ -4,6 +4,7 @@ import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupDemoAuth } from "./demo-auth";
+import { ensureSchema } from "./ensure-schema";
 import { runDemoSeeds } from "./seed-runner";
 import {
   CLERK_PROXY_PATH,
@@ -61,6 +62,8 @@ app.get("/api/healthz", (_req, res) => {
 setupDemoAuth(app, process.env.NODE_ENV === "production");
 
 (async () => {
+  // Runtime tables the server writes to are guaranteed before any request.
+  await ensureSchema();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { desc } from "drizzle-orm";
+import { ariAuditLog, db } from "@workspace/db";
 
 export interface AriAuditRow {
   id: string;
@@ -15,17 +17,16 @@ export interface AriAuditRow {
 }
 
 /**
- * In-memory audit log for Ari chat requests. Backed by a process-local array
- * for now; swap to a Drizzle table when Postgres comes online.
+ * Audit trail for Ari chat requests, persisted in the ari_audit_log table.
  *
  * IMPORTANT: this MUST NOT log query content or response content. Only the
  * sha256 hash of the query is recorded so we can de-duplicate session
  * patterns and reason about reliability without storing PHI-adjacent prose.
+ *
+ * Writes are fire-and-forget: a chat response is never delayed or failed by
+ * the audit insert, and a failed insert is logged for operators.
  */
 class AriAuditLog {
-  private rows: AriAuditRow[] = [];
-  private MAX = 5000;
-
   hashQuery(query: string): string {
     return crypto.createHash("sha256").update(query).digest("hex");
   }
@@ -38,15 +39,42 @@ class AriAuditLog {
       queryHash: this.hashQuery(query),
       ...rest,
     };
-    this.rows.push(entry);
-    if (this.rows.length > this.MAX) {
-      this.rows.splice(0, this.rows.length - this.MAX);
-    }
+    void db
+      .insert(ariAuditLog)
+      .values({
+        id: entry.id,
+        userId: entry.userId,
+        licenseType: entry.licenseType,
+        mode: entry.mode,
+        capability: entry.capability,
+        queryHash: entry.queryHash,
+        attachmentCount: entry.attachmentCount,
+        latencyMs: Math.round(entry.latencyMs),
+        success: entry.success,
+        errorCode: entry.errorCode ?? null,
+        createdAt: new Date(entry.createdAt),
+      })
+      .catch((err: unknown) => {
+        console.error("[ari/audit] write failed:", err instanceof Error ? err.message : err);
+      });
     return entry;
   }
 
-  list(limit = 200): AriAuditRow[] {
-    return this.rows.slice(-limit).reverse();
+  async list(limit = 200): Promise<AriAuditRow[]> {
+    const rows = await db.select().from(ariAuditLog).orderBy(desc(ariAuditLog.createdAt)).limit(limit);
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      licenseType: r.licenseType,
+      mode: r.mode as "ari" | "er",
+      capability: r.capability,
+      queryHash: r.queryHash,
+      attachmentCount: r.attachmentCount,
+      latencyMs: r.latencyMs,
+      success: r.success,
+      errorCode: r.errorCode ?? undefined,
+      createdAt: r.createdAt.getTime(),
+    }));
   }
 }
 

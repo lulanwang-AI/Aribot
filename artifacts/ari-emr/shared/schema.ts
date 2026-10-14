@@ -611,3 +611,9 @@ export type SecurityEvent = typeof securityEvents.$inferSelect;
 export type InsertSecurityEvent = z.infer<typeof insertSecurityEventSchema>;
 export type ComplianceReport = typeof complianceReports.$inferSelect;
 export type InsertComplianceReport = z.infer<typeof insertComplianceReportSchema>;
+
+/** Demo sign-in sessions, shared across instances and redeploys. */
+export const emrDemoSessions = pgTable("emr_demo_sessions", {
+  token: varchar("token").primaryKey(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});

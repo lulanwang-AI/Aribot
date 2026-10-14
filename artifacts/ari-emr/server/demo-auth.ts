@@ -1,13 +1,15 @@
 import { randomBytes } from "node:crypto";
 import { getAuth } from "@clerk/express";
+import { eq, lt } from "drizzle-orm";
 import type { Express, Request, Response, NextFunction } from "express";
+import { db } from "./db";
+import { emrDemoSessions } from "@shared/schema";
 
 export const DEMO_EMAIL = "demo@aribots.local";
 export const DEMO_PASSWORD = "demo";
 
 const DEMO_COOKIE = "ari_emr_demo";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-const sessions = new Map<string, number>();
 
 function readCookie(req: Request, name: string): string | undefined {
   const header = req.header("cookie");
@@ -20,21 +22,41 @@ function readCookie(req: Request, name: string): string | undefined {
     ?.slice(prefix.length);
 }
 
-function hasValidSession(req: Request): boolean {
+/**
+ * Demo sessions live in the emr_demo_sessions table so a sign-in survives a
+ * redeploy and is honoured by every autoscale instance, not only the one that
+ * issued the cookie.
+ */
+async function hasValidSession(req: Request): Promise<boolean> {
   const token = readCookie(req, DEMO_COOKIE);
   if (!token) return false;
-  const expiresAt = sessions.get(token);
-  if (!expiresAt) return false;
-  if (expiresAt <= Date.now()) {
-    sessions.delete(token);
+  const [row] = await db
+    .select({ expiresAt: emrDemoSessions.expiresAt })
+    .from(emrDemoSessions)
+    .where(eq(emrDemoSessions.token, token));
+  if (!row) return false;
+  if (row.expiresAt.getTime() <= Date.now()) {
+    await db.delete(emrDemoSessions).where(eq(emrDemoSessions.token, token));
     return false;
   }
   return true;
 }
 
+function pruneExpiredSessions(): void {
+  void db
+    .delete(emrDemoSessions)
+    .where(lt(emrDemoSessions.expiresAt, new Date()))
+    .catch((err: unknown) => {
+      console.warn("[demo-auth] prune failed:", err instanceof Error ? err.message : err);
+    });
+}
+
 function clerkUserId(req: Request): string | null {
   try {
-    return getAuth(req).userId;
+    // The EMR is on Express 4 types while @clerk/express declares Express 5;
+    // the request object is the same at runtime, as in the API server.
+    const auth = getAuth(req as never) as { userId?: string | null };
+    return auth.userId || null;
   } catch {
     return null;
   }
@@ -59,61 +81,61 @@ function clearDemoCookie(res: Response, isProduction: boolean) {
   );
 }
 
+const DEMO_USER = { id: "demo-clinician", name: "Demo Clinician", role: "clinician" };
+
 export function setupDemoAuth(app: Express, isProduction: boolean) {
-  app.post("/api/auth/login", (req, res) => {
-    const { email, password } = req.body ?? {};
-    if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-      return res.status(401).json({ message: "Invalid demo credentials." });
-    }
+  app.post("/api/auth/login", async (req, res, next) => {
+    try {
+      const { email, password } = req.body ?? {};
+      if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+        return res.status(401).json({ message: "Invalid demo credentials." });
+      }
 
-    const token = randomBytes(24).toString("hex");
-    sessions.set(token, Date.now() + SESSION_TTL_MS);
-    setDemoCookie(res, token, isProduction);
-    res.json({
-      demo: true,
-      user: {
-        id: "demo-clinician",
-        name: "Demo Clinician",
-        role: "clinician",
-      },
-    });
-  });
-
-  app.get("/api/auth/me", (req, res) => {
-    const userId = clerkUserId(req);
-    if (userId) {
-      return res.json({
-        demo: false,
-        user: {
-          id: userId,
-          name: "Authenticated Clinician",
-          role: "clinician",
-        },
+      const token = randomBytes(24).toString("hex");
+      await db.insert(emrDemoSessions).values({
+        token,
+        expiresAt: new Date(Date.now() + SESSION_TTL_MS),
       });
+      pruneExpiredSessions();
+      setDemoCookie(res, token, isProduction);
+      return res.json({ demo: true, user: DEMO_USER });
+    } catch (err) {
+      return next(err);
     }
-
-    if (hasValidSession(req)) {
-      return res.json({
-        demo: true,
-        user: {
-          id: "demo-clinician",
-          name: "Demo Clinician",
-          role: "clinician",
-        },
-      });
-    }
-
-    return res.status(401).json({ message: "Sign-in required." });
   });
 
-  app.post("/api/auth/logout", (req, res) => {
-    const token = readCookie(req, DEMO_COOKIE);
-    if (token) sessions.delete(token);
-    clearDemoCookie(res, isProduction);
-    res.json({ ok: true });
+  app.get("/api/auth/me", async (req, res, next) => {
+    try {
+      const userId = clerkUserId(req);
+      if (userId) {
+        return res.json({
+          demo: false,
+          user: { id: userId, name: "Authenticated Clinician", role: "clinician" },
+        });
+      }
+
+      if (await hasValidSession(req)) {
+        return res.json({ demo: true, user: DEMO_USER });
+      }
+
+      return res.status(401).json({ message: "Sign-in required." });
+    } catch (err) {
+      return next(err);
+    }
   });
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/logout", async (req, res, next) => {
+    try {
+      const token = readCookie(req, DEMO_COOKIE);
+      if (token) await db.delete(emrDemoSessions).where(eq(emrDemoSessions.token, token));
+      clearDemoCookie(res, isProduction);
+      return res.json({ ok: true });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
     if (!req.path.startsWith("/api")) return next();
     if (
       req.path === "/api/healthz" ||
@@ -123,9 +145,13 @@ export function setupDemoAuth(app: Express, isProduction: boolean) {
     ) {
       return next();
     }
-    if (!hasValidSession(req) && !clerkUserId(req)) {
-      return res.status(401).json({ message: "Sign-in required." });
+    try {
+      if (!(await hasValidSession(req)) && !clerkUserId(req)) {
+        return res.status(401).json({ message: "Sign-in required." });
+      }
+      return next();
+    } catch (err) {
+      return next(err);
     }
-    next();
   });
 }

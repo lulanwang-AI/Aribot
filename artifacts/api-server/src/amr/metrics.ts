@@ -1,5 +1,5 @@
 import { getAgent } from "./data/agents";
-import { hoursToReview, isReviewDue, listCases } from "./store";
+import { hoursToReview, isReviewDue } from "./store";
 import type { StewardshipCase } from "./types";
 
 export interface StewardshipMetrics {
@@ -42,8 +42,9 @@ function activeAgentIds(record: StewardshipCase): string[] {
   return fallback?.agents.map((a) => a.agentId) ?? [];
 }
 
-export function computeMetrics(): StewardshipMetrics {
-  const all = listCases();
+/** Programme metrics over a caseload. Callers supply the cases so the same
+ *  computation serves the Postgres-backed API and the in-browser build. */
+export function computeMetrics(all: StewardshipCase[]): StewardshipMetrics {
   const active = all.filter((c) => !["completed", "stopped"].includes(c.status));
   const reviewed = all.filter((c) => c.targeted);
 

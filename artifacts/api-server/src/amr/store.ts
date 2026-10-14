@@ -25,13 +25,14 @@ function newId(): string {
 }
 
 /**
- * In-memory case store.
+ * Case construction, seed data and state transitions.
  *
- * The app ships without a database dependency so it can be demonstrated on a
- * fresh environment. Swapping this for the Drizzle/Postgres layer only requires
- * reimplementing this module's exported functions.
+ * Everything here is pure computation over a StewardshipCase record, which is
+ * what lets the same source run in two places: behind /api/amr, where
+ * case-repository.ts persists records in Postgres, and inside the standalone
+ * browser build, where the in-memory store at the bottom of this file stands
+ * in for the server. Nothing in this module may import a database driver.
  */
-const cases = new Map<string, StewardshipCase>();
 
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3_600_000).toISOString();
@@ -177,7 +178,8 @@ function buildCase(spec: SeedSpec): StewardshipCase {
   return record;
 }
 
-function seed(): void {
+/** The demonstration caseload, rebuilt relative to the current time. */
+export function buildSeedCases(): StewardshipCase[] {
   const specs: SeedSpec[] = [
     {
       id: "case-vap-4471",
@@ -660,31 +662,23 @@ function seed(): void {
     },
   ];
 
-  for (const spec of specs) {
-    const record = buildCase(spec);
-    cases.set(record.id, record);
-  }
+  return specs.map(buildCase);
 }
 
-seed();
+/* ------------------------------------------------------------------ */
+/* Pure transitions                                                    */
+/* ------------------------------------------------------------------ */
 
-export function listCases(): StewardshipCase[] {
-  return [...cases.values()].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
-}
-
-export function getCase(id: string): StewardshipCase | undefined {
-  return cases.get(id);
-}
-
-export function createCase(input: {
+export interface NewCaseInput {
   mrn: string;
   patientLabel: string;
   ward: string;
   assignedTo: string;
   intake: Intake;
-}): StewardshipCase {
+}
+
+/** Builds a new case record from an intake. Does not store it. */
+export function newCase(input: NewCaseInput): StewardshipCase {
   const syndrome = getSyndrome(input.intake.suspectedSyndromeId);
   const empiric = recommendEmpiric(input.intake);
   const now = new Date().toISOString();
@@ -709,13 +703,11 @@ export function createCase(input: {
     ward: input.ward || "Unassigned",
   };
 
-  cases.set(record.id, record);
   return record;
 }
 
-export function startTherapy(id: string, regimenId: string, actor: string): StewardshipCase | undefined {
-  const record = cases.get(id);
-  if (!record) return undefined;
+/** Records the regimen the clinician started. Returns undefined for an unknown regimen. */
+export function applyStartTherapy(record: StewardshipCase, regimenId: string, actor: string): StewardshipCase | undefined {
   const regimen = record.empiric?.regimens.find((r) => r.id === regimenId);
   if (!regimen) return undefined;
 
@@ -737,12 +729,15 @@ export function startTherapy(id: string, regimenId: string, actor: string): Stew
   return record;
 }
 
-export function submitReview(
-  id: string,
-  payload: { cultures: CultureResult; response: NonNullable<StewardshipCase["clinicalResponse"]>; actor: string },
-): StewardshipCase | undefined {
-  const record = cases.get(id);
-  if (!record || !record.empiric) return undefined;
+export type ReviewPayload = {
+  cultures: CultureResult;
+  response: NonNullable<StewardshipCase["clinicalResponse"]>;
+  actor: string;
+};
+
+/** Runs the 48 to 72 hour review. Returns undefined when the case never had an empiric plan. */
+export function applySubmitReview(record: StewardshipCase, payload: ReviewPayload): StewardshipCase | undefined {
+  if (!record.empiric) return undefined;
 
   const selected =
     record.empiric.regimens.find((r) => r.id === record.selectedRegimenId) ?? record.empiric.regimens[0];
@@ -767,12 +762,9 @@ export function submitReview(
   return record;
 }
 
-export function recordDecision(
-  id: string,
-  payload: { outcome: "accepted" | "modified" | "overridden"; by: string; note: string },
-): StewardshipCase | undefined {
-  const record = cases.get(id);
-  if (!record) return undefined;
+export type DecisionPayload = { outcome: "accepted" | "modified" | "overridden"; by: string; note: string };
+
+export function applyRecordDecision(record: StewardshipCase, payload: DecisionPayload): StewardshipCase {
   const now = new Date().toISOString();
   record.decision = { ...payload, at: now };
   record.updatedAt = now;
@@ -798,9 +790,7 @@ export function recordDecision(
   return record;
 }
 
-export function addNote(id: string, note: string, actor: string): StewardshipCase | undefined {
-  const record = cases.get(id);
-  if (!record) return undefined;
+export function applyAddNote(record: StewardshipCase, note: string, actor: string): StewardshipCase {
   const now = new Date().toISOString();
   record.timeline.push(event("note", note, now, actor));
   record.updatedAt = now;
@@ -817,4 +807,58 @@ export function isReviewDue(record: StewardshipCase): boolean {
   if (["completed", "stopped"].includes(record.status)) return false;
   if (record.targeted) return false;
   return hoursToReview(record) <= 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* In-memory store                                                     */
+/*                                                                     */
+/* Used by the standalone browser build and the engine test suite. The  */
+/* server uses case-repository.ts, which persists the same records in   */
+/* Postgres. The seed caseload is built on first use so importing this  */
+/* module for its pure functions costs nothing.                         */
+/* ------------------------------------------------------------------ */
+
+let memoryCases: Map<string, StewardshipCase> | null = null;
+
+function cases(): Map<string, StewardshipCase> {
+  if (!memoryCases) {
+    memoryCases = new Map(buildSeedCases().map((record) => [record.id, record]));
+  }
+  return memoryCases;
+}
+
+export function listCases(): StewardshipCase[] {
+  return [...cases().values()].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+}
+
+export function getCase(id: string): StewardshipCase | undefined {
+  return cases().get(id);
+}
+
+export function createCase(input: NewCaseInput): StewardshipCase {
+  const record = newCase(input);
+  cases().set(record.id, record);
+  return record;
+}
+
+export function startTherapy(id: string, regimenId: string, actor: string): StewardshipCase | undefined {
+  const record = cases().get(id);
+  return record ? applyStartTherapy(record, regimenId, actor) : undefined;
+}
+
+export function submitReview(id: string, payload: ReviewPayload): StewardshipCase | undefined {
+  const record = cases().get(id);
+  return record ? applySubmitReview(record, payload) : undefined;
+}
+
+export function recordDecision(id: string, payload: DecisionPayload): StewardshipCase | undefined {
+  const record = cases().get(id);
+  return record ? applyRecordDecision(record, payload) : undefined;
+}
+
+export function addNote(id: string, note: string, actor: string): StewardshipCase | undefined {
+  const record = cases().get(id);
+  return record ? applyAddNote(record, note, actor) : undefined;
 }

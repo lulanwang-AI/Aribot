@@ -76,6 +76,16 @@ export async function initRoutes() {
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);
   app.use("/api/ari", ariRouter);
+
+  // Final handler for rejected async routes (Express 5 forwards them here).
+  app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    logger.error({ err, url: req.url?.split("?")[0] }, "Unhandled route error");
+    if (res.headersSent) {
+      res.end();
+      return;
+    }
+    res.status(500).json({ message: "Internal server error" });
+  });
 }
 
 export default app;

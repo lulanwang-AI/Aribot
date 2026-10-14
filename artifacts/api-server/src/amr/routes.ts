@@ -6,19 +6,9 @@ import { COMORBIDITY_OPTIONS, COVERAGE_FLAG_LABELS, RISK_MODIFIERS } from "./dat
 import { getAntibiogram, REGIONS, hasFacilityAntibiogram } from "./data/antibiogram";
 import { recommendEmpiric, KNOWLEDGE_BASE_VERSION, deriveRiskFactors, resolveRegion } from "./engine/empiric";
 import { computeMetrics } from "./metrics";
-import {
-  addNote,
-  createCase,
-  emptyIntake,
-  getCase,
-  hoursToReview,
-  isReviewDue,
-  listCases,
-  recordDecision,
-  startTherapy,
-  submitReview,
-} from "./store";
-import type { Intake } from "./types";
+import { emptyIntake, hoursToReview, isReviewDue } from "./store";
+import * as cases from "./case-repository";
+import type { Intake, StewardshipCase } from "./types";
 
 const router: IRouter = Router();
 
@@ -122,17 +112,16 @@ router.post("/recommend/explain", (req, res) => {
   }
 });
 
-function withDerived(record: ReturnType<typeof getCase>) {
-  if (!record) return record;
+function withDerived(record: StewardshipCase) {
   return { ...record, hoursToReview: hoursToReview(record), reviewDue: isReviewDue(record) };
 }
 
-router.get("/cases", (_req, res) => {
-  res.json(listCases().map((c) => withDerived(c)));
+router.get("/cases", async (_req, res) => {
+  res.json((await cases.listCases()).map(withDerived));
 });
 
-router.get("/cases/:id", (req, res) => {
-  const record = getCase(req.params.id);
+router.get("/cases/:id", async (req, res) => {
+  const record = await cases.getCase(req.params.id);
   if (!record) {
     res.status(404).json({ message: "Case not found" });
     return;
@@ -140,27 +129,27 @@ router.get("/cases/:id", (req, res) => {
   res.json(withDerived(record));
 });
 
-router.post("/cases", (req, res) => {
+router.post("/cases", async (req, res) => {
   const { mrn, patientLabel, ward, assignedTo, intake } = req.body ?? {};
   if (!intake?.suspectedSyndromeId) {
     res.status(400).json({ message: "intake.suspectedSyndromeId is required" });
     return;
   }
   try {
-    const record = createCase({ mrn, patientLabel, ward, assignedTo, intake });
+    const record = await cases.createCase({ mrn, patientLabel, ward, assignedTo, intake });
     res.status(201).json(withDerived(record));
   } catch (err: any) {
     res.status(400).json({ message: err?.message ?? "Unable to create the case" });
   }
 });
 
-router.post("/cases/:id/start", (req, res) => {
+router.post("/cases/:id/start", async (req, res) => {
   const { regimenId, actor } = req.body ?? {};
   if (!regimenId) {
     res.status(400).json({ message: "regimenId is required" });
     return;
   }
-  const record = startTherapy(req.params.id, regimenId, actor ?? "Clinician");
+  const record = await cases.startTherapy(req.params.id, regimenId, actor ?? "Clinician");
   if (!record) {
     res.status(404).json({ message: "Case or regimen not found" });
     return;
@@ -168,14 +157,14 @@ router.post("/cases/:id/start", (req, res) => {
   res.json(withDerived(record));
 });
 
-router.post("/cases/:id/review", (req, res) => {
+router.post("/cases/:id/review", async (req, res) => {
   const { cultures, response, actor } = req.body ?? {};
   if (!cultures || !response) {
     res.status(400).json({ message: "cultures and response are both required" });
     return;
   }
   try {
-    const record = submitReview(req.params.id, { cultures, response, actor: actor ?? "Clinician" });
+    const record = await cases.submitReview(req.params.id, { cultures, response, actor: actor ?? "Clinician" });
     if (!record) {
       res.status(404).json({ message: "Case not found" });
       return;
@@ -186,13 +175,13 @@ router.post("/cases/:id/review", (req, res) => {
   }
 });
 
-router.post("/cases/:id/decision", (req, res) => {
+router.post("/cases/:id/decision", async (req, res) => {
   const { outcome, by, note } = req.body ?? {};
   if (!["accepted", "modified", "overridden"].includes(outcome)) {
     res.status(400).json({ message: "outcome must be accepted, modified or overridden" });
     return;
   }
-  const record = recordDecision(req.params.id, { outcome, by: by ?? "Clinician", note: note ?? "" });
+  const record = await cases.recordDecision(req.params.id, { outcome, by: by ?? "Clinician", note: note ?? "" });
   if (!record) {
     res.status(404).json({ message: "Case not found" });
     return;
@@ -200,13 +189,13 @@ router.post("/cases/:id/decision", (req, res) => {
   res.json(withDerived(record));
 });
 
-router.post("/cases/:id/notes", (req, res) => {
+router.post("/cases/:id/notes", async (req, res) => {
   const { note, actor } = req.body ?? {};
   if (!note) {
     res.status(400).json({ message: "note is required" });
     return;
   }
-  const record = addNote(req.params.id, note, actor ?? "Clinician");
+  const record = await cases.addNote(req.params.id, note, actor ?? "Clinician");
   if (!record) {
     res.status(404).json({ message: "Case not found" });
     return;
@@ -214,8 +203,8 @@ router.post("/cases/:id/notes", (req, res) => {
   res.json(withDerived(record));
 });
 
-router.get("/metrics", (_req, res) => {
-  res.json(computeMetrics());
+router.get("/metrics", async (_req, res) => {
+  res.json(computeMetrics(await cases.listCases()));
 });
 
 export default router;
