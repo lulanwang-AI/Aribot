@@ -115,11 +115,21 @@ public liveness checks.
 ## Mobile apps
 
 Three Expo (React Native) apps, one per workspace, each a workspace package
-with its own `.replit-artifact/artifact.toml`. All three are declared
-`kind = "web"` with `router = "path"`: that is all their static server needs,
-and it is the configuration that demonstrably builds and serves in the
-published deployment (as a `kind = "mobile"` artifact on the Expo domain
-router, the ARIbots service came up without its static build).
+with its own `.replit-artifact/artifact.toml`. `aribots-mobile` is the one
+`kind = "mobile"` artifact on the Expo domain router; `amr-mobile` and
+`emr-mobile` are `kind = "web"` with path routing.
+
+How Expo Go reaches each app: the platform sends every request carrying an
+`expo-platform` header (Expo Go fetching a manifest) to the Expo domain
+artifact, whatever path it names. `aribots-mobile/server/serve.js` therefore
+forwards `/amr-mobile/...` and `/emr-mobile/...` to those apps' own servers
+(`EXPO_PEER_ROUTES` in its artifact.toml), so each QR code
+(`exps://<host>/<app>/`) ends at the app's own manifest. Bundle and asset
+downloads carry no such header and are path-routed directly.
+
+`.replitignore` must not exclude `artifacts/*/static-build`: the publish
+build produces those directories and the apps serve them at runtime (an old
+exclusion of the ARIbots build was why its QR code led to a 404).
 
 | App | Package | Published at | Signs in with | Talks to |
 | --- | --- | --- | --- | --- |
@@ -137,7 +147,7 @@ Each app is built by `scripts/build.js` into `static-build/` and served by
   (`expo export --platform web`, served with an SPA fallback). `app.json`
   sets `experiments.baseUrl` to `/<app>/web` so asset URLs and the router agree.
 - `/<app>/status` reports whether the iOS/Android manifests and the web build
-  exist in the running deployment.
+  exist in the running deployment, and which sibling paths it forwards.
 
 Dev ports: ARIbots 19512, AMR 19513, EMR 19514 (`.replit` maps them to external
 ports 3001 to 3003).

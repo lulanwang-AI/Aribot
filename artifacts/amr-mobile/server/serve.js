@@ -163,6 +163,40 @@ function serveWebApp(urlPath, res) {
   sendFile(indexPath, res, { "cache-control": "no-cache" });
 }
 
+/**
+ * Peer routes, e.g. EXPO_PEER_ROUTES="/amr-mobile/=19513,/emr-mobile/=19514".
+ *
+ * The platform sends every request that carries an `expo-platform` header
+ * (Expo Go fetching a manifest) to the one artifact that owns the Expo domain
+ * router, whatever path it names. When this app is that artifact, requests
+ * for a sibling app's path are forwarded to the sibling's own server in the
+ * same deployment, so each app serves its own manifest.
+ */
+const PEER_ROUTES = (process.env.EXPO_PEER_ROUTES || "")
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean)
+  .map((entry) => {
+    const [prefix, port] = entry.split("=");
+    return { prefix: (prefix || "").trim().replace(/\/+$/, ""), port: parseInt(port, 10) };
+  })
+  .filter((route) => route.prefix && route.prefix !== basePath && Number.isFinite(route.port));
+
+function proxyToPeer(req, res, route) {
+  const upstream = http.request(
+    { host: "127.0.0.1", port: route.port, method: req.method, path: req.url, headers: req.headers },
+    (up) => {
+      res.writeHead(up.statusCode || 502, up.headers);
+      up.pipe(res);
+    },
+  );
+  upstream.on("error", (err) => {
+    res.writeHead(502, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: `Peer app at ${route.prefix} is unavailable: ${err.message}` }));
+  });
+  req.pipe(upstream);
+}
+
 const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
 const appName = getAppName();
 
@@ -176,6 +210,11 @@ const server = http.createServer((req, res) => {
     return;
   }
   let pathname = url.pathname;
+
+  const peer = PEER_ROUTES.find((route) => pathname === route.prefix || pathname.startsWith(route.prefix + "/"));
+  if (peer) {
+    return proxyToPeer(req, res, peer);
+  }
 
   if (basePath && pathname.startsWith(basePath)) {
     pathname = pathname.slice(basePath.length) || "/";
@@ -193,6 +232,7 @@ const server = http.createServer((req, res) => {
           android: fs.existsSync(path.join(STATIC_ROOT, "android", "manifest.json")),
         },
         web: fs.existsSync(path.join(WEB_ROOT, "index.html")),
+        peerRoutes: PEER_ROUTES.map((route) => route.prefix),
       }),
     );
     return;

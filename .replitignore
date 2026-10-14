@@ -4,5 +4,5 @@
 # No need to store the pnpm store twice.
 .local
 
-# Expo build output is produced during publishing, not uploaded from development.
-artifacts/aribots-mobile/static-build
+# The Expo static builds (artifacts/*/static-build) are produced by the
+# publishing build and must stay in the image: the apps serve them at runtime.
