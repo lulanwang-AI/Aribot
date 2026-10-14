@@ -1,14 +1,10 @@
-kind = "mobile"
+kind = "web"
 previewPath = "/amr-mobile/"
 title = "Ari AMR Mobile"
 description = "Antimicrobial stewardship worklist, case intake and 48 to 72 hour review for the ward round."
 version = "1.0.0"
 id = "artifacts/amr-mobile"
 router = "path"
-
-[[integratedSkills]]
-name = "expo"
-version = "1.0.0"
 
 [[services]]
 ensurePreviewReachable = "/status"
@@ -19,9 +15,16 @@ localPort = 19513
 [services.development]
 run = "pnpm --filter @workspace/amr-mobile run dev"
 
+# Declared as a web artifact: the platform allows one "mobile" artifact per
+# project (artifacts/aribots-mobile), and this one only needs path routing.
+# scripts/build.js still produces the Expo Go manifests and bundles, and
+# server/serve.js serves them together with the web export.
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/amr-mobile", "run", "build" ]
 run = [ "pnpm", "--filter", "@workspace/amr-mobile", "run", "serve" ]
+
+[services.production.health.startup]
+path = "/amr-mobile/status"
 
 [services.env]
 PORT = "19513"
