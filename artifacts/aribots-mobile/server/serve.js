@@ -59,7 +59,14 @@ function requestOrigin(req) {
   return { protocol, host, baseUrl: `${protocol}://${host}` };
 }
 
-function serveManifest(platform, res) {
+/**
+ * Serves the Expo Go manifest with its bundle and asset URLs rewritten to
+ * the domain the request arrived on. build.js bakes the deployment's own
+ * domain into the manifest; when the app is reached through a custom domain
+ * the bundles should be fetched from that same domain, and the app keeps
+ * working even if the deployment's default domain changes.
+ */
+function serveManifest(platform, req, res) {
   const manifestPath = path.join(STATIC_ROOT, platform, "manifest.json");
 
   if (!fs.existsSync(manifestPath)) {
@@ -70,7 +77,18 @@ function serveManifest(platform, res) {
     return;
   }
 
-  const manifest = fs.readFileSync(manifestPath, "utf-8");
+  let manifest = fs.readFileSync(manifestPath, "utf-8");
+  try {
+    const parsed = JSON.parse(manifest);
+    const builtOrigin = new URL(parsed.launchAsset.url).origin;
+    const { host, baseUrl } = requestOrigin(req);
+    if (host && builtOrigin !== baseUrl) {
+      const builtHost = new URL(builtOrigin).host;
+      manifest = manifest.split(builtOrigin).join(baseUrl).split(`"${builtHost}/`).join(`"${host}/`);
+    }
+  } catch {
+    // Leave the manifest exactly as built if it cannot be parsed.
+  }
   res.writeHead(200, {
     "content-type": "application/json",
     "expo-protocol-version": "1",
@@ -241,7 +259,7 @@ const server = http.createServer((req, res) => {
   if (pathname === "/" || pathname === "/manifest") {
     const platform = req.headers["expo-platform"];
     if (platform === "ios" || platform === "android") {
-      return serveManifest(platform, res);
+      return serveManifest(platform, req, res);
     }
 
     if (pathname === "/") {
