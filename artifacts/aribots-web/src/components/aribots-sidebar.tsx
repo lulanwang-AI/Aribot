@@ -96,7 +96,7 @@ export function AppSidebar() {
   const [aribotOpen, setAribotOpen] = useState(true);
   const [clinicalOpen, setClinicalOpen] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [role, setRole] = useRole();
+  const [role, setRole, isServerAdmin] = useRole();
 
   const dismissNotif = useCallback((key: string) => {
     setDismissed(prev => new Set(prev).add(key));
@@ -118,7 +118,9 @@ export function AppSidebar() {
 
         <div className="px-2 pb-2">
           <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg" data-testid="role-toggle">
-            {(["physician", "medstudent", "admin"] as AppRole[]).map((r) => (
+            {(["physician", "medstudent", "admin"] as AppRole[])
+              .filter((r) => r !== "admin" || isServerAdmin)
+              .map((r) => (
               <button
                 key={r}
                 onClick={() => setRole(r)}

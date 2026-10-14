@@ -746,7 +746,9 @@ export function seedAllData() {
     hospital: "Marin Health Medical Center",
     city: "Kentfield",
     state: "CA",
-    role: "physician",
+    // The demo account is the platform owner and is the one account that
+    // exercises the admin panels, so the server grants it the admin role.
+    role: "admin",
     verified: true,
     yearsExperience: 21,
     rankingScore: 91,

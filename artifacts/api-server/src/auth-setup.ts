@@ -103,6 +103,22 @@ export async function requireAuthenticatedWebApi(
   }
 }
 
+/**
+ * Gate a route on the signed-in account's role. Runs after
+ * requireAuthenticatedWebApi, so req.user is the server-resolved user, never
+ * a value the browser chose.
+ */
+export function requireRole(...roles: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const role = (req.user as SafeUser | undefined)?.role;
+    if (!role || !roles.includes(role)) {
+      res.status(403).json({ message: `This action requires ${roles.join(" or ")} access.` });
+      return;
+    }
+    next();
+  };
+}
+
 declare global {
   namespace Express {
     interface User extends SafeUser {}

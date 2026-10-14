@@ -6,6 +6,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupDemoAuth } from "./demo-auth";
 import { ensureSchema } from "./ensure-schema";
 import { runDemoSeeds } from "./seed-runner";
+import { registerStatusRoute } from "./status";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -60,6 +61,7 @@ app.get("/api/healthz", (_req, res) => {
 });
 
 setupDemoAuth(app, process.env.NODE_ENV === "production");
+registerStatusRoute(app);
 
 (async () => {
   // Runtime tables the server writes to are guaranteed before any request.

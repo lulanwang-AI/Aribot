@@ -14,6 +14,7 @@ import { anthropic } from "../ari/client";
 import { getAriAgentConfig } from "../ari/agentSync";
 import { buildClinicianPromptAddendum } from "../ari/license";
 import { isActiveCapability, CAPABILITY_REJECTION_MESSAGE } from "../ari/capabilities";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "../auth-setup";
 import type {
   User, MobileTriagePost as TriagePost, MobileComment as Comment, MobileNewsItem as NewsItem,
   MobileGroup as Group, MobileMedEvent as MedEvent, MobileChatThread as ChatThread,
@@ -22,6 +23,9 @@ import type {
 } from "@workspace/db";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "aribots-mobile-jwt-dev-secret";
+
+// The web demo account plus the identity the Expo app's login screen offers.
+const MOBILE_DEMO_EMAILS = new Set([DEMO_EMAIL, "doctor@aribots.local"]);
 
 function signToken(payload: { userId: string; username: string }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
@@ -336,9 +340,12 @@ mobile.get("/healthz", (_req, res) => res.json({ status: "ok", service: "mobile-
 
 // Auth
 mobile.post("/auth/login", (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body ?? {};
   if (!email || !password) { res.status(400).json({ message: "Email and password required" }); return; }
-  if (process.env.NODE_ENV === "production") { res.status(401).json({ message: "Auth not configured for production" }); return; }
+  // Production accepts the shared demo account only; development keeps
+  // accepting any credentials so local testing is unchanged.
+  const isDemo = MOBILE_DEMO_EMAILS.has(String(email).trim().toLowerCase()) && password === DEMO_PASSWORD;
+  if (!isDemo && process.env.NODE_ENV === "production") { res.status(401).json({ message: "Invalid demo credentials." }); return; }
   const user = store.users.get("mu1") || [...store.users.values()][0];
   if (!user) { res.status(401).json({ message: "No seed users" }); return; }
   const { password: _, ...safe } = user;

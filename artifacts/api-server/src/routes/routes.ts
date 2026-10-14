@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs";
 import { aiAvailable, completeText, completeJSON, streamText, InvalidModelJSONError } from "@workspace/clinical-ai";
 import { logger } from "../lib/logger";
+import { requireRole } from "../auth-setup";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -357,15 +358,15 @@ export async function registerRoutes(
     res.json(event);
   });
 
-  app.get("/api/moderation", async (_req, res) => {
+  app.get("/api/moderation", requireRole("admin"), async (_req, res) => {
     const items = await storage.getFlaggedItems();
     res.json(items);
   });
 
-  app.patch("/api/moderation/:id", async (req, res) => {
+  app.patch("/api/moderation/:id", requireRole("admin"), async (req, res) => {
     const parsed = moderationSchema.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ message: parsed.error.message }); return; }
-    const item = await storage.updateFlaggedItem(req.params.id, parsed.data.status);
+    const item = await storage.updateFlaggedItem(String(req.params.id), parsed.data.status);
     if (!item) { res.status(404).json({ message: "Item not found" }); return; }
     res.json(item);
   });
