@@ -1,0 +1,28 @@
+kind = "mobile"
+previewPath = "/amr-mobile/"
+title = "Ari AMR Mobile"
+description = "Antimicrobial stewardship worklist, case intake and 48 to 72 hour review for the ward round."
+version = "1.0.0"
+id = "artifacts/amr-mobile"
+router = "path"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/amr-mobile/" ]
+localPort = 19513
+
+[services.development]
+run = "pnpm --filter @workspace/amr-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/amr-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/amr-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "19513"
+BASE_PATH = "/amr-mobile/"

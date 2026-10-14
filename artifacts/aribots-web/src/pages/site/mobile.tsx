@@ -6,8 +6,9 @@ import { ActionLink, CtaBand, PageHero, SectionIntro, StepsSection } from "@/com
 type MobileAppStatus = "available" | "in-development";
 
 /**
- * The mobile apps and where to try them. The AMR and EMR apps are being built
- * next; flip `status` and add `webPreview` when each one ships.
+ * The mobile apps and where to try them. Each app is published under its own
+ * path on this domain: the path shows an Expo Go QR code, and `/web/` below it
+ * is the same app built for the browser.
  */
 const MOBILE_APPS: {
   name: string;
@@ -15,7 +16,9 @@ const MOBILE_APPS: {
   summary: string;
   features: string[];
   status: MobileAppStatus;
+  expoGoPath?: string;
   webPreview?: string;
+  demo: string;
 }[] = [
   {
     name: "ARIbots mobile",
@@ -23,29 +26,37 @@ const MOBILE_APPS: {
     summary: "Ari in your pocket: ask, dictate, read aloud, and keep up with triage cases, news, groups, events and messages.",
     features: ["Ari chat with Ari and ER modes", "Voice dictation and read-aloud", "Triage cases, news, groups and events", "Clinical workflow: pre-charting, consult, SOAP, summary"],
     status: "available",
-    webPreview: "/aribots-mobile/",
+    expoGoPath: "/aribots-mobile/",
+    webPreview: "/aribots-mobile/web/",
+    demo: "doctor@aribots.local / demo",
   },
   {
     name: "Ari AMR mobile",
     productHref: "/products/ari-amr",
     summary: "The stewardship worklist for the ward round: cases due for review, the antibiogram and the formulary without going back to a desk.",
-    features: ["Dashboard and review worklist", "Case intake and 48 to 72 hour review", "Antibiogram by region", "Formulary and guidance"],
-    status: "in-development",
+    features: ["Dashboard, coverage alerts and review worklist", "Case intake with ranked empiric regimens", "48 to 72 hour review with culture entry and decision", "Antibiogram by region, formulary monographs, syndrome guidance, Ask Ari"],
+    status: "available",
+    expoGoPath: "/amr-mobile/",
+    webPreview: "/amr-mobile/web/",
+    demo: "demo@aribots.local / demo",
   },
   {
     name: "Ari EMR mobile",
     productHref: "/products/ari-emr",
     summary: "The chart, the schedule and the in-basket on a phone, with Ari drafting notes from what you dictate between rooms.",
-    features: ["Patients and charts", "Today's schedule", "Encounters and Ari-assisted notes", "In-basket"],
-    status: "in-development",
+    features: ["Today's schedule and open encounters", "Patient charts: problems, medications, allergies, vitals, notes", "Ari-drafted SOAP notes from the chart or your dictation, edit and sign", "In-basket triage and chart Q&A, differentials, text rewriting"],
+    status: "available",
+    expoGoPath: "/emr-mobile/",
+    webPreview: "/emr-mobile/web/",
+    demo: "demo@aribots.local / demo",
   },
 ];
 
 const TEST_STEPS = [
-  { step: "Step 1", title: "Open the web preview", body: "Each app also ships as a web build on this domain, so the fastest check is to open its preview link on your phone's browser." },
-  { step: "Step 2", title: "Install Expo Go", body: "For the native experience install Expo Go from the App Store or Google Play. It runs development builds without an app-store release." },
-  { step: "Step 3", title: "Scan the QR code", body: "The project workspace prints a QR code for each mobile app when its development server starts. Scan it in Expo Go." },
-  { step: "Step 4", title: "Sign in with the demo account", body: "Use the shared demo credentials shown on the sign-in screen. Data is the same demo dataset the web apps use." },
+  { step: "Step 1", title: "Open the web preview", body: "Each app also ships as a web build on this domain, so the fastest check is to open its web preview on your phone's or laptop's browser." },
+  { step: "Step 2", title: "Install Expo Go", body: "For the native experience install Expo Go from the App Store or Google Play. It runs these builds without an app-store release." },
+  { step: "Step 3", title: "Scan the QR code", body: "Open the app's Expo Go page on this domain and scan its QR code with your phone's camera. Expo Go downloads the current build and starts it." },
+  { step: "Step 4", title: "Sign in with the demo account", body: "Use the demo credentials shown on each sign-in screen. The data is the same demo dataset the web workspaces use, so a case or note made on the phone appears at the desk." },
 ];
 
 function StatusBadge({ status }: { status: MobileAppStatus }) {
@@ -81,7 +92,10 @@ function AppsSection() {
                   <li key={f} className="flex gap-2"><span className="text-[#4A90D9]">•</span>{f}</li>
                 ))}
               </ul>
-              <div className="mt-6 flex flex-wrap gap-3 pt-2">
+              <p className="mt-4 text-xs text-gray-500">
+                Demo sign-in: <span className="font-medium text-gray-700">{app.demo}</span>
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3 pt-2">
                 {app.webPreview ? (
                   <a href={app.webPreview} className="inline-flex items-center gap-2 rounded-xl bg-[#4A90D9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5BA0E9]" data-testid={`link-mobile-preview-${app.name.toLowerCase().replace(/\s+/g, "-")}`}>
                     <Globe className="h-4 w-4" /> Open web preview
@@ -89,6 +103,11 @@ function AppsSection() {
                 ) : (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-500"><QrCode className="h-4 w-4" /> Preview coming with the next release</span>
                 )}
+                {app.expoGoPath ? (
+                  <a href={app.expoGoPath} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50" data-testid={`link-mobile-expo-${app.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                    <QrCode className="h-4 w-4" /> Expo Go QR code
+                  </a>
+                ) : null}
                 <Link href={app.productHref} className="inline-flex items-center rounded-xl px-3 py-2 text-sm font-semibold text-[#4A90D9] hover:underline">About the workspace →</Link>
               </div>
             </div>
@@ -117,7 +136,7 @@ export default function MobilePage() {
         lede="Native apps for iOS and Android built with Expo, brand-matched to the web workspaces and signed in to the same account and data. Every app can be tested on a phone before it reaches an app store."
         actions={
           <>
-            <ActionLink href="/aribots-mobile/" external testId="link-mobile-hero-preview">Try the ARIbots web preview</ActionLink>
+            <ActionLink href="/amr-mobile/web/" external testId="link-mobile-hero-preview">Try the Ari AMR web preview</ActionLink>
             <ActionLink href="#how-to-test" variant="outline" testId="link-mobile-hero-how">How to test on a phone</ActionLink>
           </>
         }

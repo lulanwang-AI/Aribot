@@ -3,6 +3,7 @@ import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { getAuth } from "@clerk/express";
+import jwt from "jsonwebtoken";
 import type { Express, NextFunction, Request, Response } from "express";
 import { storage } from "./storage";
 import { pool, type User } from "@workspace/db";
@@ -13,6 +14,69 @@ type SafeUser = Omit<User, "password">;
 
 export const DEMO_EMAIL = "demo@aribots.local";
 export const DEMO_PASSWORD = "demo";
+
+/**
+ * The mobile apps authenticate with the JWT issued by POST /api/mobile/auth/login
+ * and present it as a bearer token. The secret is shared with the mobile router
+ * so one sign-in works for both the /api/mobile routes and the web API routes
+ * (stewardship, Ari) that the Ari AMR mobile app uses.
+ */
+export const MOBILE_JWT_SECRET = process.env.SESSION_SECRET || "aribots-mobile-jwt-dev-secret";
+
+/** The web account a mobile bearer token resolves to: the shared demo clinician. */
+const MOBILE_BEARER_USER_ID = "u1";
+
+export interface MobileTokenPayload {
+  userId: string;
+  username: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      /** Verified mobile JWT payload, set by detachMobileBearer. */
+      mobileToken?: MobileTokenPayload;
+    }
+  }
+}
+
+function bearerToken(req: Request): string | undefined {
+  const header = req.headers.authorization;
+  if (typeof header !== "string" || !header.startsWith("Bearer ")) return undefined;
+  const token = header.slice(7).trim();
+  return token || undefined;
+}
+
+/**
+ * Runs before the Clerk middleware. A bearer token that verifies with the
+ * mobile secret is ours: its payload is kept on the request and the header is
+ * removed, so Clerk never tries to verify it as one of its own session tokens
+ * (that attempt is a network round trip on every request). Anything else is
+ * left untouched for Clerk.
+ */
+export function detachMobileBearer(req: Request, _res: Response, next: NextFunction) {
+  const token = bearerToken(req);
+  if (token) {
+    try {
+      const payload = jwt.verify(token, MOBILE_JWT_SECRET) as Partial<MobileTokenPayload>;
+      if (typeof payload.userId === "string") {
+        req.mobileToken = { userId: payload.userId, username: String(payload.username ?? "") };
+        delete req.headers.authorization;
+      }
+    } catch {
+      // Not a mobile token.
+    }
+  }
+  next();
+}
+
+async function resolveMobileBearerUser(req: Request): Promise<SafeUser | undefined> {
+  if (!req.mobileToken) return undefined;
+  const user = await storage.getUser(MOBILE_BEARER_USER_ID);
+  if (!user) return undefined;
+  const { password: _password, ...safe } = user;
+  return safe;
+}
 
 function claimString(
   claims: Record<string, unknown> | null | undefined,
@@ -82,7 +146,7 @@ export async function resolveAuthenticatedUser(
   }
 
   if (req.isAuthenticated?.() && req.user) return req.user;
-  return undefined;
+  return resolveMobileBearerUser(req);
 }
 
 export async function requireAuthenticatedWebApi(

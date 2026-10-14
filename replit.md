@@ -10,7 +10,7 @@ ARIbots is a doctor-only clinical AI platform. The project ships:
 
 - **`artifacts/aribots-web`** — Vite + React web app (existing, working).
 - **`artifacts/api-server`** — Express + Drizzle Postgres API (existing, working). Auth: passport-local with session cookies. Includes Ari endpoints under `/api/ari/*` (Anthropic-backed, SSE streaming, MCP tools).
-- **`artifacts/aribots-mobile`** — Expo (React Native, iOS + Android) mobile app, brand-matched to web. New in this build.
+- **`artifacts/aribots-mobile`**, **`artifacts/amr-mobile`**, **`artifacts/emr-mobile`** — Expo (React Native, iOS + Android + web export) mobile apps, one per workspace, brand-matched to their web apps. See "Mobile apps" below.
 - **`artifacts/mockup-sandbox`** — design canvas sandbox (existing).
 
 ## Databases and demo data
@@ -112,43 +112,118 @@ reachable, with row counts for the runtime tables. They report presence only,
 never a secret value. `GET /api/healthz` and `GET /ari-emr/api/healthz` remain
 public liveness checks.
 
-## Mobile app architecture
+## Mobile apps
 
-`artifacts/aribots-mobile` uses Expo Router (file-based routing) with a tab bar plus stack screens.
+Three Expo (React Native) apps, one per workspace, each a workspace package
+with its own `.replit-artifact/artifact.toml` (`kind = "mobile"`):
 
-Key directories:
+| App | Package | Published at | Signs in with | Talks to |
+| --- | --- | --- | --- | --- |
+| ARIbots mobile | `artifacts/aribots-mobile` | `/aribots-mobile/` | `POST /api/mobile/auth/login` (JWT) | `/api/mobile/*` |
+| Ari AMR mobile | `artifacts/amr-mobile` | `/amr-mobile/` | `POST /api/mobile/auth/login` (JWT) | `/api/amr/*`, `/api/mobile/ari/chat` |
+| Ari EMR mobile | `artifacts/emr-mobile` | `/emr-mobile/` | `POST /ari-emr/api/auth/login` (session token) | `/ari-emr/api/*` |
 
-- `app/(tabs)/` — Home, Ari (AI chat), Triage (cases), News, More.
+Each app is built by `scripts/build.js` into `static-build/` and served by
+`server/serve.js` (no dependencies). Under the app's path:
+
+- `/<app>/` is the Expo Go landing page: QR code, store links and a link to the
+  web build. With an `expo-platform: ios|android` header the same URL returns
+  the Expo Go manifest, so the QR code encodes `exps://<host>/<app>/`.
+- `/<app>/web/` is the same app exported for the browser
+  (`expo export --platform web`, served with an SPA fallback). `app.json`
+  sets `experiments.baseUrl` to `/<app>/web` so asset URLs and the router agree.
+- `/<app>/status` reports whether the iOS/Android manifests and the web build
+  exist in the running deployment.
+
+Dev ports: ARIbots 19512, AMR 19513, EMR 19514 (`.replit` maps them to external
+ports 3001 to 3003).
+
+### Testing a mobile app
+
+1. Open `/mobile` on the public site, or go straight to `/<app>/web/` on a
+   phone or laptop browser, and sign in with the demo account.
+2. For the native build, install Expo Go, open `/<app>/` on the phone and scan
+   the QR code (or tap "Open in Expo Go").
+3. Demo accounts: ARIbots mobile `doctor@aribots.local` / `demo`; Ari AMR and
+   Ari EMR `demo@aribots.local` / `demo`.
+
+Headless checks used before each release live only in the session scratchpad;
+the equivalent manual pass is: sign in, open every tab, open a detail screen,
+create something (AMR: new case, start therapy, run the review; EMR: Ari
+draft, save, sign), confirm it is visible in the web workspace.
+
+### Auth for the mobile apps
+
+- The mobile JWT (`SESSION_SECRET`-signed, issued by the mobile router) is also
+  accepted as a bearer token by `requireAuthenticatedWebApi` in
+  `artifacts/api-server/src/auth-setup.ts`; it resolves to the demo clinician
+  `u1`. That is how the AMR app reaches `/api/amr` without cookies.
+- `detachMobileBearer` (same file, mounted in `app.ts` before the Clerk
+  middleware) verifies a mobile JWT, keeps its payload on `req.mobileToken`
+  and removes the `Authorization` header, so Clerk never tries to verify our
+  tokens as its own. Without this every mobile request paid a Clerk round
+  trip (3 to 4 seconds when Clerk is unreachable).
+- The EMR login returns its session token in the JSON body as well as the
+  HttpOnly cookie; `demo-auth.ts` accepts `Authorization: Bearer <token>`.
+- On the web builds, API requests go to the page's own origin when
+  `EXPO_PUBLIC_DOMAIN` is not set at build time.
+
+### ARIbots mobile (`artifacts/aribots-mobile`)
+
+Expo Router with a tab bar plus stack screens.
+
+- `app/(tabs)/` — Home, Ari (AI chat), Events, More.
 - `app/triage/[id].tsx`, `app/news/[id].tsx`, `app/groups/[id].tsx`, `app/chats/[id].tsx` — detail stack screens.
 - `app/login.tsx`, `app/groups.tsx`, `app/events.tsx`, `app/chats.tsx`, `app/doctors.tsx`, `app/training.tsx`, `app/telemed.tsx`, `app/pre-charting.tsx`, `app/soap.tsx`, `app/visit-summary.tsx`, `app/clinical-chat.tsx` — secondary screens.
 - `components/Brand.tsx` — `BrandMark`, `BrandWordmark`, `ModeGradient` (Ari ↔ ER gradient).
-- `components/SimpleList.tsx` — shared list pattern for groups / events / doctors / training / chats.
-- `lib/api.ts` — fetch helper with persistent cookie jar (AsyncStorage) since RN doesn't have a native cookie jar. Handles `Set-Cookie` from the API server so session-based endpoints work after login.
-- `lib/auth.tsx` — auth context, persists "signed in" flag in AsyncStorage.
-- `constants/colors.ts` — palette synced with the web app's `index.css` (primary `#3b82f6`, light/dark surfaces, Ari/ER gradient stops).
-- `assets/images/` — brand assets copied from web (`aribot-mark-1024.png`, favicons, logo.svg). `icon.png` is the same mark used for the launch icon.
+- `lib/api.ts` — JWT in AsyncStorage, `Authorization: Bearer` on every request, SSE streaming for Ari via `expo/fetch`.
+- `constants/colors.ts` — palette synced with the web app.
 
-The mobile app talks to the existing **`artifacts/api-server`** at `https://${EXPO_PUBLIC_DOMAIN}/api/*`. Both web and mobile share one Postgres database and one set of routes, including Ari (`/api/ari/chat` SSE streaming via `expo/fetch`).
+`app/(tabs)/ari.tsx` streams from `POST /api/mobile/ari/chat` (same managed
+agent configuration as the web Ask Ari). Live telemedicine video stays web-only.
 
-## Auth
+### Ari AMR mobile (`artifacts/amr-mobile`)
 
-The mobile login screen calls `POST /api/auth/login`. The API server's dev passport-local fallback accepts any email/password and resolves to seed user `u1`. Cookies are captured from `Set-Cookie` and replayed on subsequent requests via `lib/api.ts`. Ari endpoints (`requireAriClinician`) also fall back to `u1` when no session exists.
+- Tabs: Dashboard (metrics, coverage alerts, reviews due), Cases (worklist
+  with filters), Antibiogram (region picker, organism × agent table),
+  Formulary (agents by spectrum tier), More (account, Ask Ari, syndrome
+  guidance, theme).
+- `app/intake.tsx` — the screening intake; previews and creates a case.
+- `app/case/[id].tsx` — intake summary, ranked empiric regimens with "Start
+  this regimen", the 48 to 72 hour review form (culture result, isolate with
+  S/I/R for the current agents, rapid diagnostics, clinical response), the
+  targeted recommendation, the clinician decision, notes and the timeline.
+- `app/agent/[id].tsx`, `app/syndrome/[id].tsx` — monograph and guidance.
+- `app/ari.tsx` — Ask Ari (streams from `/api/mobile/ari/chat`).
+- `lib/amr.ts` imports the engine's types from
+  `artifacts/api-server/src/amr/types.ts` (type-only, erased at build time).
 
-## Ari mobile chat
+### Ari EMR mobile (`artifacts/emr-mobile`)
 
-`app/(tabs)/ari.tsx` streams from `POST /api/ari/chat` using `import { fetch } from 'expo/fetch'` (required for `getReader()` on RN). Supports an Ari ↔ ER mode toggle with a brand gradient. Parses SSE `data:` frames as JSON and concatenates `delta`/`text`/`content`/`token` deltas into the streaming bubble.
+- Tabs: Today (appointments by date, open encounters), Patients, In-basket
+  (unread badge, categories, open/done), Ari (chart Q&A, differential, text
+  rewriting), More.
+- `app/patient/[id].tsx` — summary (vitals, problems, medications,
+  allergies), encounters, notes.
+- `app/encounter/[id].tsx` — "Draft from the chart" (`/api/ari/draft-note`)
+  into an editable SOAP draft, saved as a draft note.
+- `app/note/new.tsx` — dictate or type a narrative, "Structure with Ari"
+  (`/api/ari/structure-narrative`), save.
+- `app/note/[id].tsx` — view, edit, sign, addendums.
+- `lib/emr.ts` imports the row types from `artifacts/ari-emr/shared/schema.ts`
+  (type-only).
 
-## Branding parity
-
-- Logo / favicon / mark: copied directly from web.
-- Primary blue: `#3b82f6` (matches web HSL `217 91% 60%`).
-- Light bg `#ffffff`, dark bg `#0b0e13` (matches web dark surface).
-- Typography: Inter (font-loaded via `@expo-google-fonts/inter`, weights 400/500/600/700) — close to the web's Open Sans/Montserrat in feel and well-suited for clinical UI.
-- Ari gradient: blue → violet (`#60a5fa → #a78bfa`). ER gradient: rose → orange (`#fb7185 → #f97316`).
+Both new apps share the same small component kit (`components/ui.tsx`) and
+differ in `constants/colors.ts`: AMR uses the stewardship workspace's teal
+tokens, EMR the EMR's ink-blue tokens.
 
 ## Known infrastructure note (mobile preview)
 
-The Replit workflow runner reports the `artifacts/aribots-mobile: expo` workflow as `failed` with "didn't open port 19512", and the Replit Expo proxy (`*.expo.worf.replit.dev`) gates on workflow state — so the in-IDE web preview for the Expo app may show as unreachable. This is a Replit-side port-detection quirk with this Expo SDK; Metro itself binds and serves correctly (a direct `curl http://localhost:19512/status` returns `200`). Mobile testing via Expo Go (scan QR code from the workflow log) and the production publish path via **Expo Launch** are unaffected.
+The Replit workflow runner may report an Expo workflow as `failed` with
+"didn't open port", and the Replit Expo proxy (`*.expo.worf.replit.dev`)
+gates on workflow state, so the in-IDE preview for an Expo app can show as
+unreachable in development. Metro itself binds and serves correctly. The
+published paths above (`/<app>/`, `/<app>/web/`) do not depend on this.
 
 ## Out of scope (per requirements)
 

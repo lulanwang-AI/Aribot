@@ -1,0 +1,28 @@
+kind = "mobile"
+previewPath = "/emr-mobile/"
+title = "Ari EMR Mobile"
+description = "Patients, schedule, encounters, Ari-assisted notes and the in-basket on a phone."
+version = "1.0.0"
+id = "artifacts/emr-mobile"
+router = "path"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/emr-mobile/" ]
+localPort = 19514
+
+[services.development]
+run = "pnpm --filter @workspace/emr-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/emr-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/emr-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "19514"
+BASE_PATH = "/emr-mobile/"
