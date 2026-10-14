@@ -14,6 +14,7 @@ import {
 import { registerRoutes } from "./routes/routes";
 import ariRouter from "./ari/routes";
 import healthRouter from "./routes/health";
+import statusRouter from "./routes/status";
 import mobileRouter from "./routes/mobile-router";
 import amrRouter from "./amr/routes";
 import {
@@ -66,6 +67,7 @@ registerAuthRoutes(app);
 app.use("/api", healthRouter);
 app.use("/api/mobile", mobileRouter);
 app.use("/api", requireAuthenticatedWebApi);
+app.use("/api", statusRouter);
 app.use("/api/amr", amrRouter);
 
 let routesRegistered = false;

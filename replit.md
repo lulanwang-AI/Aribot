@@ -59,6 +59,33 @@ The two Drizzle configs (`lib/db` and `artifacts/ari-emr`) target the same
 database and each carries a `tablesFilter` so a push from one never proposes
 dropping the other's tables.
 
+## Roles
+
+Every account has a `role` on the server (`admin` for the first three seeded
+clinicians, including the demo account, otherwise `physician` or `member`).
+Admin-only API routes (`/api/moderation`) are gated by `requireRole("admin")`
+in `artifacts/api-server/src/auth-setup.ts`. The sidebar role toggle is a view
+preference: it can show the observer (student) view to anyone, but the admin
+view is offered and honoured only when `/api/me` reports an admin account
+(`artifacts/aribots-web/src/lib/role.ts`).
+
+## Demo sign-ins
+
+- Web and API (`POST /api/auth/login`): `demo@aribots.local` / `demo`, or a
+  Clerk account when Clerk keys are configured.
+- Mobile (`POST /api/mobile/auth/login`, JWT): `demo@aribots.local` or
+  `doctor@aribots.local` with password `demo` in every environment;
+  development additionally accepts any non-empty credentials.
+- EMR (`POST /ari-emr/api/auth/login`): `demo@aribots.local` / `demo`.
+
+## Status endpoints
+
+`GET /api/status` (API server) and `GET /ari-emr/api/status` (EMR) report,
+after sign-in, which integrations are configured and whether the database is
+reachable, with row counts for the runtime tables. They report presence only,
+never a secret value. `GET /api/healthz` and `GET /ari-emr/api/healthz` remain
+public liveness checks.
+
 ## Mobile app architecture
 
 `artifacts/aribots-mobile` uses Expo Router (file-based routing) with a tab bar plus stack screens.
