@@ -1,5 +1,16 @@
 import { z } from "zod";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  json,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -284,3 +295,73 @@ export const insertDemoRequestSchema = z.object({
 
 export type InsertDemoRequest = z.infer<typeof insertDemoRequestSchema>;
 export type DemoRequest = typeof demoRequests.$inferSelect;
+
+/**
+ * Antimicrobial stewardship cases. The complete case record is stored as JSON
+ * because it is a deep engine output that the API returns verbatim; the scalar
+ * columns exist so worklists can sort and filter without unpacking it.
+ */
+export const amrCases = pgTable(
+  "amr_cases",
+  {
+    id: varchar("id").primaryKey(),
+    mrn: text("mrn").notNull(),
+    patientLabel: text("patient_label").notNull(),
+    ward: text("ward").notNull(),
+    assignedTo: text("assigned_to").notNull(),
+    status: text("status").notNull(),
+    syndromeId: text("syndrome_id").notNull(),
+    record: jsonb("record").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("amr_cases_updated_at_idx").on(t.updatedAt)],
+);
+
+/** Ari chat audit trail. Holds a hash of each query, never its text. */
+export const ariAuditLog = pgTable(
+  "ari_audit_log",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id").notNull(),
+    licenseType: text("license_type").notNull(),
+    mode: text("mode").notNull(),
+    capability: text("capability").notNull(),
+    queryHash: text("query_hash").notNull(),
+    attachmentCount: integer("attachment_count").notNull().default(0),
+    latencyMs: integer("latency_ms").notNull(),
+    success: boolean("success").notNull(),
+    errorCode: text("error_code"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ari_audit_log_created_at_idx").on(t.createdAt)],
+);
+
+/** Verified-claim memory written by Ari when ARI_MEMORY_ENABLED is true. */
+export const ariMemory = pgTable(
+  "ari_memory",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    topic: text("topic").notNull(),
+    slug: text("slug").notNull(),
+    contentMarkdown: text("content_markdown").notNull(),
+    metadata: jsonb("metadata"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ari_memory_topic_slug_idx").on(t.topic, t.slug)],
+);
+
+/**
+ * express-session storage in exactly the shape connect-pg-simple reads and
+ * writes. Declared here so schema pushes keep the table rather than treating it
+ * as foreign.
+ */
+export const sessions = pgTable(
+  "session",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: json("sess").notNull(),
+    expire: timestamp("expire", { precision: 6 }).notNull(),
+  },
+  (t) => [index("IDX_session_expire").on(t.expire)],
+);

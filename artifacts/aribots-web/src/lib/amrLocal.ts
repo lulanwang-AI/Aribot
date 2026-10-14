@@ -124,7 +124,7 @@ export const localAmrApi: AmrApi = {
   },
 
   async metrics(): Promise<StewardshipMetrics> {
-    return computeMetrics();
+    return computeMetrics(listCases());
   },
 
   async cases() {
@@ -200,8 +200,8 @@ export const localSupportApi = {
     };
   },
   notifications() {
-    const metrics = computeMetrics();
     const cases = listCases();
+    const metrics = computeMetrics(cases);
     return {
       reviewsDue: metrics.reviewsDue,
       reviewsOverdue: metrics.reviewsOverdue,

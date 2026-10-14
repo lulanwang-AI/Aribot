@@ -1,10 +1,13 @@
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { getAuth } from "@clerk/express";
 import type { Express, NextFunction, Request, Response } from "express";
 import { storage } from "./storage";
-import type { User } from "@workspace/db";
+import { pool, type User } from "@workspace/db";
+
+const PgSessionStore = connectPgSimple(session);
 
 type SafeUser = Omit<User, "password">;
 
@@ -132,6 +135,13 @@ export function setupAuth(app: Express) {
 
   app.use(
     session({
+      // Sessions live in the "session" table (created by ensureSchema) so a
+      // sign-in survives redeploys and is shared by every autoscale instance.
+      store: new PgSessionStore({
+        pool,
+        tableName: "session",
+        pruneSessionInterval: 15 * 60,
+      }),
       secret,
       resave: false,
       saveUninitialized: false,

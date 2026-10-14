@@ -31,6 +31,34 @@ empty. `pnpm --filter @workspace/ari-emr run typecheck:server` typechecks the
 EMR server code (it still reports pre-existing errors in `routes.ts` and
 `storage.ts`, so it is not yet wired into the workspace typecheck).
 
+## Persistence (API server)
+
+The API server keeps its operational state in Postgres; only the seeded
+community demo content (doctors, triage posts, news, groups, events, chats,
+training) is still held in memory and rebuilt on start.
+
+| Data | Table | Code |
+|---|---|---|
+| Sign-in sessions (express-session) | `session` | `artifacts/api-server/src/auth-setup.ts` via connect-pg-simple |
+| Antimicrobial stewardship cases | `amr_cases` | `artifacts/api-server/src/amr/case-repository.ts` |
+| Website demo requests | `demo_requests` | `artifacts/api-server/src/storage.ts` |
+| Ari chat audit trail (query hashes only) | `ari_audit_log` | `artifacts/api-server/src/ari/audit.ts` |
+| Ari verified-claim memory (`ARI_MEMORY_ENABLED=true`) | `ari_memory` | `artifacts/api-server/src/ari/memory.ts` |
+| EMR demo sign-in sessions | `emr_demo_sessions` | `artifacts/ari-emr/server/demo-auth.ts` |
+
+Both servers create their runtime tables on boot (`lib/db/src/ensure-schema.ts`,
+`artifacts/ari-emr/server/ensure-schema.ts`), so a deployment never depends on a
+manual `drizzle-kit push`. The stewardship engine (`artifacts/api-server/src/amr/store.ts`)
+stays pure and database-free because the standalone web build bundles it into
+the browser; the server-side repository applies the same transitions and
+persists the result. The eight demonstration stewardship cases are loaded once
+into an empty `amr_cases` table; set `AMR_SEED_DEMO=false` on the API service
+for a tenant that must start with none.
+
+The two Drizzle configs (`lib/db` and `artifacts/ari-emr`) target the same
+database and each carries a `tablesFilter` so a push from one never proposes
+dropping the other's tables.
+
 ## Mobile app architecture
 
 `artifacts/aribots-mobile` uses Expo Router (file-based routing) with a tab bar plus stack screens.
