@@ -1,3 +1,9 @@
+/**
+ * Marketing sections shared by the public site pages (src/pages/site). Each
+ * section is self-contained; pages compose the ones they need inside
+ * SiteLayout, which supplies the header, footer and the landing-shell styling
+ * these sections were designed against.
+ */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -187,7 +193,7 @@ function useInView(threshold = 0.15) {
   return { ref, isVisible };
 }
 
-function AnimatedCounter({ target, label, suffix = "" }: { target: number; label: string; suffix?: string }) {
+export function AnimatedCounter({ target, label, suffix = "" }: { target: number; label: string; suffix?: string }) {
   const { ref, isVisible } = useInView();
   const [count, setCount] = useState(0);
 
@@ -217,127 +223,7 @@ function AnimatedCounter({ target, label, suffix = "" }: { target: number; label
   );
 }
 
-export function LandingNavbar({ loginHref = "/sign-in" }: { loginHref?: string }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [location, setLocation] = useLocation();
-
-  function scrollTo(id: string) {
-    setMobileOpen(false);
-    if (location !== "/") {
-      setLocation(`/#${id}`);
-      return;
-    }
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  }
-
-  const links = [
-    { label: "Home", id: "hero" },
-    { label: "Applications", id: "applications" },
-    { label: "Features", id: "capabilities" },
-    { label: "Reviews", id: "testimonials" },
-    { label: "Team", id: "team" },
-    { label: "FAQ", id: "faq" },
-    { label: "Plan with Ari", id: "demo", testId: "link-nav-join-the-community" },
-  ];
-
-  const CONTACT_URL = "https://www.aribots.com/contact-8";
-
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#111]/90 backdrop-blur-md border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-        <button
-          onClick={() => scrollTo("hero")}
-          className="flex items-center gap-3"
-          data-testid="link-navbar-logo"
-        >
-          <img src={aribotLogoPath} alt="ARIbots" className="h-9 w-9 rounded object-contain" />
-        </button>
-
-        <div className="hidden md:flex items-center gap-8">
-          {links.map((l) => (
-            <button
-              key={l.label}
-              onClick={() => scrollTo(l.id)}
-              className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
-              data-testid={l.testId ?? `link-nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              {l.label}
-            </button>
-          ))}
-          <Link
-            href={loginHref}
-            className="text-sm text-white/80 hover:text-[#4A90D9] transition-colors"
-            data-testid="link-nav-login"
-          >
-            Sign in
-          </Link>
-          <a
-            href={CONTACT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-semibold px-5 py-2 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
-            data-testid="link-nav-product-demo"
-          >
-            Book a product demo
-          </a>
-        </div>
-
-        <div className="md:hidden flex items-center gap-3">
-          <a
-            href={CONTACT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold px-4 py-1.5 bg-[#4A90D9] text-white rounded-full hover:bg-[#5BA0E9] transition-colors"
-            data-testid="link-mobile-product-demo"
-          >
-            Book demo
-          </a>
-          <button
-            className="text-white"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            data-testid="button-mobile-menu"
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <div className="md:hidden bg-[#111]/95 border-t border-white/10 px-4 pb-4">
-          {links.map((l) => (
-            <button
-              key={l.label}
-              onClick={() => scrollTo(l.id)}
-              className="block w-full text-left py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
-               data-testid={l.testId?.replace("link-nav-", "link-mobile-") ?? `link-mobile-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              {l.label}
-            </button>
-          ))}
-          <Link
-            href={loginHref}
-            onClick={() => setMobileOpen(false)}
-            className="block py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
-            data-testid="link-mobile-login"
-          >
-            Sign in
-          </Link>
-          <a
-            href={CONTACT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block py-3 text-white/80 hover:text-[#4A90D9] transition-colors text-sm"
-            data-testid="link-mobile-contact"
-          >
-            Contact
-          </a>
-        </div>
-      )}
-    </nav>
-  );
-}
-
-function AribotMockup() {
+export function AribotMockup() {
   const messages = [
     { role: "user", text: "What's the latest evidence on SGLT2 inhibitors for HFpEF?" },
     { role: "assistant", text: "Recent trials including EMPEROR-Preserved show Empagliflozin reduces HF hospitalization by 21% in HFpEF patients. ACC/AHA 2022 guidelines now give a Class IIa recommendation." },
@@ -504,7 +390,7 @@ function AribotMockup() {
   );
 }
 
-function AriSystemFlow() {
+export function AriSystemFlow() {
   const [active, setActive] = useState(0);
   const stages = [
     { name: "ARIbots", label: "Understand", icon: Brain, color: "#75d4cf", detail: "Patient context + evidence", note: "A complex case enters the system." },
@@ -592,7 +478,7 @@ function AriSystemFlow() {
   );
 }
 
-function HeroSection() {
+export function HeroSection() {
   const [, setLocation] = useLocation();
   return (
     <section id="hero" className="relative min-h-screen flex items-center overflow-hidden bg-[#0e1117]">
@@ -664,15 +550,15 @@ function HeroSection() {
   );
 }
 
-function ApplicationsSection() {
+export function ApplicationsSection() {
   const applications = [
     {
       name: "ARIbots",
       eyebrow: "Think with the evidence",
       description:
         "Clinical intelligence for the questions that move care forward: evidence synthesis, reasoning, collaboration, triage, and shared context for multidisciplinary teams.",
-      href: "/sign-in",
-      cta: "Open ARIbots",
+      href: "/products/aribots",
+      cta: "Explore ARIbots",
       icon: Users,
     },
     {
@@ -680,7 +566,7 @@ function ApplicationsSection() {
       eyebrow: "Protect the next decision",
       description:
         "A stewardship workspace for resistance surveillance, antibiograms, case review, formulary guidance, and responsible therapy decisions.",
-      href: "/ari-amr#hero",
+      href: "/products/ari-amr",
       cta: "Explore Ari AMR",
       icon: Shield,
     },
@@ -689,8 +575,8 @@ function ApplicationsSection() {
       eyebrow: "Carry the story forward",
       description:
         "The operational record for patient charts, imaging, appointments, care operations, reporting, and billing—so the care story stays available beyond one encounter.",
-      href: "/ari-emr/",
-      cta: "Open Ari EMR",
+      href: "/products/ari-emr",
+      cta: "Explore Ari EMR",
       icon: Stethoscope,
     },
   ];
@@ -738,11 +624,7 @@ function ApplicationsSection() {
             const classes =
               "group block rounded-[1.5rem] border border-white/10 bg-[#173246]/80 p-7 transition duration-300 hover:-translate-y-1 hover:border-[#75d4cf]/55 hover:bg-[#1b4053]";
 
-            return application.href === "/ari-emr/" ? (
-              <a key={application.name} href={application.href} className={classes} data-testid="link-application-ari-emr">
-                {content}
-              </a>
-            ) : (
+            return (
               <Link key={application.name} href={application.href} className={classes} data-testid={`link-application-${application.name.toLowerCase().replace(/\s+/g, "-")}`}>
                 {content}
               </Link>
@@ -754,7 +636,7 @@ function ApplicationsSection() {
   );
 }
 
-function MeetAriSection() {
+export function MeetAriSection() {
   const { ref, isVisible } = useInView();
   const { ref: srcRef, isVisible: srcVisible } = useInView();
   const [activeSource, setActiveSource] = useState<string | null>(null);
@@ -961,7 +843,8 @@ function MeetAriSection() {
   );
 }
 
-function PhysicianFeaturesSection() {
+export function PhysicianFeaturesSection() {
+  const [, setLocation] = useLocation();
   const features = [
     {
       id: "telemedicine",
@@ -1096,7 +979,7 @@ function PhysicianFeaturesSection() {
                   </ul>
 
                   <button
-                    onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                    onClick={() => setLocation("/request-demo")}
                     className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all duration-200 hover:opacity-90 active:scale-95"
                     style={{ background: f.accentColor }}
                     data-testid={`cta-feature-${f.id}`}
@@ -1114,7 +997,7 @@ function PhysicianFeaturesSection() {
   );
 }
 
-function HowAriWorksSection() {
+export function HowAriWorksSection() {
   const { ref, isVisible } = useInView();
   const [activeTab, setActiveTab] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -1378,7 +1261,7 @@ function HowAriWorksSection() {
   );
 }
 
-function OurVisionSection() {
+export function OurVisionSection() {
   const { ref, isVisible } = useInView();
   const cards = [
     {
@@ -1432,7 +1315,7 @@ function OurVisionSection() {
   );
 }
 
-function TestimonialsSection() {
+export function TestimonialsSection() {
   const { ref, isVisible } = useInView();
   const testimonials = [
     {
@@ -1537,7 +1420,7 @@ function TestimonialsSection() {
   );
 }
 
-function CapabilitiesSection() {
+export function CapabilitiesSection() {
   const { ref, isVisible } = useInView();
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
@@ -1621,7 +1504,7 @@ function CapabilitiesSection() {
   );
 }
 
-function WhatAriKnowsSection() {
+export function WhatAriKnowsSection() {
   const { ref, isVisible } = useInView();
 
   const categories = [
@@ -1763,7 +1646,7 @@ function WhatAriKnowsSection() {
   );
 }
 
-function CommunitySection() {
+export function CommunitySection() {
   const hospitals = [
     "Massachusetts General Hospital", "Johns Hopkins Hospital", "Mayo Clinic",
     "Cleveland Clinic", "UCLA Medical Center", "Cedars-Sinai Medical Center",
@@ -1817,7 +1700,7 @@ function CommunitySection() {
   );
 }
 
-function TeamSection() {
+export function TeamSection() {
   const { ref, isVisible } = useInView();
   const team = [
     {
@@ -1927,7 +1810,7 @@ function TeamSection() {
   );
 }
 
-function FaqSection() {
+export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const { ref, isVisible } = useInView();
 
@@ -2034,7 +1917,7 @@ const MEMBER_TYPES: { id: MemberType; label: string; sub: string; icon: ReactNod
   },
 ];
 
-function DemoFormSection() {
+export function DemoFormSection() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [memberType, setMemberType] = useState<MemberType>("physician");
@@ -2421,141 +2304,5 @@ function DemoFormSection() {
         )}
       </div>
     </section>
-  );
-}
-
-export function Footer() {
-  const CONTACT_URL = "https://www.aribots.com/contact-8";
-  const [location, setLocation] = useLocation();
-
-  function navigateToSection(id: string) {
-    if (location === "/") {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      setLocation(`/#${id}`);
-    }
-  }
-
-  return (
-    <footer className="py-12 bg-[#111] border-t border-white/5">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <img src={aribotLogoPath} alt="ARIbots" className="h-8 w-8 rounded object-contain" />
-              <span className="text-white font-semibold text-lg">ARI bots</span>
-            </div>
-            <p className="text-white/40 text-sm leading-relaxed">
-              A connected clinical infrastructure layer for the people and systems that carry care forward.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              {[
-                { label: "Features", id: "capabilities" },
-                { label: "Reviews", id: "testimonials" },
-                { label: "Team", id: "team" },
-                { label: "FAQ", id: "faq" },
-              ].map((item) => (
-                <li key={item.label}>
-                  <button
-                     onClick={() => navigateToSection(item.id)}
-                    className="text-white/40 hover:text-[#4A90D9] text-sm transition-colors"
-                    data-testid={`link-footer-${item.id}`}
-                  >
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-4">Contact Us</h4>
-            <ul className="space-y-3 mb-5">
-              <li className="flex items-center gap-2 text-white/50 text-sm">
-                <Phone className="w-3.5 h-3.5 text-[#4A90D9] shrink-0" />
-                <a href="tel:4152289933" className="hover:text-[#4A90D9] transition-colors">415.228.9933</a>
-              </li>
-              <li className="flex items-center gap-2 text-white/50 text-sm">
-                <Mail className="w-3.5 h-3.5 text-[#4A90D9] shrink-0" />
-                <a href="mailto:info@aribots.com" className="hover:text-[#4A90D9] transition-colors">info@aribots.com</a>
-              </li>
-            </ul>
-            <div className="flex items-center gap-3 mb-5">
-              {[
-                { href: "https://www.facebook.com/aribots", label: "Facebook", path: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" },
-                { href: "https://www.twitter.com/aribots", label: "Twitter / X", path: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" },
-                { href: "https://www.linkedin.com/company/aribots", label: "LinkedIn", path: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" },
-                { href: "https://www.instagram.com/aribots", label: "Instagram", path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" },
-              ].map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#4A90D9]/20 hover:border-[#4A90D9]/40 transition-colors group"
-                  data-testid={`link-social-${s.label.toLowerCase()}`}
-                >
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white/40 group-hover:fill-[#4A90D9] transition-colors">
-                    <path d={s.path} />
-                  </svg>
-                </a>
-              ))}
-            </div>
-            <a
-              href={CONTACT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4A90D9]/10 border border-[#4A90D9]/30 text-[#4A90D9] text-xs font-medium hover:bg-[#4A90D9]/20 transition-colors"
-              data-testid="link-footer-contact"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              Send Us a Message
-            </a>
-          </div>
-        </div>
-
-        <div className="border-t border-white/5 pt-6 text-center">
-          <p className="text-white/30 text-xs">
-            © {new Date().getFullYear()} ARI bots. All rights reserved. Clinical context, connected.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-export default function Landing() {
-  useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (!id) return;
-    const frame = requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  return (
-    <div className="landing-shell min-h-screen">
-      <LandingNavbar />
-      <HeroSection />
-      <ApplicationsSection />
-      <MeetAriSection />
-      <PhysicianFeaturesSection />
-      <HowAriWorksSection />
-      <CapabilitiesSection />
-      <WhatAriKnowsSection />
-      <TestimonialsSection />
-      <CommunitySection />
-      <TeamSection />
-      <OurVisionSection />
-      <FaqSection />
-      <DemoFormSection />
-      <Footer />
-    </div>
   );
 }

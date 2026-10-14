@@ -1,28 +1,17 @@
 import { useLocation } from "wouter";
 import { ArrowLeft, Shield, Brain, FileText, FlaskConical, ChevronRight, Stethoscope, Pill, BookOpen, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SiteLayout } from "@/components/site/SiteLayout";
 
 export default function Whitepaper() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#0e1117] text-white">
-      <nav className="sticky top-0 z-50 bg-[#0e1117]/90 backdrop-blur-md border-b border-white/8">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/")}
-            className="text-white/60 hover:text-white hover:bg-white/8 gap-2"
-            data-testid="button-back-home"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          <div className="h-4 w-px bg-white/15" />
-          <span className="text-white/40 text-sm">Technical White Paper — March 2026</span>
-        </div>
-      </nav>
+    <SiteLayout
+      theme="dark"
+      title="Technical white paper | ARIbots"
+      description="The ARIbots technical white paper: clinical AI architecture, verification, safety gates and the three connected workspaces."
+    >
 
       <div className="max-w-4xl mx-auto px-6 py-16">
 
@@ -394,7 +383,7 @@ export default function Whitepaper() {
         </div>
 
       </div>
-    </div>
+    </SiteLayout>
   );
 }
 
