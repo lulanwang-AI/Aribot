@@ -114,8 +114,13 @@ public liveness checks.
 
 ## Mobile apps
 
-Three Expo (React Native) apps, one per workspace, each a workspace package
-with its own `.replit-artifact/artifact.toml`. `aribots-mobile` is the one
+Three Expo (React Native) apps on Expo SDK 57 (React Native 0.86, the SDK the
+current Expo Go release runs), one per workspace, each a workspace package
+with its own `.replit-artifact/artifact.toml`. When the App Store Expo Go
+moves to a newer SDK, bump `expo` and the `expo-*`, `react-native*` and
+`react` versions in the three apps' package.json files together (the
+versions Expo expects are listed in the expo package's
+`bundledNativeModules.json`). `aribots-mobile` is the one
 `kind = "mobile"` artifact on the Expo domain router; `amr-mobile` and
 `emr-mobile` are `kind = "web"` with path routing.
 

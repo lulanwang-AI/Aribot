@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, type ColorValue } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/components/ui";
@@ -11,7 +11,7 @@ import { emrApi } from "@/lib/emr";
 type Icon = keyof typeof Feather.glyphMap;
 
 function tabIcon(name: Icon) {
-  return ({ color }: { color: string }) => <Feather name={name} size={22} color={color} />;
+  return ({ color }: { color: ColorValue }) => <Feather name={name} size={22} color={color} />;
 }
 
 export default function TabLayout() {
