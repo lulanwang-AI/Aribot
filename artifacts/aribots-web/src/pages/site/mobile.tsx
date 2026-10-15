@@ -55,7 +55,7 @@ const MOBILE_APPS: {
 const TEST_STEPS = [
   { step: "Step 1", title: "Open the web preview", body: "Each app also ships as a web build on this domain, so the fastest check is to open its web preview on your phone's or laptop's browser." },
   { step: "Step 2", title: "Install Expo Go", body: "For the native experience install Expo Go from the App Store or Google Play. It runs these builds without an app-store release." },
-  { step: "Step 3", title: "Scan the QR code", body: "Open the app's Expo Go page on this domain and scan its QR code with your phone's camera. Expo Go downloads the current build and starts it." },
+  { step: "Step 3", title: "Scan the QR code", body: "Open the app's Expo Go page on this domain and scan its QR code with your phone's camera. Expo Go downloads the current build and starts it. If you are signed in to Expo Go it refuses projects that are not served by your own Expo CLI: log out in Expo Go's Profile tab, then scan again." },
   { step: "Step 4", title: "Sign in with the demo account", body: "Use the demo credentials shown on each sign-in screen. The data is the same demo dataset the web workspaces use, so a case or note made on the phone appears at the desk." },
 ];
 

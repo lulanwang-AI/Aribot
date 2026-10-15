@@ -165,6 +165,11 @@ ports 3001 to 3003).
    the QR code (or tap "Open in Expo Go").
 3. Demo accounts: ARIbots mobile `doctor@aribots.local` / `demo`; Ari AMR and
    Ari EMR `demo@aribots.local` / `demo`.
+4. Expo Go must be signed out. A signed-in Expo Go refuses a project whose
+   manifest is not served by an Expo CLI logged in to the same account
+   ("You're signed in to Expo Go as X, but not signed in to Expo CLI"); our
+   builds are served by `server/serve.js`, so testers log out in Expo Go's
+   Profile tab first. The web preview has no such restriction.
 
 Headless checks used before each release live only in the session scratchpad;
 the equivalent manual pass is: sign in, open every tab, open a detail screen,
