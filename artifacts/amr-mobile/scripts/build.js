@@ -147,7 +147,7 @@ function exportWeb(expoPublicReplId) {
 
   const result = spawnSync(
     "pnpm",
-    ["exec", "expo", "export", "--platform", "web", "--output-dir", outputDir],
+    ["exec", "expo", "export", "--clear", "--platform", "web", "--output-dir", outputDir],
     { cwd: projectRoot, env, stdio: "inherit" },
   );
   if (result.error) {
@@ -187,6 +187,9 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
       "exec",
       "expo",
       "start",
+      // A fresh transform cache: EXPO_PUBLIC_* values are inlined at transform
+      // time, and a cached transform from an earlier build keeps the old ones.
+      "--clear",
       "--no-dev",
       "--minify",
       "--localhost",
