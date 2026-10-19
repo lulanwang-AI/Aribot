@@ -132,6 +132,13 @@ forwards `/amr-mobile/...` and `/emr-mobile/...` to those apps' own servers
 (`exps://<host>/<app>/`) ends at the app's own manifest. Bundle and asset
 downloads carry no such header and are path-routed directly.
 
+`build.js` can only bake the deployment's default domain into the manifests
+and native bundles; `serve.js` rewrites that origin to the host each request
+arrives on, so an app opened through the custom domain loads its bundle and
+assets from, and talks to the API on, that domain. Asset URLs are normalised
+(no `./` or `../` segments, workspace `node_modules` files included): a phone
+sends such paths verbatim and the edge answers them with a redirect.
+
 `.replitignore` must not exclude `artifacts/*/static-build`: the publish
 build produces those directories and the apps serve them at runtime (an old
 exclusion of the ARIbots build was why its QR code led to a 404).
@@ -165,11 +172,13 @@ ports 3001 to 3003).
    the QR code (or tap "Open in Expo Go").
 3. Demo accounts: ARIbots mobile `doctor@aribots.local` / `demo`; Ari AMR and
    Ari EMR `demo@aribots.local` / `demo`.
-4. Expo Go must be signed out. A signed-in Expo Go refuses a project whose
-   manifest is not served by an Expo CLI logged in to the same account
-   ("You're signed in to Expo Go as X, but not signed in to Expo CLI"); our
-   builds are served by `server/serve.js`, so testers log out in Expo Go's
-   Profile tab first. The web preview has no such restriction.
+4. No Expo account is needed, signed in or out. Expo Go only demands a
+   signed-in Expo CLI for a manifest that looks like a live dev server (an
+   `extra.expoGo.developer` entry), so `build.js` removes that entry and
+   `serve.js` drops it from older builds; the manifest is then a published
+   update with an anonymous scope key, which Expo Go verifies by itself.
+   Putting the entry back brings "You need to be signed in to Expo Go and
+   Expo CLI" (or "...not signed in to Expo CLI") for every tester.
 
 Headless checks used before each release live only in the session scratchpad;
 the equivalent manual pass is: sign in, open every tab, open a detail screen,
