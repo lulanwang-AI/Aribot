@@ -393,10 +393,27 @@ function extractAssets(timestamp) {
   return Array.from(assetsMap.values());
 }
 
+/**
+ * Where an asset is served from under static-build/<timestamp>/, derived from
+ * the project-relative path Metro reports for it. Normalised so the URL has
+ * no "./" or "../" segments (a phone's HTTP stack sends those verbatim and the
+ * edge answers them with a redirect) and so files above the project, such as
+ * the workspace's pnpm node_modules, stay under the same prefix instead of
+ * climbing out of it.
+ */
+function assetServePath(relativePath) {
+  const normalised = path.posix
+    .normalize(relativePath)
+    .replace(/^(\.\.\/)+/, "")
+    .replace(/^\.(\/|$)/, "");
+  return path.posix.join("_expo", "static", "js", normalised);
+}
+
 async function downloadAssets(assets, timestamp) {
   if (assets.length === 0) {
     return 0;
   }
+  const claimedOutputs = new Map();
 
   console.log("Copying assets...");
   let successCount = 0;
@@ -416,13 +433,17 @@ async function downloadAssets(assets, timestamp) {
       projectRoot,
       "static-build",
       timestamp,
-      "_expo",
-      "static",
-      "js",
-      asset.relativePath,
+      assetServePath(asset.relativePath),
     );
     fs.mkdirSync(outputDir, { recursive: true });
     const output = path.join(outputDir, asset.filename);
+    const claimedBy = claimedOutputs.get(output);
+    if (claimedBy && claimedBy !== asset.relativePath) {
+      throw new Error(
+        `Assets ${claimedBy} and ${asset.relativePath} would both serve ${asset.filename} at the same URL`,
+      );
+    }
+    claimedOutputs.set(output, asset.relativePath);
 
     try {
       const candidates = [
@@ -486,7 +507,7 @@ function updateBundleUrls(timestamp, baseUrl) {
         }
 
         const decodedPath = decodeURIComponent(unstablePath);
-        return `httpServerLocation:"${baseUrl}${basePath}/${timestamp}/_expo/static/js/${decodedPath}"`;
+        return `httpServerLocation:"${baseUrl}${basePath}/${timestamp}/${assetServePath(decodedPath)}"`;
       },
     );
 
@@ -514,6 +535,13 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
     manifest.extra.expoGo.debuggerHost =
       baseUrl.replace("https://", "") + "/" + platform;
     manifest.extra.expoGo.packagerOpts.dev = false;
+    // Expo Go reads an expoGo.developer entry as "this is a live dev server"
+    // and, on a phone, then insists that server be an Expo CLI signed in to
+    // the same account as Expo Go ("You need to be signed in to Expo Go and
+    // Expo CLI" / "...but not signed in to Expo CLI"). This is a static build
+    // with an anonymous scope key, which Expo Go opens without any account, so
+    // present it as the published update it is.
+    delete manifest.extra.expoGo.developer;
 
     if (manifest.assets && manifest.assets.length > 0) {
       manifest.assets.forEach((asset) => {
@@ -525,7 +553,7 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
         const assetInfo = assetsByHash.get(hash);
         if (!assetInfo) return;
 
-        asset.url = `${baseUrl}${basePath}/${timestamp}/_expo/static/js/${assetInfo.relativePath}/${assetInfo.filename}`;
+        asset.url = `${baseUrl}${basePath}/${timestamp}/${assetServePath(assetInfo.relativePath)}/${assetInfo.filename}`;
       });
     }
 

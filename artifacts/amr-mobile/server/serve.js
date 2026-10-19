@@ -4,7 +4,8 @@
  * Serves the output of build.js (static-build/) with these routes, all
  * relative to BASE_PATH:
  * - GET / or /manifest with an expo-platform header → platform manifest JSON
- *   for Expo Go
+ *   for Expo Go, with the origin build.js baked in rewritten to the one the
+ *   request arrived on (so are the native bundles below)
  * - GET / without the header → landing page (QR code, store links, web link)
  * - GET /web/... → the exported web build, with an SPA fallback to its
  *   index.html so deep links such as /web/login load
@@ -52,20 +53,52 @@ function getAppName() {
   }
 }
 
+const HOST_PATTERN = /^[A-Za-z0-9.-]+(:\d+)?$/;
+
+/** The origin a request arrived on; host is null when the header is not a plain host[:port]. */
 function requestOrigin(req) {
   const forwardedProto = req.headers["x-forwarded-proto"];
   const protocol = (typeof forwardedProto === "string" && forwardedProto.split(",")[0].trim()) || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers["host"];
-  return { protocol, host, baseUrl: `${protocol}://${host}` };
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const rawHost = (typeof forwardedHost === "string" && forwardedHost.split(",")[0].trim()) || req.headers["host"];
+  const host = typeof rawHost === "string" && HOST_PATTERN.test(rawHost) ? rawHost : null;
+  return { protocol, host, baseUrl: host ? `${protocol}://${host}` : null };
+}
+
+let builtOriginCache;
+
+/** The origin build.js baked into the manifests and bundles, or null without a native build. */
+function builtOrigin() {
+  if (builtOriginCache !== undefined) return builtOriginCache;
+  builtOriginCache = null;
+  for (const platform of ["ios", "android"]) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.join(STATIC_ROOT, platform, "manifest.json"), "utf-8"));
+      builtOriginCache = new URL(manifest.launchAsset.url).origin;
+      break;
+    } catch {
+      // No usable build for this platform.
+    }
+  }
+  return builtOriginCache;
 }
 
 /**
- * Serves the Expo Go manifest with its bundle and asset URLs rewritten to
- * the domain the request arrived on. build.js bakes the deployment's own
- * domain into the manifest; when the app is reached through a custom domain
- * the bundles should be fetched from that same domain, and the app keeps
- * working even if the deployment's default domain changes.
+ * Rewrites the origin build.js baked into a manifest or bundle to the origin
+ * the request arrived on. build.js only knows the deployment's own domain;
+ * an app opened through a custom domain should fetch its bundle and assets,
+ * and talk to the API, on that same domain, and it keeps working if the
+ * deployment's default domain changes.
  */
+function rewriteOrigins(text, req) {
+  const built = builtOrigin();
+  const { host, baseUrl } = requestOrigin(req);
+  if (!built || !host || built === baseUrl) return text;
+  const builtHost = new URL(built).host;
+  return text.split(built).join(baseUrl).split(`"${builtHost}/`).join(`"${host}/`);
+}
+
+/** The Expo Go manifest for one platform (see rewriteOrigins). */
 function serveManifest(platform, req, res) {
   const manifestPath = path.join(STATIC_ROOT, platform, "manifest.json");
 
@@ -80,25 +113,46 @@ function serveManifest(platform, req, res) {
   let manifest = fs.readFileSync(manifestPath, "utf-8");
   try {
     const parsed = JSON.parse(manifest);
-    const builtOrigin = new URL(parsed.launchAsset.url).origin;
-    const { host, baseUrl } = requestOrigin(req);
-    if (host && builtOrigin !== baseUrl) {
-      const builtHost = new URL(builtOrigin).host;
-      manifest = manifest.split(builtOrigin).join(baseUrl).split(`"${builtHost}/`).join(`"${host}/`);
-    }
+    // build.js drops this for the reason given there; cover builds made before it did.
+    if (parsed.extra && parsed.extra.expoGo) delete parsed.extra.expoGo.developer;
+    manifest = JSON.stringify(parsed);
   } catch {
     // Leave the manifest exactly as built if it cannot be parsed.
   }
   res.writeHead(200, {
     "content-type": "application/json",
+    "cache-control": "private, max-age=0",
     "expo-protocol-version": "1",
     "expo-sfv-version": "0",
   });
-  res.end(manifest);
+  res.end(rewriteOrigins(manifest, req));
+}
+
+const BUNDLE_PATH = /\/_expo\/static\/js\/(ios|android)\/bundle\.js$/;
+const bundleCache = new Map();
+
+/** A native bundle with its baked origin rewritten to the requesting one (see rewriteOrigins). */
+function serveBundle(filePath, req, res) {
+  const { baseUrl } = requestOrigin(req);
+  const cacheKey = `${filePath}|${baseUrl}`;
+  let body = bundleCache.get(cacheKey);
+  if (!body) {
+    body = Buffer.from(rewriteOrigins(fs.readFileSync(filePath, "utf-8"), req));
+    if (bundleCache.size >= 8) bundleCache.clear();
+    bundleCache.set(cacheKey, body);
+  }
+  res.writeHead(200, {
+    "content-type": MIME_TYPES[".js"],
+    "content-length": body.length,
+    // The build timestamp is in the path, so this URL's content never changes.
+    "cache-control": "public, max-age=31536000, immutable",
+  });
+  res.end(body);
 }
 
 function serveLandingPage(req, res, landingPageTemplate, appName) {
-  const { host, baseUrl } = requestOrigin(req);
+  const baseUrl = requestOrigin(req).baseUrl || builtOrigin() || "https://localhost";
+  const host = new URL(baseUrl).host;
   // Expo Go opens exps://<host><path>, fetching https://<host><path> with an
   // expo-platform header. Keeping the base path in the link means the request
   // reaches this service directly, whichever app owns the domain root.
@@ -138,7 +192,7 @@ function resolveWithin(root, urlPath) {
   return filePath;
 }
 
-function serveStaticFile(urlPath, res) {
+function serveStaticFile(urlPath, req, res) {
   const filePath = resolveWithin(STATIC_ROOT, urlPath);
   if (!filePath) {
     res.writeHead(403);
@@ -150,6 +204,10 @@ function serveStaticFile(urlPath, res) {
     res.writeHead(404);
     res.end("Not Found");
     return;
+  }
+
+  if (BUNDLE_PATH.test(filePath)) {
+    return serveBundle(filePath, req, res);
   }
 
   sendFile(filePath, res);
@@ -277,7 +335,7 @@ const server = http.createServer((req, res) => {
     return serveWebApp(pathname.slice("/web".length), res);
   }
 
-  serveStaticFile(pathname, res);
+  serveStaticFile(pathname, req, res);
 });
 
 const port = parseInt(process.env.PORT || "3000", 10);
